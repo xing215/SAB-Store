@@ -24,8 +24,7 @@ const productSchema = new mongoose.Schema({
     required: [true, 'Hình ảnh sản phẩm là bắt buộc']
   },
   imageUrl: {
-    type: String,
-    required: [true, 'URL hình ảnh sản phẩm là bắt buộc']
+    type: String
   },
   category: {
     type: String,

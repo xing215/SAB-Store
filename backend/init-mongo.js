@@ -4,7 +4,7 @@ db = db.getSiblingDB('minipreorder');
 // Create admin user with environment variables
 db.admins.insertOne({
   username: 'admin',
-  password: '$2a$10$q8MLuWlHjpGpvKJp/xj4c.J0HuU3qd7xfe.lBmPAx8ddeL.QsowDK',
+  password: '$2a$10$sP2I.fQBhsi/ovbf6InCfu751q7QgRVl4ROOdrYfEM7Y4gDeLHDZu',
   isActive: true,
   createdAt: new Date()
 });
