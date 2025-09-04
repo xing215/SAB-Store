@@ -88,7 +88,14 @@ const orderSchema = new mongoose.Schema({
     },
     trim: true,
     lowercase: true,
-    match: [/^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/, 'Email không hợp lệ']
+    validate: {
+      validator: function(v) {
+        // Skip validation for direct sales or empty values
+        if (this.isDirectSale || !v) return true;
+        return /^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/.test(v);
+      },
+      message: 'Email không hợp lệ'
+    }
   },
   additionalNote: {
     type: String,

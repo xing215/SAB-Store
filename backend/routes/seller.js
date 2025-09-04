@@ -466,10 +466,7 @@ router.post('/orders/direct', authenticateSeller, async (req, res) => {
     const order = new Order({
       orderNumber,
       orderCode,  // Use generated unique code, not orderNumber
-      // For direct sales, use minimal placeholder data
-      studentId: 'DIRECT',
-      fullName: 'Bán trực tiếp',
-      email: 'direct@sab.local',
+      // For direct sales, don't include customer data fields
       items: orderItems,
       totalAmount,
       status: 'pending',
