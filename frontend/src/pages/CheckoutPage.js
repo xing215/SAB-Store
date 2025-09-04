@@ -1,0 +1,351 @@
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { toast } from 'react-toastify';
+import { useCart } from '../context/CartContext';
+import { orderService } from '../services/api';
+import LoadingSpinner from '../components/LoadingSpinner';
+
+const CheckoutPage = () => {
+  const navigate = useNavigate();
+  const { cart, getCartTotal, formatCurrency, clearCart } = useCart();
+  
+  const [formData, setFormData] = useState({
+    studentId: '',
+    fullName: '',
+    email: '',
+    additionalNote: ''
+  });
+  
+  const [errors, setErrors] = useState({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Redirect if cart is empty
+  useEffect(() => {
+    if (cart.items.length === 0) {
+      toast.warning('Giỏ hàng trống. Vui lòng thêm sản phẩm trước khi thanh toán.');
+      navigate('/');
+    }
+  }, [cart.items.length, navigate]);
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+    
+    // Clear error when user starts typing
+    if (errors[name]) {
+      setErrors(prev => ({
+        ...prev,
+        [name]: ''
+      }));
+    }
+  };
+
+  const validateForm = () => {
+    const newErrors = {};
+
+    // Student ID validation
+    if (!formData.studentId.trim()) {
+      newErrors.studentId = 'Mã số sinh viên là bắt buộc';
+    } else if (formData.studentId.trim().length < 3) {
+      newErrors.studentId = 'Mã số sinh viên phải có ít nhất 3 ký tự';
+    }
+
+    // Full name validation
+    if (!formData.fullName.trim()) {
+      newErrors.fullName = 'Họ tên là bắt buộc';
+    } else if (formData.fullName.trim().length < 2) {
+      newErrors.fullName = 'Họ tên phải có ít nhất 2 ký tự';
+    } else if (!/^[a-zA-ZÀ-ỹ\s]+$/.test(formData.fullName.trim())) {
+      newErrors.fullName = 'Họ tên chỉ được chứa chữ cái và khoảng trắng';
+    }
+
+    // Email validation
+    if (!formData.email.trim()) {
+      newErrors.email = 'Email là bắt buộc';
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email.trim())) {
+      newErrors.email = 'Email không hợp lệ';
+    }
+
+    // Additional note validation (optional but length check)
+    if (formData.additionalNote.length > 500) {
+      newErrors.additionalNote = 'Ghi chú không được vượt quá 500 ký tự';
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    
+    if (!validateForm()) {
+      toast.error('Vui lòng kiểm tra lại thông tin đã nhập');
+      return;
+    }
+
+    if (cart.items.length === 0) {
+      toast.error('Giỏ hàng trống');
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      const orderData = {
+        studentId: formData.studentId.trim(),
+        fullName: formData.fullName.trim(),
+        email: formData.email.trim().toLowerCase(),
+        additionalNote: formData.additionalNote.trim(),
+        items: cart.items.map(item => ({
+          productId: item.productId,
+          quantity: item.quantity
+        }))
+      };
+
+      const response = await orderService.createOrder(orderData);
+
+      if (response.success) {
+        // Clear cart
+        clearCart();
+        
+        // Show success message
+        toast.success('Đơn hàng đã được tạo thành công!');
+        
+        // Redirect to success page with order info
+        navigate('/order-success', {
+          state: {
+            orderCode: response.data.orderCode,
+            totalAmount: response.data.totalAmount,
+            customerInfo: {
+              fullName: formData.fullName.trim(),
+              email: formData.email.trim()
+            }
+          }
+        });
+      }
+    } catch (error) {
+      console.error('Order creation error:', error);
+      toast.error(error.message || 'Có lỗi xảy ra khi tạo đơn hàng');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const total = getCartTotal();
+
+  if (cart.items.length === 0) {
+    return null; // Will redirect in useEffect
+  }
+
+  return (
+    <div className="container mx-auto px-4 py-8">
+      <div className="max-w-4xl mx-auto">
+        {/* Header */}
+        <div className="text-center mb-8">
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">
+            <i className="fas fa-credit-card mr-3 text-primary-600"></i>
+            Thanh toán đơn hàng
+          </h1>
+          <p className="text-gray-600">
+            Vui lòng điền đầy đủ thông tin để hoàn tất đơn hàng
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Order Form */}
+          <div className="lg:col-span-2">
+            <div className="card">
+              <div className="bg-primary-50 px-6 py-4 border-b border-primary-100">
+                <h2 className="text-xl font-semibold text-gray-900">
+                  Thông tin đặt hàng
+                </h2>
+              </div>
+              
+              <form onSubmit={handleSubmit} className="p-6 space-y-6">
+                {/* Student ID */}
+                <div>
+                  <label htmlFor="studentId" className="block text-sm font-medium text-gray-700 mb-2">
+                    Mã số sinh viên <span className="text-danger-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    id="studentId"
+                    name="studentId"
+                    value={formData.studentId}
+                    onChange={handleInputChange}
+                    placeholder="Nhập mã số sinh viên"
+                    className={`form-input ${errors.studentId ? 'form-input-error' : ''}`}
+                    maxLength="20"
+                  />
+                  {errors.studentId && (
+                    <p className="text-danger-500 text-sm mt-1">
+                      <i className="fas fa-exclamation-circle mr-1"></i>
+                      {errors.studentId}
+                    </p>
+                  )}
+                </div>
+
+                {/* Full Name */}
+                <div>
+                  <label htmlFor="fullName" className="block text-sm font-medium text-gray-700 mb-2">
+                    Họ tên <span className="text-danger-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    id="fullName"
+                    name="fullName"
+                    value={formData.fullName}
+                    onChange={handleInputChange}
+                    placeholder="Nhập họ tên đầy đủ"
+                    className={`form-input ${errors.fullName ? 'form-input-error' : ''}`}
+                    maxLength="100"
+                  />
+                  {errors.fullName && (
+                    <p className="text-danger-500 text-sm mt-1">
+                      <i className="fas fa-exclamation-circle mr-1"></i>
+                      {errors.fullName}
+                    </p>
+                  )}
+                </div>
+
+                {/* Email */}
+                <div>
+                  <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
+                    Email <span className="text-danger-500">*</span>
+                  </label>
+                  <input
+                    type="email"
+                    id="email"
+                    name="email"
+                    value={formData.email}
+                    onChange={handleInputChange}
+                    placeholder="Nhập địa chỉ email"
+                    className={`form-input ${errors.email ? 'form-input-error' : ''}`}
+                    maxLength="100"
+                  />
+                  {errors.email && (
+                    <p className="text-danger-500 text-sm mt-1">
+                      <i className="fas fa-exclamation-circle mr-1"></i>
+                      {errors.email}
+                    </p>
+                  )}
+                  <p className="text-gray-500 text-sm mt-1">
+                    Email sẽ được sử dụng để gửi xác nhận đơn hàng
+                  </p>
+                </div>
+
+                {/* Additional Note */}
+                <div>
+                  <label htmlFor="additionalNote" className="block text-sm font-medium text-gray-700 mb-2">
+                    Ghi chú thêm (không bắt buộc)
+                  </label>
+                  <textarea
+                    id="additionalNote"
+                    name="additionalNote"
+                    value={formData.additionalNote}
+                    onChange={handleInputChange}
+                    placeholder="Ghi chú đặc biệt cho đơn hàng (ví dụ: không cay, ít đá...)"
+                    rows="3"
+                    className={`form-input ${errors.additionalNote ? 'form-input-error' : ''}`}
+                    maxLength="500"
+                  />
+                  <div className="flex justify-between mt-1">
+                    {errors.additionalNote && (
+                      <p className="text-danger-500 text-sm">
+                        <i className="fas fa-exclamation-circle mr-1"></i>
+                        {errors.additionalNote}
+                      </p>
+                    )}
+                    <p className="text-gray-500 text-sm ml-auto">
+                      {formData.additionalNote.length}/500
+                    </p>
+                  </div>
+                </div>
+
+                {/* Submit Button */}
+                <div className="pt-4">
+                  <button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="btn-success w-full text-lg py-3 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {isSubmitting ? (
+                      <LoadingSpinner size="small" text="Đang xử lý..." />
+                    ) : (
+                      <>
+                        <i className="fas fa-check mr-2"></i>
+                        Xác nhận đặt hàng
+                      </>
+                    )}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+
+          {/* Order Summary */}
+          <div className="lg:col-span-1">
+            <div className="card sticky top-24">
+              <div className="bg-primary-50 px-6 py-4 border-b border-primary-100">
+                <h3 className="text-lg font-semibold text-gray-900">
+                  Tóm tắt đơn hàng
+                </h3>
+              </div>
+              
+              <div className="p-6">
+                {/* Order Items */}
+                <div className="space-y-3 mb-6">
+                  {cart.items.map(item => (
+                    <div key={item.productId} className="flex justify-between items-start">
+                      <div className="flex-1 mr-2">
+                        <h4 className="font-medium text-gray-900 text-sm line-clamp-2">
+                          {item.productName}
+                        </h4>
+                        <p className="text-gray-600 text-sm">
+                          {formatCurrency(item.price)} x {item.quantity}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-semibold text-gray-900">
+                          {formatCurrency(item.price * item.quantity)}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Total */}
+                <div className="border-t pt-4">
+                  <div className="flex justify-between items-center text-lg font-bold">
+                    <span className="text-gray-900">Tổng cộng:</span>
+                    <span className="text-primary-600">
+                      {formatCurrency(total)}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Important Notes */}
+                <div className="mt-6 p-4 bg-warning-50 border border-warning-200 rounded-lg">
+                  <h4 className="font-semibold text-warning-800 mb-2">
+                    <i className="fas fa-info-circle mr-1"></i>
+                    Lưu ý quan trọng:
+                  </h4>
+                  <ul className="text-warning-700 text-sm space-y-1">
+                    <li>• Email xác nhận sẽ được gửi sau khi đặt hàng</li>
+                    <li>• Đơn hàng sẽ được xử lý trong 15-30 phút</li>
+                    <li>• Vui lòng kiểm tra kỹ thông tin trước khi xác nhận</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default CheckoutPage;
