@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { adminService } from '../../services/api';
 import LoadingSpinner from '../../components/LoadingSpinner';
+import Logo from '../../components/Logo';
 
 const AdminLoginPage = () => {
   const navigate = useNavigate();
@@ -89,8 +90,7 @@ const AdminLoginPage = () => {
         {/* Header */}
         <div className="text-center">
           <Link to="/" className="inline-flex items-center text-2xl font-bold text-primary-600 hover:text-primary-700">
-            <i className="fas fa-shopping-cart mr-2"></i>
-            Mini Preorder
+            <Logo/ >
           </Link>
           <h2 className="mt-6 text-3xl font-bold text-gray-900">
             Đăng nhập Admin

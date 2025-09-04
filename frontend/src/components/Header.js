@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
+import Logo from './Logo';
 
 const Header = () => {
   const { getCartItemCount, formatCurrency, getCartTotal } = useCart();
@@ -14,23 +15,25 @@ const Header = () => {
           {/* Logo */}
           <Link 
             to="/" 
-            className="flex items-center space-x-2 text-2xl font-bold text-primary-600 hover:text-primary-700 transition-colors"
+            className="flex items-center space-x-3 text-2xl font-bold text-blue-800 hover:text-blue-900 transition-colors"
           >
-            <i className="fas fa-shopping-cart"></i>
-            <span>Mini Preorder</span>
+            <Logo size="lg" />
+            <span className="text-blue-800">
+              <span className="text-yellow-500">|</span> Lanyard Preorder
+            </span>
           </Link>
 
           {/* Navigation */}
           <nav className="hidden md:flex items-center space-x-6">
             <Link 
               to="/" 
-              className="text-gray-700 hover:text-primary-600 transition-colors font-medium"
+              className="text-gray-700 hover:text-blue-700 transition-colors font-medium"
             >
               Trang chủ
             </Link>
             <Link 
               to="/order-tracking" 
-              className="text-gray-700 hover:text-primary-600 transition-colors font-medium"
+              className="text-gray-700 hover:text-blue-700 transition-colors font-medium"
             >
               Tra cứu đơn hàng
             </Link>
@@ -59,15 +62,6 @@ const Header = () => {
                 </span>
               )}
             </div>
-
-            {/* Admin Link */}
-            <Link 
-              to="/admin/login" 
-              className="text-gray-500 hover:text-gray-700 transition-colors p-2"
-              title="Đăng nhập Admin"
-            >
-              <i className="fas fa-user-shield text-lg"></i>
-            </Link>
           </div>
         </div>
 

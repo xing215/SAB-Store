@@ -15,9 +15,18 @@ const api = axios.create({
 // Request interceptor to add auth token
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('admin_token');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
+    // Check for admin token first, then seller token
+    const adminToken = localStorage.getItem('admin_token');
+    const sellerToken = localStorage.getItem('sellerToken');
+    
+    if (adminToken && config.url.includes('/admin/')) {
+      config.headers.Authorization = `Bearer ${adminToken}`;
+    } else if (sellerToken && config.url.includes('/seller/')) {
+      config.headers.Authorization = `Bearer ${sellerToken}`;
+    } else if (adminToken) {
+      config.headers.Authorization = `Bearer ${adminToken}`;
+    } else if (sellerToken) {
+      config.headers.Authorization = `Bearer ${sellerToken}`;
     }
     return config;
   },
@@ -34,9 +43,16 @@ api.interceptors.response.use(
   (error) => {
     if (error.response?.status === 401) {
       // Token expired or invalid
-      localStorage.removeItem('admin_token');
-      if (window.location.pathname.startsWith('/admin') || window.location.pathname === '/dashboard') {
-        window.location.href = '/admin/login';
+      if (error.config.url.includes('/admin/')) {
+        localStorage.removeItem('admin_token');
+        if (window.location.pathname.startsWith('/admin') || window.location.pathname === '/dashboard') {
+          window.location.href = '/admin/login';
+        }
+      } else if (error.config.url.includes('/seller/')) {
+        localStorage.removeItem('sellerToken');
+        if (window.location.pathname.startsWith('/seller')) {
+          window.location.href = '/seller/login';
+        }
       }
     }
     return Promise.reject(error);
@@ -155,12 +171,86 @@ export const adminService = {
   },
 
   // Update order status
-  updateOrder: async (id, updateData) => {
+  updateOrderStatus: async (id, updateData) => {
     try {
       const response = await api.put(`/admin/orders/${id}`, updateData);
       return response.data;
     } catch (error) {
       throw new Error(error.response?.data?.message || 'Lỗi khi cập nhật đơn hàng');
+    }
+  },
+
+  // Product management
+  getProducts: async () => {
+    try {
+      const response = await api.get('/admin/products');
+      return response.data;
+    } catch (error) {
+      throw new Error(error.response?.data?.message || 'Lỗi khi lấy danh sách sản phẩm');
+    }
+  },
+
+  createProduct: async (productData) => {
+    try {
+      const response = await api.post('/admin/products', productData);
+      return response.data;
+    } catch (error) {
+      throw new Error(error.response?.data?.message || 'Lỗi khi tạo sản phẩm');
+    }
+  },
+
+  updateProduct: async (id, productData) => {
+    try {
+      const response = await api.put(`/admin/products/${id}`, productData);
+      return response.data;
+    } catch (error) {
+      throw new Error(error.response?.data?.message || 'Lỗi khi cập nhật sản phẩm');
+    }
+  },
+
+  deleteProduct: async (id) => {
+    try {
+      const response = await api.delete(`/admin/products/${id}`);
+      return response.data;
+    } catch (error) {
+      throw new Error(error.response?.data?.message || 'Lỗi khi xóa sản phẩm');
+    }
+  },
+
+  // Seller management
+  getSellers: async () => {
+    try {
+      const response = await api.get('/admin/sellers');
+      return response.data;
+    } catch (error) {
+      throw new Error(error.response?.data?.message || 'Lỗi khi lấy danh sách seller');
+    }
+  },
+
+  createSeller: async (sellerData) => {
+    try {
+      const response = await api.post('/admin/sellers', sellerData);
+      return response.data;
+    } catch (error) {
+      throw new Error(error.response?.data?.message || 'Lỗi khi tạo seller');
+    }
+  },
+
+  updateSeller: async (id, sellerData) => {
+    try {
+      const response = await api.put(`/admin/sellers/${id}`, sellerData);
+      return response.data;
+    } catch (error) {
+      throw new Error(error.response?.data?.message || 'Lỗi khi cập nhật seller');
+    }
+  },
+
+  deleteSeller: async (id) => {
+    try {
+      const response = await api.delete(`/admin/sellers/${id}`);
+      return response.data;
+    } catch (error) {
+      throw new Error(error.response?.data?.message || 'Lỗi khi xóa seller');
     }
   },
 
@@ -189,6 +279,90 @@ export const adminService = {
       return { success: true, message: 'Xuất file Excel thành công' };
     } catch (error) {
       throw new Error(error.response?.data?.message || 'Lỗi khi xuất file Excel');
+    }
+  }
+};
+
+// Seller Services
+export const sellerService = {
+  // Seller login
+  login: async (credentials) => {
+    try {
+      const response = await api.post('/seller/login', credentials);
+      if (response.data.success && response.data.data.token) {
+        localStorage.setItem('sellerToken', response.data.data.token);
+        // Save seller info for later use
+        if (response.data.data.seller) {
+          localStorage.setItem('sellerInfo', JSON.stringify({
+            username: response.data.data.seller.username,
+            fullName: response.data.data.seller.fullName
+          }));
+        }
+      }
+      return response.data;
+    } catch (error) {
+      throw new Error(error.response?.data?.message || 'Lỗi đăng nhập');
+    }
+  },
+
+  // Seller logout
+  logout: () => {
+    localStorage.removeItem('sellerToken');
+    localStorage.removeItem('sellerInfo');
+  },
+
+  // Check if seller is logged in
+  isLoggedIn: () => {
+    return !!localStorage.getItem('sellerToken');
+  },
+
+  // Get dashboard statistics
+  getDashboardStats: async () => {
+    try {
+      const response = await api.get('/seller/dashboard/stats');
+      return response.data;
+    } catch (error) {
+      throw new Error(error.response?.data?.message || 'Lỗi khi lấy thống kê');
+    }
+  },
+
+  // Get all orders (seller)
+  getOrders: async (params = {}) => {
+    try {
+      const response = await api.get('/seller/orders', { params });
+      return response.data;
+    } catch (error) {
+      throw new Error(error.response?.data?.message || 'Lỗi khi lấy danh sách đơn hàng');
+    }
+  },
+
+  // Get single order (seller)
+  getOrder: async (id) => {
+    try {
+      const response = await api.get(`/seller/orders/${id}`);
+      return response.data;
+    } catch (error) {
+      throw new Error(error.response?.data?.message || 'Lỗi khi lấy thông tin đơn hàng');
+    }
+  },
+
+  // Update order status
+  updateOrderStatus: async (id, updateData) => {
+    try {
+      const response = await api.put(`/seller/orders/${id}`, updateData);
+      return response.data;
+    } catch (error) {
+      throw new Error(error.response?.data?.message || 'Lỗi khi cập nhật đơn hàng');
+    }
+  },
+
+  // Create direct sale order
+  createDirectOrder: async (orderData) => {
+    try {
+      const response = await api.post('/seller/orders/direct', orderData);
+      return response.data;
+    } catch (error) {
+      throw new Error(error.response?.data?.message || 'Lỗi khi tạo đơn hàng trực tiếp');
     }
   }
 };

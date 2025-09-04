@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { toast } from 'react-toastify';
 import { orderService, formatCurrency, formatDate, getStatusText, getStatusColor } from '../services/api';
+import { generateOrderPaymentQR, formatOrderPaymentDescription } from '../utils/payment';
 import LoadingSpinner from '../components/LoadingSpinner';
 
 const OrderTrackingPage = () => {
@@ -17,8 +18,8 @@ const OrderTrackingPage = () => {
       return;
     }
 
-    if (orderCode.trim().length !== 5) {
-      setError('Mã đơn hàng phải có 5 ký tự');
+    if (orderCode.trim().length < 5) {
+      setError('Mã đơn hàng không hợp lệ');
       return;
     }
 
@@ -31,7 +32,6 @@ const OrderTrackingPage = () => {
       
       if (response.success) {
         setOrder(response.data);
-        toast.success('Tìm thấy đơn hàng!');
       }
     } catch (err) {
       setError(err.message);
@@ -72,7 +72,7 @@ const OrderTrackingPage = () => {
         {/* Header */}
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            <i className="fas fa-search mr-3 text-primary-600"></i>
+            <i className="fas fa-search mr-3 text-blue-700"></i>
             Tra cứu đơn hàng
           </h1>
           <p className="text-gray-600">
@@ -97,9 +97,8 @@ const OrderTrackingPage = () => {
                       setOrderCode(e.target.value.toUpperCase());
                       setError('');
                     }}
-                    placeholder="Nhập mã đơn hàng (5 ký tự)"
+                    placeholder="Nhập mã đơn hàng"
                     className={`form-input flex-1 ${error ? 'form-input-error' : ''}`}
-                    maxLength="5"
                     style={{ textTransform: 'uppercase' }}
                   />
                   <button
@@ -170,14 +169,14 @@ const OrderTrackingPage = () => {
                 {order.status !== 'cancelled' ? (
                   <div className="mb-6">
                     <h3 className="font-semibold text-gray-900 mb-4">Tiến trình đơn hàng:</h3>
-                    <div className="flex items-center justify-between">
+                    <div className="relative flex items-center justify-between">
                       {getStatusSteps(order.status).map((step, index) => (
-                        <div key={step.key} className="flex flex-col items-center flex-1">
-                          <div className={`w-10 h-10 rounded-full flex items-center justify-center mb-2 ${
+                        <div key={step.key} className="flex flex-col items-center flex-1 relative">
+                          <div className={`w-10 h-10 rounded-full flex items-center justify-center mb-2 relative z-10 ${
                             step.completed 
                               ? 'bg-success-100 text-success-600' 
                               : step.active
-                              ? 'bg-primary-100 text-primary-600'
+                              ? 'bg-blue-100 text-blue-700'
                               : 'bg-gray-100 text-gray-400'
                           }`}>
                             <i className={step.icon}></i>
@@ -192,9 +191,12 @@ const OrderTrackingPage = () => {
                           
                           {/* Connector line */}
                           {index < getStatusSteps(order.status).length - 1 && (
-                            <div className={`hidden md:block absolute h-0.5 w-24 mt-5 ${
+                            <div className={`absolute top-5 left-1/2 h-0.5 ${
                               step.completed ? 'bg-success-300' : 'bg-gray-200'
-                            }`} style={{ marginLeft: '80px' }}></div>
+                            }`} style={{ 
+                              width: 'calc(100% - 20px)',
+                              marginLeft: '10px'
+                            }}></div>
                           )}
                         </div>
                       ))}
@@ -245,13 +247,111 @@ const OrderTrackingPage = () => {
                 <div className="border-t pt-4 mt-4">
                   <div className="flex justify-between items-center text-lg font-bold">
                     <span className="text-gray-900">Tổng cộng:</span>
-                    <span className="text-primary-600">
+                    <span className="text-blue-700">
                       {formatCurrency(order.totalAmount)}
                     </span>
                   </div>
                 </div>
               </div>
             </div>
+
+            {/* Payment QR Code - Show only if not paid and not cancelled */}
+            {order.status !== 'paid' && order.status !== 'delivered' && order.status !== 'cancelled' && (
+              <div className="card mt-6">
+                <div className="bg-gradient-to-br from-red-50 to-orange-50 border-2 border-red-200 px-6 py-4 border-b border-red-100">
+                  <h3 className="text-xl font-bold text-red-700 flex items-center">
+                    <i className="fas fa-exclamation-triangle mr-2"></i>
+                    Thanh toán đơn hàng
+                  </h3>
+                  <p className="text-red-600 text-sm mt-1">
+                    Để được xử lý nhanh nhất, bạn vui lòng thanh toán sớm nhất có thể
+                  </p>
+                </div>
+                
+                <div>
+                  <div className="text-center">
+                    {/* QR Code */}
+                    <div className="bg-white rounded-lg p-4 shadow-inner mb-4 inline-block">
+                      <img 
+                        src={generateOrderPaymentQR(
+                          order.totalAmount,
+                          order.orderCode,
+                          order.studentId,
+                          order.fullName
+                        )}
+                        alt="Payment QR Code"
+                        className="w-48 h-48 mx-auto"
+                        onError={(e) => {
+                          e.target.style.display = 'none';
+                          e.target.nextSibling.style.display = 'block';
+                        }}
+                      />
+                      <div 
+                        className="w-48 h-48 bg-gray-200 flex flex-col items-center justify-center text-gray-500"
+                        style={{display: 'none'}}
+                      >
+                        <i className="fas fa-image text-2xl mb-2"></i>
+                        <p className="text-sm">Không thể tải QR</p>
+                      </div>
+                    </div>
+
+                    {/* Payment Instructions */}
+                    <div className="text-left space-y-3">
+                      <h4 className="font-semibold text-red-800 text-center">
+                        <i className="fas fa-mobile-alt mr-2"></i>
+                        Hướng dẫn thanh toán
+                      </h4>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                        <ol className="space-y-2 text-red-700">
+                          <li className="flex items-start">
+                            <span className="bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs mr-2 mt-0.5">1</span>
+                            Mở ứng dụng ngân hàng hoặc ví điện tử
+                          </li>
+                          <li className="flex items-start">
+                            <span className="bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs mr-2 mt-0.5">2</span>
+                            Quét mã VietQR bên trên
+                          </li>
+                          <li className="flex items-start">
+                            <span className="bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs mr-2 mt-0.5">3</span>
+                            Kiểm tra thông tin và xác nhận thanh toán
+                          </li>
+                        </ol>
+                        
+                        <div className="bg-white border-2 border-red-200 rounded-lg p-3">
+                          <h5 className="font-semibold text-red-800 mb-2">Thông tin chuyển khoản</h5>
+                          <div className="space-y-1 text-xs text-red-600">
+                            <p><strong>Số tiền:</strong> {formatCurrency(order.totalAmount)}</p>
+                            <p><strong>Nội dung:</strong> {formatOrderPaymentDescription(
+                              order.orderCode,
+                              order.studentId,
+                              order.fullName
+                            )}</p>
+                            <p className="text-red-700 font-medium mt-2">
+                              ⚠️ Không thay đổi nội dung chuyển khoản
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Payment Notice */}
+                      <div className="bg-red-50 border-2 border-red-200 rounded-lg p-3 mt-4">
+                        <div className="flex items-start space-x-2">
+                          <i className="fas fa-info-circle text-red-600 mt-0.5"></i>
+                          <div className="text-red-800 text-sm">
+                            <p className="font-semibold mb-1">Lưu ý:</p>
+                            <ul className="space-y-1 text-xs">
+                              <li>• SAB sẽ kiểm tra thông tin thanh toán của bạn trong vòng tối đa 7 ngày.</li>
+                              <li>• Nếu cần hỗ trợ thêm, bạn có thể liên hệ với SAB qua email: <a href="mailto:sab@fit.hcmus.edu.vn" className="text-red-600 hover:text-red-800">sab@fit.hcmus.edu.vn</a></li>
+                            </ul>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Actions */}
             <div className="flex justify-center space-x-4">
@@ -265,27 +365,6 @@ const OrderTrackingPage = () => {
             </div>
           </div>
         )}
-
-        {/* Help Section */}
-        <div className="mt-8 p-4 bg-gray-50 rounded-lg">
-          <h4 className="font-semibold text-gray-900 mb-2">
-            <i className="fas fa-question-circle mr-2"></i>
-            Cần hỗ trợ?
-          </h4>
-          <p className="text-gray-600 text-sm mb-2">
-            Nếu bạn không tìm thấy đơn hàng hoặc có thắc mắc, vui lòng liên hệ:
-          </p>
-          <div className="flex flex-col sm:flex-row gap-2 text-sm">
-            <span className="text-gray-700">
-              <i className="fas fa-phone mr-1"></i>
-              Hotline: 0123 456 789
-            </span>
-            <span className="text-gray-700">
-              <i className="fas fa-envelope mr-1"></i>
-              Email: support@minipreorder.com
-            </span>
-          </div>
-        </div>
       </div>
     </div>
   );

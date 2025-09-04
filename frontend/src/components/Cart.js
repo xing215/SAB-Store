@@ -60,15 +60,15 @@ const Cart = () => {
               <img
                 src={item.image}
                 alt={item.productName}
-                className="w-12 h-12 object-cover rounded-lg"
+                className="w-14 h-14 object-cover rounded-lg flex-shrink-0"
                 onError={(e) => {
-                  e.target.src = 'https://via.placeholder.com/48x48?text=SP';
+                  e.target.src = 'https://via.placeholder.com/56x56?text=SP';
                 }}
               />
               
               {/* Product Info */}
               <div className="flex-1 min-w-0">
-                <h4 className="font-medium text-gray-900 text-sm line-clamp-1">
+                <h4 className="font-medium text-gray-900 text-sm line-clamp-2 mb-1">
                   {item.productName}
                 </h4>
                 <p className="text-primary-600 font-semibold text-sm">
@@ -77,35 +77,28 @@ const Cart = () => {
               </div>
               
               {/* Quantity Controls */}
-              <div className="flex items-center space-x-2">
-                <button
-                  onClick={() => decreaseQuantity(item.productId)}
-                  className="w-8 h-8 bg-gray-200 hover:bg-gray-300 rounded-full flex items-center justify-center transition-colors"
-                >
-                  <i className="fas fa-minus text-xs"></i>
-                </button>
-                
-                <span className="w-8 text-center font-semibold text-gray-900">
-                  {item.quantity}
-                </span>
-                
-                <button
-                  onClick={() => increaseQuantity(item.productId)}
-                  className="w-8 h-8 bg-primary-200 hover:bg-primary-300 rounded-full flex items-center justify-center transition-colors"
-                  disabled={item.quantity >= 99}
-                >
-                  <i className="fas fa-plus text-xs"></i>
-                </button>
+              <div className="flex flex-col items-center space-y-2">
+                <div className="flex items-center space-x-2">
+                  <button
+                    onClick={() => decreaseQuantity(item.productId)}
+                    className="w-7 h-7 bg-gray-200 hover:bg-gray-300 rounded-full flex items-center justify-center transition-colors"
+                  >
+                    <i className="fas fa-minus text-xs"></i>
+                  </button>
+                  
+                  <span className="w-8 text-center font-semibold text-gray-900 text-sm">
+                    {item.quantity}
+                  </span>
+                  
+                  <button
+                    onClick={() => increaseQuantity(item.productId)}
+                    className="w-7 h-7 bg-primary-200 hover:bg-primary-300 rounded-full flex items-center justify-center transition-colors"
+                    disabled={item.quantity >= 99}
+                  >
+                    <i className="fas fa-plus text-xs"></i>
+                  </button>
+                </div>
               </div>
-              
-              {/* Remove Button */}
-              <button
-                onClick={() => removeFromCart(item.productId)}
-                className="text-danger-500 hover:text-danger-600 p-1"
-                title="Xóa sản phẩm"
-              >
-                <i className="fas fa-times"></i>
-              </button>
             </div>
           ))}
         </div>
@@ -128,11 +121,6 @@ const Cart = () => {
             {formatCurrency(total)}
           </span>
         </div>
-        
-        {/* Note */}
-        <p className="text-xs text-gray-500 text-center">
-          * Giá cuối cùng có thể thay đổi tùy vào chính sách của shop
-        </p>
       </div>
     </div>
   );

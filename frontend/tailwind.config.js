@@ -6,17 +6,42 @@ module.exports = {
   theme: {
     extend: {
       colors: {
+        // Brand colors based on logo CMYK values
         primary: {
-          50: '#f0f9ff',
-          100: '#e0f2fe',
-          200: '#bae6fd',
-          300: '#7dd3fc',
-          400: '#38bdf8',
-          500: '#0ea5e9',
-          600: '#0284c7',
-          700: '#0369a1',
-          800: '#075985',
-          900: '#0c4a6e',
+          50: '#f0f2ff',
+          100: '#e1e6ff',
+          200: '#c8d1ff',
+          300: '#a6b4ff',
+          400: '#8591ff',
+          500: '#5d6eff',
+          600: '#4651f5',
+          700: '#3a42e0',
+          800: '#334CA6', // C 80 M 70 Y 00 K 00 - Main dark blue
+          900: '#2a3985',
+        },
+        secondary: {
+          50: '#f0fffe',
+          100: '#ccffff',
+          200: '#99ffff',
+          300: '#66CCCC', // C 60 M 00 Y 20 K 00 - Main light blue/teal
+          400: '#33cccc',
+          500: '#00cccc',
+          600: '#00b3b3',
+          700: '#009999',
+          800: '#008080',
+          900: '#006666',
+        },
+        accent: {
+          50: '#fffef5',
+          100: '#fffbe6',
+          200: '#fff7cc',
+          300: '#fff0a3',
+          400: '#ffe680',
+          500: '#ffdd4d',
+          600: '#FFCC66', // C 00 M 20 Y 70 K 00 - Main yellow
+          700: '#ffb833',
+          800: '#e6a000',
+          900: '#b37a00',
         },
         success: {
           50: '#f0fdf4',

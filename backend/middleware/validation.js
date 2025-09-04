@@ -112,6 +112,26 @@ const validateOrderUpdate = [
 ];
 
 /**
+ * Validation rules for seller login
+ */
+const validateSellerLogin = [
+  body('username')
+    .notEmpty()
+    .withMessage('Tên đăng nhập là bắt buộc')
+    .isLength({ min: 3, max: 50 })
+    .withMessage('Tên đăng nhập phải từ 3-50 ký tự')
+    .trim(),
+    
+  body('password')
+    .notEmpty()
+    .withMessage('Mật khẩu là bắt buộc')
+    .isLength({ min: 6 })
+    .withMessage('Mật khẩu phải có ít nhất 6 ký tự'),
+    
+  handleValidationErrors
+];
+
+/**
  * Validation rules for search parameters
  */
 const validateSearch = [
@@ -142,6 +162,7 @@ const validateSearch = [
 module.exports = {
   validateOrder,
   validateAdminLogin,
+  validateSellerLogin,
   validateOrderUpdate,
   validateSearch,
   handleValidationErrors

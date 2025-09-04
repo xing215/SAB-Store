@@ -120,6 +120,7 @@ const CheckoutPage = () => {
             orderCode: response.data.orderCode,
             totalAmount: response.data.totalAmount,
             customerInfo: {
+              studentId: formData.studentId.trim(),
               fullName: formData.fullName.trim(),
               email: formData.email.trim()
             }
@@ -146,25 +147,25 @@ const CheckoutPage = () => {
         {/* Header */}
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            <i className="fas fa-credit-card mr-3 text-primary-600"></i>
-            Thanh toán đơn hàng
+            <i className="fas fa-credit-card mr-3 text-blue-700"></i>
+            Xác nhận đơn hàng
           </h1>
           <p className="text-gray-600">
             Vui lòng điền đầy đủ thông tin để hoàn tất đơn hàng
           </p>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
           {/* Order Form */}
-          <div className="lg:col-span-2">
+          <div className="xl:col-span-2">
             <div className="card">
-              <div className="bg-primary-50 px-6 py-4 border-b border-primary-100">
+              <div className="bg-blue-50 px-6 py-4 border-b border-blue-100">
                 <h2 className="text-xl font-semibold text-gray-900">
                   Thông tin đặt hàng
                 </h2>
               </div>
               
-              <form onSubmit={handleSubmit} className="p-6 space-y-6">
+              <form id="checkout-form" onSubmit={handleSubmit} className="p-6 space-y-6">
                 {/* Student ID */}
                 <div>
                   <label htmlFor="studentId" className="block text-sm font-medium text-gray-700 mb-2">
@@ -264,32 +265,14 @@ const CheckoutPage = () => {
                     </p>
                   </div>
                 </div>
-
-                {/* Submit Button */}
-                <div className="pt-4">
-                  <button
-                    type="submit"
-                    disabled={isSubmitting}
-                    className="btn-success w-full text-lg py-3 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {isSubmitting ? (
-                      <LoadingSpinner size="small" text="Đang xử lý..." />
-                    ) : (
-                      <>
-                        <i className="fas fa-check mr-2"></i>
-                        Xác nhận đặt hàng
-                      </>
-                    )}
-                  </button>
-                </div>
               </form>
             </div>
           </div>
 
           {/* Order Summary */}
-          <div className="lg:col-span-1">
+          <div className="xl:col-span-1">
             <div className="card sticky top-24">
-              <div className="bg-primary-50 px-6 py-4 border-b border-primary-100">
+              <div className="bg-blue-50 px-6 py-4 border-b border-blue-100">
                 <h3 className="text-lg font-semibold text-gray-900">
                   Tóm tắt đơn hàng
                 </h3>
@@ -321,7 +304,7 @@ const CheckoutPage = () => {
                 <div className="border-t pt-4">
                   <div className="flex justify-between items-center text-lg font-bold">
                     <span className="text-gray-900">Tổng cộng:</span>
-                    <span className="text-primary-600">
+                    <span className="text-blue-700">
                       {formatCurrency(total)}
                     </span>
                   </div>
@@ -338,6 +321,25 @@ const CheckoutPage = () => {
                     <li>• Đơn hàng sẽ được xử lý trong 15-30 phút</li>
                     <li>• Vui lòng kiểm tra kỹ thông tin trước khi xác nhận</li>
                   </ul>
+                </div>
+
+                {/* Submit Button */}
+                <div className="mt-6">
+                  <button
+                    type="submit"
+                    form="checkout-form"
+                    disabled={isSubmitting}
+                    className="btn-success w-full text-lg py-3 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {isSubmitting ? (
+                      <LoadingSpinner size="small" text="Đang xử lý..." />
+                    ) : (
+                      <>
+                        <i className="fas fa-check mr-2"></i>
+                        Xác nhận đặt hàng
+                      </>
+                    )}
+                  </button>
                 </div>
               </div>
             </div>

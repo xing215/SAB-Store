@@ -1,11 +1,13 @@
 import React from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { adminService } from '../../services/api';
 import Swal from 'sweetalert2';
+import Logo from '../Logo';
 
 const AdminLayout = ({ children }) => {
   const navigate = useNavigate();
+  const location = useLocation();
 
   const handleLogout = async () => {
     const result = await Swal.fire({
@@ -26,6 +28,10 @@ const AdminLayout = ({ children }) => {
     }
   };
 
+  const isActiveRoute = (path) => {
+    return location.pathname === path;
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Admin Header */}
@@ -36,16 +42,51 @@ const AdminLayout = ({ children }) => {
             <div className="flex items-center space-x-4">
               <Link 
                 to="/" 
-                className="flex items-center space-x-2 text-xl font-bold text-primary-600 hover:text-primary-700"
+                className="flex items-center space-x-3 text-xl font-bold text-blue-800 hover:text-blue-900"
               >
-                <i className="fas fa-shopping-cart"></i>
-                <span>Mini Preorder</span>
+                <Logo size="md" />
+                <span className="text-blue-800">
+                  <span className="text-yellow-500">|</span> Admin Panel
+                </span>
               </Link>
-              <div className="hidden md:block h-6 w-px bg-gray-300"></div>
-              <h1 className="hidden md:block text-lg font-semibold text-gray-900">
-                Bảng điều khiển Admin
-              </h1>
             </div>
+
+            {/* Navigation */}
+            <nav className="hidden md:flex space-x-6">
+              <Link
+                to="/admin/dashboard"
+                className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                  isActiveRoute('/admin/dashboard')
+                    ? 'bg-primary-100 text-primary-700'
+                    : 'text-gray-700 hover:text-primary-600'
+                }`}
+              >
+                <i className="fas fa-chart-line mr-2"></i>
+                Dashboard
+              </Link>
+              <Link
+                to="/admin/products"
+                className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                  isActiveRoute('/admin/products')
+                    ? 'bg-primary-100 text-primary-700'
+                    : 'text-gray-700 hover:text-primary-600'
+                }`}
+              >
+                <i className="fas fa-box mr-2"></i>
+                Sản phẩm
+              </Link>
+              <Link
+                to="/admin/sellers"
+                className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                  isActiveRoute('/admin/sellers')
+                    ? 'bg-primary-100 text-primary-700'
+                    : 'text-gray-700 hover:text-primary-600'
+                }`}
+              >
+                <i className="fas fa-users mr-2"></i>
+                Sellers
+              </Link>
+            </nav>
 
             {/* Admin Actions */}
             <div className="flex items-center space-x-4">
@@ -67,9 +108,48 @@ const AdminLayout = ({ children }) => {
                 title="Đăng xuất"
               >
                 <i className="fas fa-sign-out-alt"></i>
-                <span className="hidden md:inline">Đăng xuất</span>
+                <span className="hidden lg:inline">Đăng xuất</span>
               </button>
             </div>
+          </div>
+        </div>
+
+        {/* Mobile Navigation */}
+        <div className="md:hidden border-t">
+          <div className="px-2 pt-2 pb-3 space-y-1">
+            <Link
+              to="/admin/dashboard"
+              className={`block px-3 py-2 rounded-md text-base font-medium transition-colors ${
+                isActiveRoute('/admin/dashboard')
+                  ? 'bg-primary-100 text-primary-700'
+                  : 'text-gray-700 hover:text-primary-600'
+              }`}
+            >
+              <i className="fas fa-chart-line mr-2"></i>
+              Dashboard
+            </Link>
+            <Link
+              to="/admin/products"
+              className={`block px-3 py-2 rounded-md text-base font-medium transition-colors ${
+                isActiveRoute('/admin/products')
+                  ? 'bg-primary-100 text-primary-700'
+                  : 'text-gray-700 hover:text-primary-600'
+              }`}
+            >
+              <i className="fas fa-box mr-2"></i>
+              Sản phẩm
+            </Link>
+            <Link
+              to="/admin/sellers"
+              className={`block px-3 py-2 rounded-md text-base font-medium transition-colors ${
+                isActiveRoute('/admin/sellers')
+                  ? 'bg-primary-100 text-primary-700'
+                  : 'text-gray-700 hover:text-primary-600'
+              }`}
+            >
+              <i className="fas fa-users mr-2"></i>
+              Sellers
+            </Link>
           </div>
         </div>
       </header>

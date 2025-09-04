@@ -1,17 +1,29 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { formatCurrency } from '../services/api';
+import { generateOrderPaymentQR, formatOrderPaymentDescription } from '../utils/payment';
 
 const OrderSuccessPage = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const orderData = location.state;
+  const [paymentQR, setPaymentQR] = useState(null);
 
   useEffect(() => {
     // Redirect to home if no order data
     if (!orderData || !orderData.orderCode) {
       navigate('/', { replace: true });
+      return;
     }
+
+    // Generate payment QR
+    const qrUrl = generateOrderPaymentQR(
+      orderData.totalAmount,
+      orderData.orderCode,
+      orderData.customerInfo.studentId,
+      orderData.customerInfo.fullName
+    );
+    setPaymentQR(qrUrl);
   }, [orderData, navigate]);
 
   if (!orderData) {
@@ -32,7 +44,7 @@ const OrderSuccessPage = () => {
             Đặt hàng thành công! 🎉
           </h1>
           <p className="text-gray-600 text-lg">
-            Cảm ơn bạn đã sử dụng dịch vụ của chúng tôi
+            Nhà Cá sẽ chuẩn bị hàng cho bạn sớm nhất 🐟
           </p>
         </div>
 
@@ -63,7 +75,7 @@ const OrderSuccessPage = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-left">
                 <div>
                   <p className="text-sm text-gray-600">Khách hàng:</p>
-                  <p className="font-semibold text-gray-900">{customerInfo.fullName}</p>
+                  <p className="font-semibold text-gray-900">{customerInfo.studentId} - {customerInfo.fullName}</p>
                 </div>
                 <div>
                   <p className="text-sm text-gray-600">Email:</p>
@@ -84,61 +96,95 @@ const OrderSuccessPage = () => {
           </div>
         </div>
 
+        {/* Payment QR Code */}
+        {paymentQR && (
+          <div className="bg-gradient-to-br from-red-50 to-orange-50 border-2 border-red-200 rounded-lg p-6 mb-8">
+            <div className="text-center">
+              {/* Urgent Payment Header */}
+              <div className="mb-4">
+                <h3 className="text-xl font-bold text-red-700 mb-2">
+                  <i className="fas fa-exclamation-triangle mr-2"></i>
+                  Thanh toán đơn đặt hàng.
+                </h3>
+                <p className="text-red-600 text-sm">
+                  Để được xử lý nhanh nhất, bạn vui lòng thanh toán trong vòng 1 giờ
+                </p>
+              </div>
+
+              {/* QR Code */}
+              <div className="bg-white rounded-lg p-4 shadow-inner mb-4 inline-block">
+                <img 
+                  src={paymentQR}
+                  alt="Payment QR Code"
+                  className="w-64 h-64 mx-auto"
+                  onError={(e) => {
+                    e.target.style.display = 'none';
+                    e.target.nextSibling.style.display = 'block';
+                  }}
+                />
+                <div 
+                  className="w-64 h-64 bg-gray-200 flex items-center justify-center text-gray-500"
+                  style={{display: 'none'}}
+                >
+                  <i className="fas fa-image text-4xl"></i>
+                  <p>Không thể tải QR</p>
+                </div>
+              </div>
+
+              {/* Payment Instructions */}
+              <div className="text-left space-y-3">
+                <h4 className="font-semibold text-gray-900 text-center">
+                  <i className="fas fa-mobile-alt mr-2"></i>
+                  Hướng dẫn thanh toán
+                </h4>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                  <ol className="space-y-2 text-gray-700">
+                    <li className="flex items-start">
+                      <span className="bg-primary-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs mr-2 mt-0.5">1</span>
+                      Mở ứng dụng ngân hàng hoặc ví điện tử
+                    </li>
+                    <li className="flex items-start">
+                      <span className="bg-primary-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs mr-2 mt-0.5">2</span>
+                      Quét mã QR bên trái
+                    </li>
+                    <li className="flex items-start">
+                      <span className="bg-primary-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs mr-2 mt-0.5">3</span>
+                      Kiểm tra thông tin và xác nhận thanh toán
+                    </li>
+                  </ol>
+                  
+                  <div className="bg-gray-50 rounded-lg p-3">
+                    <h5 className="font-semibold text-gray-900 mb-2">Thông tin chuyển khoản:</h5>
+                    <div className="space-y-1 text-xs text-gray-600">
+                      <p><strong>Số tiền:</strong> {formatCurrency(totalAmount)}</p>
+                      <p><strong>Nội dung:</strong> {formatOrderPaymentDescription(orderCode, customerInfo.studentId, customerInfo.fullName)}</p>
+                      <p className="text-red-600 font-medium">
+                        ⚠️ Không thay đổi nội dung chuyển khoản
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
         {/* Email Notification */}
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-8">
           <div className="flex items-start space-x-3">
             <i className="fas fa-envelope text-blue-600 mt-1"></i>
             <div className="text-left">
               <h3 className="font-semibold text-blue-900 mb-1">
-                Email xác nhận đã được gửi
+                Đã gửi email xác nhận
               </h3>
               <p className="text-blue-700 text-sm">
-                Chúng tôi đã gửi email xác nhận đơn hàng đến <strong>{customerInfo.email}</strong>. 
-                Vui lòng kiểm tra hộp thư đến (và cả thư mục spam) để xem chi tiết đơn hàng.
+                Chúng mình đã gửi email xác nhận đơn hàng đến <strong>{customerInfo.email}</strong>. 
+                Bạn vui lòng kiểm tra hộp thư đến (và cả thư mục spam) để xem chi tiết đơn hàng.
               </p>
             </div>
           </div>
         </div>
 
-        {/* Next Steps */}
-        <div className="card mb-8">
-          <div className="p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">
-              Các bước tiếp theo:
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-              <div className="text-center">
-                <div className="w-12 h-12 bg-primary-100 rounded-full flex items-center justify-center mx-auto mb-2">
-                  <span className="text-primary-600 font-bold">1</span>
-                </div>
-                <h4 className="font-semibold text-gray-900 mb-1">Xác nhận</h4>
-                <p className="text-gray-600">
-                  Đơn hàng đã được xác nhận và đang được xử lý
-                </p>
-              </div>
-              
-              <div className="text-center">
-                <div className="w-12 h-12 bg-warning-100 rounded-full flex items-center justify-center mx-auto mb-2">
-                  <span className="text-warning-600 font-bold">2</span>
-                </div>
-                <h4 className="font-semibold text-gray-900 mb-1">Chuẩn bị</h4>
-                <p className="text-gray-600">
-                  Chúng tôi sẽ chuẩn bị đơn hàng trong 15-30 phút
-                </p>
-              </div>
-              
-              <div className="text-center">
-                <div className="w-12 h-12 bg-success-100 rounded-full flex items-center justify-center mx-auto mb-2">
-                  <span className="text-success-600 font-bold">3</span>
-                </div>
-                <h4 className="font-semibold text-gray-900 mb-1">Giao hàng</h4>
-                <p className="text-gray-600">
-                  Đơn hàng sẽ được giao đến bạn
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
 
         {/* Action Buttons */}
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
@@ -157,27 +203,6 @@ const OrderSuccessPage = () => {
             <i className="fas fa-home mr-2"></i>
             Về trang chủ
           </Link>
-        </div>
-
-        {/* Support Info */}
-        <div className="mt-8 p-4 bg-gray-50 rounded-lg">
-          <h4 className="font-semibold text-gray-900 mb-2">
-            <i className="fas fa-headset mr-2"></i>
-            Cần hỗ trợ?
-          </h4>
-          <p className="text-gray-600 text-sm mb-2">
-            Nếu bạn có bất kỳ câu hỏi nào về đơn hàng, vui lòng liên hệ:
-          </p>
-          <div className="flex flex-col sm:flex-row gap-2 justify-center text-sm">
-            <span className="text-gray-700">
-              <i className="fas fa-phone mr-1"></i>
-              Hotline: 0123 456 789
-            </span>
-            <span className="text-gray-700">
-              <i className="fas fa-envelope mr-1"></i>
-              Email: support@minipreorder.com
-            </span>
-          </div>
         </div>
       </div>
     </div>

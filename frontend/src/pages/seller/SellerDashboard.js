@@ -4,7 +4,7 @@ import Swal from 'sweetalert2';
 import { adminService, formatCurrency, formatDate, getStatusText, getStatusColor } from '../../services/api';
 import LoadingSpinner from '../../components/LoadingSpinner';
 
-const AdminDashboard = () => {
+const SellerDashboard = () => {
   const [stats, setStats] = useState(null);
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -81,11 +81,13 @@ const AdminDashboard = () => {
 
   // Handle order status update
   const handleStatusUpdate = async (orderId, currentStatus) => {
-    // Admin có thể chuyển sang bất kỳ trạng thái nào
-    const allStatuses = ['confirmed', 'paid', 'delivered', 'cancelled'];
-    
-    // Loại bỏ trạng thái hiện tại khỏi danh sách
-    const availableStatuses = allStatuses.filter(status => status !== currentStatus);
+    const statusOptions = {
+      'confirmed': ['paid', 'cancelled'],
+      'paid': ['delivered', 'cancelled'],
+      'delivered': [],
+      'cancelled': []
+    };
+    const availableStatuses = statusOptions[currentStatus] || [];
     
     if (availableStatuses.length === 0) {
       toast.warning('Không có trạng thái nào khác để thay đổi');
@@ -260,73 +262,6 @@ const AdminDashboard = () => {
         <p className="text-gray-600">Quản lý đơn hàng và thống kê</p>
       </div>
 
-      {/* Statistics Cards */}
-      {stats && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {/* Total Orders */}
-          <div className="card">
-            <div className="p-6">
-              <div className="flex items-center">
-                <div className="flex-1">
-                  <p className="text-sm font-medium text-gray-600">Tổng đơn hàng</p>
-                  <p className="text-2xl font-bold text-gray-900">{stats.orders.total}</p>
-                </div>
-                <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                  <i className="fas fa-shopping-cart text-blue-700 text-xl"></i>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Today Orders */}
-          <div className="card">
-            <div className="p-6">
-              <div className="flex items-center">
-                <div className="flex-1">
-                  <p className="text-sm font-medium text-gray-600">Hôm nay</p>
-                  <p className="text-2xl font-bold text-gray-900">{stats.orders.today}</p>
-                </div>
-                <div className="w-12 h-12 bg-success-100 rounded-lg flex items-center justify-center">
-                  <i className="fas fa-calendar-day text-success-600 text-xl"></i>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* This Week */}
-          <div className="card">
-            <div className="p-6">
-              <div className="flex items-center">
-                <div className="flex-1">
-                  <p className="text-sm font-medium text-gray-600">Tuần này</p>
-                  <p className="text-2xl font-bold text-gray-900">{stats.orders.week}</p>
-                </div>
-                <div className="w-12 h-12 bg-warning-100 rounded-lg flex items-center justify-center">
-                  <i className="fas fa-calendar-week text-warning-600 text-xl"></i>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Revenue */}
-          <div className="card">
-            <div className="p-6">
-              <div className="flex items-center">
-                <div className="flex-1">
-                  <p className="text-sm font-medium text-gray-600">Doanh thu</p>
-                  <p className="text-2xl font-bold text-gray-900">
-                    {formatCurrency(stats.revenue)}
-                  </p>
-                </div>
-                <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
-                  <i className="fas fa-dollar-sign text-green-600 text-xl"></i>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Orders Management */}
       <div className="card">
         <div className="bg-gray-50 px-6 py-4 border-b border-gray-200">
@@ -413,9 +348,6 @@ const AdminDashboard = () => {
                     Trạng thái
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Mã giao dịch
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Ngày tạo
                   </th>
                   <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -467,22 +399,13 @@ const AdminDashboard = () => {
                       </button>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {order.transactionCode ? (
-                        <span className="font-mono text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
-                          {order.transactionCode}
-                        </span>
-                      ) : (
-                        <span className="text-gray-400">-</span>
-                      )}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {formatDate(order.createdAt)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       {(order.status !== 'delivered' && order.status !== 'cancelled') && (
                         <button
                           onClick={() => handleStatusUpdate(order._id, order.status)}
-                          className="text-blue-700 hover:text-blue-900 mr-3"
+                          className="text-primary-600 hover:text-primary-900 mr-3"
                         >
                           <i className="fas fa-edit mr-1"></i>
                           Cập nhật
@@ -715,4 +638,4 @@ const AdminDashboard = () => {
   );
 };
 
-export default AdminDashboard;
+export default SellerDashboard;

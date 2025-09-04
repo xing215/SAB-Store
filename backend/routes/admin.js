@@ -1,7 +1,9 @@
 const express = require('express');
-const xlsx = require('xlsx');
+const ExcelJS = require('exceljs');
 const Order = require('../models/Order');
+const Product = require('../models/Product');
 const Admin = require('../models/Admin');
+const User = require('../models/User');
 const { authenticateAdmin, generateAdminToken } = require('../middleware/auth');
 const { validateAdminLogin, validateOrderUpdate } = require('../middleware/validation');
 const { getPaginationInfo, formatDate, formatCurrency } = require('../utils/helpers');
@@ -60,6 +62,111 @@ router.post('/login', validateAdminLogin, async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Lỗi server khi đăng nhập'
+    });
+  }
+});
+
+/**
+ * @route   GET /api/admin/dashboard/stats
+ * @desc    Get dashboard statistics
+ * @access  Private (Admin)
+ */
+router.get('/dashboard/stats', authenticateAdmin, async (req, res) => {
+  try {
+    const now = new Date();
+    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const startOfWeek = new Date(now.getFullYear(), now.getMonth(), now.getDate() - now.getDay());
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+
+    // Orders statistics
+    const [
+      totalOrders,
+      todayOrders,
+      weekOrders,
+      monthOrders,
+      deliveredOrders,
+      totalRevenue,
+      productStats
+    ] = await Promise.all([
+      // Total orders
+      Order.countDocuments(),
+      
+      // Today's orders
+      Order.countDocuments({ createdAt: { $gte: startOfToday } }),
+      
+      // This week's orders
+      Order.countDocuments({ createdAt: { $gte: startOfWeek } }),
+      
+      // This month's orders
+      Order.countDocuments({ createdAt: { $gte: startOfMonth } }),
+      
+      // Delivered orders (for revenue calculation)
+      Order.find({ status: { $in: ['delivered', 'paid'] } }),
+      
+      // Total revenue from delivered/paid orders
+      Order.aggregate([
+        { $match: { status: { $in: ['delivered', 'paid'] } } },
+        { $group: { _id: null, total: { $sum: '$totalAmount' } } }
+      ]),
+      
+      // Product statistics from orders
+      Order.aggregate([
+        { $unwind: '$items' },
+        { $group: {
+          _id: {
+            productId: '$items.productId',
+            productName: '$items.productName'
+          },
+          totalQuantity: { $sum: '$items.quantity' },
+          totalRevenue: { $sum: { $multiply: ['$items.price', '$items.quantity'] } }
+        }},
+        { $sort: { totalQuantity: -1 } },
+        { $limit: 10 }
+      ])
+    ]);
+
+    // Get all products for complete statistics
+    const allProducts = await Product.find({}, 'name category available');
+    
+    // Calculate product statistics
+    const productsByCategory = allProducts.reduce((acc, product) => {
+      acc[product.category] = (acc[product.category] || 0) + 1;
+      return acc;
+    }, {});
+
+    const availableProducts = allProducts.filter(p => p.available).length;
+    const unavailableProducts = allProducts.filter(p => !p.available).length;
+
+    res.json({
+      success: true,
+      data: {
+        orders: {
+          total: totalOrders,
+          today: todayOrders,
+          week: weekOrders,
+          month: monthOrders
+        },
+        revenue: totalRevenue[0]?.total || 0,
+        products: {
+          total: allProducts.length,
+          available: availableProducts,
+          unavailable: unavailableProducts,
+          byCategory: productsByCategory,
+          topSelling: productStats.map(item => ({
+            productId: item._id.productId,
+            productName: item._id.productName,
+            totalQuantity: item.totalQuantity,
+            totalRevenue: item.totalRevenue
+          }))
+        }
+      }
+    });
+    
+  } catch (error) {
+    console.error('Error fetching dashboard stats:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Lỗi server khi lấy thống kê dashboard'
     });
   }
 });
@@ -180,7 +287,7 @@ router.get('/orders/:id', authenticateAdmin, async (req, res) => {
  */
 router.put('/orders/:id', authenticateAdmin, validateOrderUpdate, async (req, res) => {
   try {
-    const { status, transactionCode, cancelReason } = req.body;
+    const { status, transactionCode, cancelReason, note } = req.body;
     
     const order = await Order.findById(req.params.id);
     
@@ -190,21 +297,10 @@ router.put('/orders/:id', authenticateAdmin, validateOrderUpdate, async (req, re
         message: 'Không tìm thấy đơn hàng'
       });
     }
-    
-    // Validate status transitions
-    const validTransitions = {
-      'confirmed': ['paid', 'cancelled'],
-      'paid': ['delivered', 'cancelled'],
-      'delivered': [], // Final state
-      'cancelled': [] // Final state
-    };
-    
-    if (!validTransitions[order.status].includes(status)) {
-      return res.status(400).json({
-        success: false,
-        message: `Không thể chuyển từ trạng thái "${order.status}" sang "${status}"`
-      });
-    }
+
+    // Admin có thể thay đổi trạng thái bất kỳ - không có ràng buộc flow
+    // Record who made the change
+    order.lastUpdatedBy = req.admin.username; // Get username from authenticated admin
     
     // Update order
     order.status = status;
@@ -297,49 +393,56 @@ router.get('/orders/export/excel', authenticateAdmin, async (req, res) => {
     // Get orders
     const orders = await Order.find(query).sort({ createdAt: -1 }).lean();
     
-    // Prepare data for Excel
-    const excelData = orders.map(order => ({
-      'Mã đơn hàng': order.orderCode,
-      'Mã số sinh viên': order.studentId,
-      'Họ tên': order.fullName,
-      'Email': order.email,
-      'Tổng tiền': formatCurrency(order.totalAmount),
-      'Trạng thái': getStatusText(order.status),
-      'Ngày đặt': formatDate(order.createdAt),
-      'Ngày cập nhật': formatDate(order.statusUpdatedAt),
-      'Mã giao dịch': order.transactionCode || '',
-      'Lý do hủy': order.cancelReason || '',
-      'Ghi chú': order.additionalNote || '',
-      'Chi tiết sản phẩm': order.items.map(item => 
-        `${item.productName} x${item.quantity} (${formatCurrency(item.price)})`
-      ).join('; ')
-    }));
-    
     // Create workbook
-    const wb = xlsx.utils.book_new();
-    const ws = xlsx.utils.json_to_sheet(excelData);
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet('Đơn hàng');
     
-    // Auto-fit columns
-    const colWidths = [
-      { wch: 12 }, // Mã đơn hàng
-      { wch: 15 }, // Mã số sinh viên
-      { wch: 25 }, // Họ tên
-      { wch: 30 }, // Email
-      { wch: 15 }, // Tổng tiền
-      { wch: 12 }, // Trạng thái
-      { wch: 20 }, // Ngày đặt
-      { wch: 20 }, // Ngày cập nhật
-      { wch: 15 }, // Mã giao dịch
-      { wch: 30 }, // Lý do hủy
-      { wch: 30 }, // Ghi chú
-      { wch: 50 }  // Chi tiết sản phẩm
+    // Define columns
+    worksheet.columns = [
+      { header: 'Mã đơn hàng', key: 'orderCode', width: 15 },
+      { header: 'Mã số sinh viên', key: 'studentId', width: 20 },
+      { header: 'Họ tên', key: 'fullName', width: 25 },
+      { header: 'Email', key: 'email', width: 30 },
+      { header: 'Tổng tiền', key: 'totalAmount', width: 15 },
+      { header: 'Trạng thái', key: 'status', width: 15 },
+      { header: 'Ngày đặt', key: 'createdAt', width: 20 },
+      { header: 'Ngày cập nhật', key: 'statusUpdatedAt', width: 20 },
+      { header: 'Mã giao dịch', key: 'transactionCode', width: 15 },
+      { header: 'Lý do hủy', key: 'cancelReason', width: 30 },
+      { header: 'Ghi chú', key: 'additionalNote', width: 30 },
+      { header: 'Chi tiết sản phẩm', key: 'itemDetails', width: 50 }
     ];
-    ws['!cols'] = colWidths;
-    
-    xlsx.utils.book_append_sheet(wb, ws, 'Đơn hàng');
+
+    // Style header row
+    worksheet.getRow(1).font = { bold: true };
+    worksheet.getRow(1).fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FFE3F2FD' }
+    };
+
+    // Add data
+    orders.forEach(order => {
+      worksheet.addRow({
+        orderCode: order.orderCode,
+        studentId: order.studentId,
+        fullName: order.fullName,
+        email: order.email,
+        totalAmount: order.totalAmount,
+        status: getStatusText(order.status),
+        createdAt: formatDate(order.createdAt),
+        statusUpdatedAt: formatDate(order.statusUpdatedAt),
+        transactionCode: order.transactionCode || '',
+        cancelReason: order.cancelReason || '',
+        additionalNote: order.additionalNote || '',
+        itemDetails: order.items.map(item => 
+          `${item.productName} x${item.quantity} (${formatCurrency(item.price)})`
+        ).join('; ')
+      });
+    });
     
     // Generate buffer
-    const buffer = xlsx.write(wb, { type: 'buffer', bookType: 'xlsx' });
+    const buffer = await workbook.xlsx.writeBuffer();
     
     // Set headers for file download
     const filename = `don-hang-${new Date().toISOString().split('T')[0]}.xlsx`;
@@ -430,5 +533,360 @@ function getStatusText(status) {
   };
   return statusMap[status] || status;
 }
+
+/**
+ * @route   GET /api/admin/products
+ * @desc    Get all products for admin management
+ * @access  Private (Admin)
+ */
+router.get('/products', authenticateAdmin, async (req, res) => {
+  try {
+    const { page = 1, limit = 10, search = '', category = '', status = '' } = req.query;
+    
+    // Build filter
+    const filter = {};
+    if (search) {
+      filter.$or = [
+        { name: { $regex: search, $options: 'i' } },
+        { description: { $regex: search, $options: 'i' } }
+      ];
+    }
+    if (category) {
+      filter.category = category;
+    }
+    if (status !== '') {
+      filter.isActive = status === 'active';
+    }
+
+    const options = {
+      page: parseInt(page),
+      limit: parseInt(limit),
+      sort: { createdAt: -1 }
+    };
+
+    const products = await Product.paginate(filter, options);
+
+    res.json({
+      success: true,
+      data: {
+        products: products.docs,
+        pagination: {
+          page: products.page,
+          pages: products.totalPages,
+          total: products.totalDocs,
+          limit: products.limit
+        }
+      }
+    });
+  } catch (error) {
+    console.error('Get products error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Lỗi server khi lấy danh sách sản phẩm'
+    });
+  }
+});
+
+/**
+ * @route   POST /api/admin/products
+ * @desc    Create new product
+ * @access  Private (Admin)
+ */
+router.post('/products', authenticateAdmin, async (req, res) => {
+  try {
+    const {
+      name,
+      description,
+      price,
+      category,
+      imageUrl,
+      isActive,
+      stockQuantity,
+      minOrderQuantity
+    } = req.body;
+
+    // Validate required fields
+    if (!name || !price || !category) {
+      return res.status(400).json({
+        success: false,
+        message: 'Tên, giá và danh mục sản phẩm là bắt buộc'
+      });
+    }
+
+    const product = new Product({
+      name,
+      description,
+      price,
+      category,
+      imageUrl,
+      isActive: isActive !== undefined ? isActive : true,
+      stockQuantity: stockQuantity || 0,
+      minOrderQuantity: minOrderQuantity || 1
+    });
+
+    await product.save();
+
+    res.status(201).json({
+      success: true,
+      message: 'Tạo sản phẩm thành công',
+      data: { product }
+    });
+  } catch (error) {
+    console.error('Create product error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Lỗi server khi tạo sản phẩm'
+    });
+  }
+});
+
+/**
+ * @route   PUT /api/admin/products/:id
+ * @desc    Update product
+ * @access  Private (Admin)
+ */
+router.put('/products/:id', authenticateAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const updateData = req.body;
+
+    const product = await Product.findByIdAndUpdate(
+      id,
+      updateData,
+      { new: true, runValidators: true }
+    );
+
+    if (!product) {
+      return res.status(404).json({
+        success: false,
+        message: 'Không tìm thấy sản phẩm'
+      });
+    }
+
+    res.json({
+      success: true,
+      message: 'Cập nhật sản phẩm thành công',
+      data: { product }
+    });
+  } catch (error) {
+    console.error('Update product error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Lỗi server khi cập nhật sản phẩm'
+    });
+  }
+});
+
+/**
+ * @route   DELETE /api/admin/products/:id
+ * @desc    Delete product
+ * @access  Private (Admin)
+ */
+router.delete('/products/:id', authenticateAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const product = await Product.findByIdAndDelete(id);
+
+    if (!product) {
+      return res.status(404).json({
+        success: false,
+        message: 'Không tìm thấy sản phẩm'
+      });
+    }
+
+    res.json({
+      success: true,
+      message: 'Xóa sản phẩm thành công'
+    });
+  } catch (error) {
+    console.error('Delete product error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Lỗi server khi xóa sản phẩm'
+    });
+  }
+});
+
+/**
+ * @route   GET /api/admin/sellers
+ * @desc    Get all sellers for admin management
+ * @access  Private (Admin)
+ */
+router.get('/sellers', authenticateAdmin, async (req, res) => {
+  try {
+    const { page = 1, limit = 10, search = '', status = '' } = req.query;
+    
+    // Build filter for sellers (users with role seller)
+    const filter = { role: 'seller' };
+    if (search) {
+      filter.$or = [
+        { username: { $regex: search, $options: 'i' } },
+        { email: { $regex: search, $options: 'i' } }
+      ];
+    }
+    if (status !== '') {
+      filter.isActive = status === 'active';
+    }
+
+    const options = {
+      page: parseInt(page),
+      limit: parseInt(limit),
+      sort: { createdAt: -1 },
+      select: '-password' // Exclude password from results
+    };
+
+    const sellers = await User.paginate(filter, options);
+
+    res.json({
+      success: true,
+      data: {
+        sellers: sellers.docs,
+        pagination: {
+          page: sellers.page,
+          pages: sellers.totalPages,
+          total: sellers.totalDocs,
+          limit: sellers.limit
+        }
+      }
+    });
+  } catch (error) {
+    console.error('Get sellers error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Lỗi server khi lấy danh sách seller'
+    });
+  }
+});
+
+/**
+ * @route   POST /api/admin/sellers
+ * @desc    Create new seller account
+ * @access  Private (Admin)
+ */
+router.post('/sellers', authenticateAdmin, async (req, res) => {
+  try {
+    const { username, email, password, isActive } = req.body;
+
+    // Validate required fields
+    if (!username || !email || !password) {
+      return res.status(400).json({
+        success: false,
+        message: 'Username, email và password là bắt buộc'
+      });
+    }
+
+    // Check if username or email already exists
+    const existingUser = await User.findOne({
+      $or: [{ username }, { email }]
+    });
+
+    if (existingUser) {
+      return res.status(400).json({
+        success: false,
+        message: 'Username hoặc email đã tồn tại'
+      });
+    }
+
+    const seller = new User({
+      username,
+      email,
+      password,
+      role: 'seller',
+      isActive: isActive !== undefined ? isActive : true
+    });
+
+    await seller.save();
+
+    // Remove password from response
+    const sellerResponse = seller.toObject();
+    delete sellerResponse.password;
+
+    res.status(201).json({
+      success: true,
+      message: 'Tạo tài khoản seller thành công',
+      data: { seller: sellerResponse }
+    });
+  } catch (error) {
+    console.error('Create seller error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Lỗi server khi tạo tài khoản seller'
+    });
+  }
+});
+
+/**
+ * @route   PUT /api/admin/sellers/:id
+ * @desc    Update seller account
+ * @access  Private (Admin)
+ */
+router.put('/sellers/:id', authenticateAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const updateData = { ...req.body };
+
+    // Remove password from update data if not provided or empty
+    if (!updateData.password) {
+      delete updateData.password;
+    }
+
+    const seller = await User.findByIdAndUpdate(
+      id,
+      updateData,
+      { new: true, runValidators: true, select: '-password' }
+    );
+
+    if (!seller) {
+      return res.status(404).json({
+        success: false,
+        message: 'Không tìm thấy seller'
+      });
+    }
+
+    res.json({
+      success: true,
+      message: 'Cập nhật seller thành công',
+      data: { seller }
+    });
+  } catch (error) {
+    console.error('Update seller error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Lỗi server khi cập nhật seller'
+    });
+  }
+});
+
+/**
+ * @route   DELETE /api/admin/sellers/:id
+ * @desc    Delete seller account
+ * @access  Private (Admin)
+ */
+router.delete('/sellers/:id', authenticateAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const seller = await User.findByIdAndDelete(id);
+
+    if (!seller) {
+      return res.status(404).json({
+        success: false,
+        message: 'Không tìm thấy seller'
+      });
+    }
+
+    res.json({
+      success: true,
+      message: 'Xóa seller thành công'
+    });
+  } catch (error) {
+    console.error('Delete seller error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Lỗi server khi xóa seller'
+    });
+  }
+});
 
 module.exports = router;

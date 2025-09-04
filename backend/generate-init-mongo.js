@@ -1,10 +1,22 @@
-// Initialize database with sample data
+const fs = require('fs');
+const bcrypt = require('bcryptjs');
+require('dotenv').config();
+
+// Get admin credentials from environment variables
+const adminUsername = process.env.ADMIN_USERNAME || 'admin';
+const adminPassword = process.env.ADMIN_PASSWORD || 'admin123';
+
+// Hash the password using bcrypt (same salt rounds as backend: 10)
+const hashedPassword = bcrypt.hashSync(adminPassword, 10);
+
+// Generate the MongoDB initialization script
+const initScript = `// Initialize database with sample data
 db = db.getSiblingDB('minipreorder');
 
 // Create admin user with environment variables
 db.admins.insertOne({
-  username: 'admin',
-  password: '$2a$10$q8MLuWlHjpGpvKJp/xj4c.J0HuU3qd7xfe.lBmPAx8ddeL.QsowDK',
+  username: '${adminUsername}',
+  password: '${hashedPassword}',
   isActive: true,
   createdAt: new Date()
 });
@@ -59,5 +71,13 @@ db.products.insertMany([
 ]);
 
 print('Database initialized successfully!');
-print('Admin user created: ' + 'admin');
+print('Admin user created: ' + '${adminUsername}');
 print('Sample products created!');
+`;
+
+// Write the generated script to init-mongo.js
+fs.writeFileSync('./init-mongo.js', initScript, 'utf8');
+console.log('✅ Generated init-mongo.js with admin credentials:');
+console.log(`   Username: ${adminUsername}`);
+console.log(`   Password: ${adminPassword}`);
+console.log(`   Hash: ${hashedPassword}`);

@@ -1,5 +1,4 @@
 const express = require('express');
-const mongoose = require('mongoose');
 const Order = require('../models/Order');
 const Product = require('../models/Product');
 const { validateOrder } = require('../middleware/validation');
@@ -13,9 +12,6 @@ const router = express.Router();
  * @access  Public
  */
 router.post('/', validateOrder, async (req, res) => {
-  const session = await mongoose.startSession();
-  session.startTransaction();
-  
   try {
     const { studentId, fullName, email, additionalNote, items } = req.body;
     
@@ -24,10 +20,9 @@ router.post('/', validateOrder, async (req, res) => {
     const products = await Product.find({ 
       _id: { $in: productIds },
       available: true 
-    }).session(session);
+    });
     
     if (products.length !== items.length) {
-      await session.abortTransaction();
       return res.status(400).json({
         success: false,
         message: 'Một hoặc nhiều sản phẩm không tồn tại hoặc không khả dụng'
@@ -55,7 +50,7 @@ router.post('/', validateOrder, async (req, res) => {
     
     while (!isUnique && attempts < 10) {
       orderCode = generateOrderCode();
-      const existingOrder = await Order.findOne({ orderCode }).session(session);
+      const existingOrder = await Order.findOne({ orderCode });
       if (!existingOrder) {
         isUnique = true;
       }
@@ -63,7 +58,6 @@ router.post('/', validateOrder, async (req, res) => {
     }
     
     if (!isUnique) {
-      await session.abortTransaction();
       return res.status(500).json({
         success: false,
         message: 'Không thể tạo mã đơn hàng duy nhất'
@@ -79,11 +73,19 @@ router.post('/', validateOrder, async (req, res) => {
       additionalNote,
       items: orderItems,
       totalAmount,
-      status: 'confirmed'
+      status: 'confirmed',
+      lastUpdatedBy: 'system',
+      statusHistory: [
+        {
+          status: 'confirmed',
+          updatedBy: 'system',
+          updatedAt: new Date(),
+          note: 'Đơn hàng được tạo từ hệ thống'
+        }
+      ]
     });
     
-    await order.save({ session });
-    await session.commitTransaction();
+    await order.save();
     
     // Send confirmation email (non-blocking)
     sendOrderConfirmationEmail(order).catch(error => {
@@ -102,7 +104,6 @@ router.post('/', validateOrder, async (req, res) => {
     });
     
   } catch (error) {
-    await session.abortTransaction();
     console.error('Error creating order:', error);
     
     if (error.name === 'ValidationError') {
@@ -117,8 +118,6 @@ router.post('/', validateOrder, async (req, res) => {
       success: false,
       message: 'Lỗi server khi tạo đơn hàng'
     });
-  } finally {
-    session.endSession();
   }
 });
 
@@ -142,11 +141,13 @@ router.get('/:orderCode', async (req, res) => {
       });
     }
     
-    // Return limited information for security
+    // Return order information including payment details
     res.json({
       success: true,
       data: {
         orderCode: order.orderCode,
+        studentId: order.studentId,
+        fullName: order.fullName,
         status: order.status,
         totalAmount: order.totalAmount,
         createdAt: order.createdAt,

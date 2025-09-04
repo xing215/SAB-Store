@@ -1,5 +1,35 @@
 const mongoose = require('mongoose');
 
+// Schema for status history tracking
+const statusHistorySchema = new mongoose.Schema({
+  status: {
+    type: String,
+    required: true,
+    enum: ['confirmed', 'paid', 'delivered', 'cancelled']
+  },
+  updatedBy: {
+    type: String,
+    required: true // Username of who made the change
+  },
+  updatedAt: {
+    type: Date,
+    default: Date.now
+  },
+  transactionCode: {
+    type: String,
+    trim: true
+  },
+  cancelReason: {
+    type: String,
+    trim: true
+  },
+  note: {
+    type: String,
+    trim: true,
+    maxLength: [500, 'Ghi chú không được vượt quá 500 ký tự']
+  }
+});
+
 const orderItemSchema = new mongoose.Schema({
   productId: {
     type: mongoose.Schema.Types.ObjectId,
@@ -28,23 +58,34 @@ const orderSchema = new mongoose.Schema({
     required: true,
     unique: true,
     uppercase: true,
-    length: 5
+    maxLength: 10  // Increased from length: 5 to accommodate both formats
+  },
+  orderNumber: {
+    type: String,
+    unique: true,
+    sparse: true // Allow null values but enforce uniqueness when present
   },
   studentId: {
     type: String,
-    required: [true, 'Mã số sinh viên là bắt buộc'],
+    required: function() {
+      return !this.isDirectSale;
+    },
     trim: true,
     maxLength: [20, 'Mã số sinh viên không được vượt quá 20 ký tự']
   },
   fullName: {
     type: String,
-    required: [true, 'Họ tên là bắt buộc'],
+    required: function() {
+      return !this.isDirectSale;
+    },
     trim: true,
     maxLength: [100, 'Họ tên không được vượt quá 100 ký tự']
   },
   email: {
     type: String,
-    required: [true, 'Email là bắt buộc'],
+    required: function() {
+      return !this.isDirectSale;
+    },
     trim: true,
     lowercase: true,
     match: [/^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/, 'Email không hợp lệ']
@@ -62,7 +103,7 @@ const orderSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ['confirmed', 'paid', 'delivered', 'cancelled'],
+    enum: ['pending', 'confirmed', 'paid', 'delivered', 'cancelled'],
     default: 'confirmed'
   },
   transactionCode: {
@@ -75,9 +116,23 @@ const orderSchema = new mongoose.Schema({
     trim: true,
     maxLength: [500, 'Lý do hủy không được vượt quá 500 ký tự']
   },
+  statusHistory: [statusHistorySchema], // Track all status changes
+  lastUpdatedBy: {
+    type: String,
+    default: 'system' // Username of who last updated the order
+  },
   statusUpdatedAt: {
     type: Date,
     default: Date.now
+  },
+  // Direct sale specific fields
+  isDirectSale: {
+    type: Boolean,
+    default: false
+  },
+  createdBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
   }
 }, {
   timestamps: true
@@ -85,16 +140,39 @@ const orderSchema = new mongoose.Schema({
 
 // Indexes for better search performance
 orderSchema.index({ orderCode: 1 });
+orderSchema.index({ orderNumber: 1 });
 orderSchema.index({ studentId: 1 });
 orderSchema.index({ email: 1 });
 orderSchema.index({ status: 1 });
 orderSchema.index({ createdAt: -1 });
-orderSchema.index({ fullName: 'text', studentId: 'text', orderCode: 'text' });
+orderSchema.index({ isDirectSale: 1 });
+orderSchema.index({ fullName: 'text', studentId: 'text', orderCode: 'text', orderNumber: 'text' });
 
-// Middleware to update statusUpdatedAt when status changes
+// Middleware to update statusUpdatedAt and track status history when status changes
 orderSchema.pre('save', function(next) {
   if (this.isModified('status')) {
     this.statusUpdatedAt = new Date();
+    
+    // Add to status history if this is not a new document
+    if (!this.isNew) {
+      const historyEntry = {
+        status: this.status,
+        updatedBy: this.lastUpdatedBy || 'system',
+        updatedAt: new Date()
+      };
+      
+      // Add transaction code if status is paid
+      if (this.status === 'paid' && this.transactionCode) {
+        historyEntry.transactionCode = this.transactionCode;
+      }
+      
+      // Add cancel reason if status is cancelled
+      if (this.status === 'cancelled' && this.cancelReason) {
+        historyEntry.cancelReason = this.cancelReason;
+      }
+      
+      this.statusHistory.push(historyEntry);
+    }
   }
   next();
 });

@@ -95,7 +95,15 @@
   }
   
   .bg-gradient-primary {
-    background: linear-gradient(135deg, #0ea5e9 0%, #3b82f6 100%);
+    background: linear-gradient(135deg, #334CA6 0%, #66CCCC 100%);
+  }
+  
+  .bg-gradient-secondary {
+    background: linear-gradient(135deg, #66CCCC 0%, #FFCC66 100%);
+  }
+  
+  .bg-gradient-accent {
+    background: linear-gradient(135deg, #FFCC66 0%, #334CA6 100%);
   }
   
   .bg-gradient-success {
