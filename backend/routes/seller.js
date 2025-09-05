@@ -5,6 +5,7 @@ const User = require('../models/User');
 const { authenticateSeller, generateSellerToken } = require('../middleware/auth');
 const { validateSellerLogin } = require('../middleware/validation');
 const { getPaginationInfo, formatDate, formatCurrency } = require('../utils/helpers');
+const { sendOrderToAppScript } = require('../utils/appscript');
 const router = express.Router();
 
 /**
@@ -349,6 +350,25 @@ router.put('/orders/:id/status', authenticateSeller, async (req, res) => {
       });
     }
 
+        const appscriptData = {
+          orderCode: order.orderCode,
+          studentId: order.studentId,
+          fullName: order.fullName,
+          email: order.email,
+          additionalNote: order.additionalNote,
+          items: order.items,
+          totalAmount: order.totalAmount,
+          transactionCode: order.transactionCode,
+          cancelReason: order.cancelReason,
+          status: order.status
+        };
+        console.log('Push to AppScript:', appscriptData);
+        setImmediate(() => {
+          sendOrderToAppScript(appscriptData).catch(err => {
+            console.error('Gửi đơn hàng lên App Script thất bại:', err.message);
+          });
+        });
+
     res.json({
       success: true,
       message: 'Cập nhật trạng thái đơn hàng thành công',
@@ -500,11 +520,11 @@ router.post('/orders/direct', authenticateSeller, async (req, res) => {
       status: 'confirmed',
       isDirectSale: true,
       createdBy: req.seller?.id || null,
-      lastUpdatedBy: req.seller?.username || req.admin?.username || 'unknown',
+      lastUpdatedBy: req.seller?.username || req?.admin?.username || 'unknown',
       statusHistory: [
         {
           status: 'confirmed',
-          updatedBy: req.seller?.username || req.admin?.username || 'unknown',
+          updatedBy: req.seller?.username || req?.admin?.username || 'unknown',
           updatedAt: new Date(),
         }
       ]

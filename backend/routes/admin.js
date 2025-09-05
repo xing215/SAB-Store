@@ -346,7 +346,27 @@ router.put('/orders/:id', authenticateAdmin, validateOrderUpdate, async (req, re
     order.statusHistory.push(historyEntry);
     
     await order.save();
-    
+
+    // Tự động push lên App Script mỗi lần cập nhật trạng thái
+    const appscriptData = {
+      orderCode: order.orderCode,
+      studentId: order.studentId,
+      fullName: order.fullName,
+      email: order.email,
+      additionalNote: order.additionalNote,
+      items: order.items,
+      totalAmount: order.totalAmount,
+      transactionCode: order.transactionCode,
+      cancelReason: order.cancelReason,
+      status: order.status
+    };
+    console.log('Push to AppScript:', appscriptData);
+    setImmediate(() => {
+      require('../utils/appscript').sendOrderToAppScript(appscriptData).catch(err => {
+        console.error('Gửi đơn hàng lên App Script thất bại:', err.message);
+      });
+    });
+
     res.json({
       success: true,
       message: 'Cập nhật trạng thái đơn hàng thành công',

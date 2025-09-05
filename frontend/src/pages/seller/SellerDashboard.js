@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { toast } from 'react-toastify';
 import Swal from 'sweetalert2';
-import { adminService, formatCurrency, formatDate, getStatusText, getStatusColor } from '../../services/api';
+import { sellerService, formatCurrency, formatDate, getStatusText, getStatusColor } from '../../services/api';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import Modal from '../../components/Modal';
 
 const SellerDashboard = () => {
-  const [stats, setStats] = useState(null);
+  // const [stats, setStats] = useState(null); // Xóa thống kê cho seller
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [ordersLoading, setOrdersLoading] = useState(false);
@@ -27,29 +27,14 @@ const SellerDashboard = () => {
     setSelectedOrderStatus(null);
   };
 
-  // Fetch dashboard stats
-  useEffect(() => {
-    const fetchStats = async () => {
-      try {
-        const response = await adminService.getDashboardStats();
-        if (response.success) {
-          setStats(response.data);
-        }
-      } catch (error) {
-        console.error('Error fetching stats:', error);
-        toast.error('Lỗi khi tải thống kê');
-      }
-    };
-
-    fetchStats();
-  }, []);
+  // Đã xóa phần thống kê dashboard cho seller
 
   // Fetch orders
   useEffect(() => {
     const fetchOrders = async () => {
       try {
         setOrdersLoading(true);
-        const response = await adminService.getOrders(filters);
+  const response = await sellerService.getOrders(filters);
         
         if (response.success) {
           setOrders(response.data.orders);
@@ -197,13 +182,13 @@ const SellerDashboard = () => {
     }
 
     try {
-      const response = await adminService.updateOrderStatus(orderId, updateData);
+  const response = await sellerService.updateOrderStatus(orderId, updateData);
       
       if (response.success) {
         toast.success('Cập nhật trạng thái đơn hàng thành công');
         
         // Refresh orders list
-        const ordersResponse = await adminService.getOrders(filters);
+  const ordersResponse = await sellerService.getOrders(filters);
         if (ordersResponse.success) {
           setOrders(ordersResponse.data.orders);
           setPagination(ordersResponse.data.pagination);

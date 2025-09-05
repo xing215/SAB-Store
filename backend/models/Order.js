@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const mongoosePaginate = require('mongoose-paginate-v2');
 
 // Schema for status history tracking
 const statusHistorySchema = new mongoose.Schema({
@@ -184,4 +185,5 @@ orderSchema.pre('save', function(next) {
   next();
 });
 
+orderSchema.plugin(mongoosePaginate);
 module.exports = mongoose.model('Order', orderSchema);

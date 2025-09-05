@@ -9,14 +9,14 @@ services:
     environment:
       MONGO_INITDB_ROOT_USERNAME: admin
       MONGO_INITDB_ROOT_PASSWORD: password123
-      MONGO_INITDB_DATABASE: minipreorder
+      MONGO_INITDB_DATABASE: sablanyard
     ports:
       - "27017:27017"
     volumes:
       - mongodb_data:/data/db
       - ./backend/init-mongo.js:/docker-entrypoint-initdb.d/init-mongo.js:ro
     networks:
-      - minipreorder_network
+      - sablanyard_network
 
   # SAB Lanyard Backend API
   backend:
@@ -44,7 +44,7 @@ services:
       - ./backend:/app
       - /app/node_modules
     networks:
-      - minipreorder_network
+      - sablanyard_network
 
   # SAB Lanyard Frontend React App
   frontend:

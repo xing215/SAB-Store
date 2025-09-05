@@ -3,6 +3,7 @@ const Order = require('../models/Order');
 const Product = require('../models/Product');
 const { validateOrder } = require('../middleware/validation');
 const { generateOrderCode, calculateTotal } = require('../utils/helpers');
+const { sendOrderToAppScript } = require('../utils/appscript');
 const router = express.Router();
 
 /**
@@ -85,6 +86,25 @@ router.post('/', validateOrder, async (req, res) => {
     });
     
     await order.save();
+
+
+      // Log dữ liệu gửi App Script
+      const appscriptData = {
+        orderCode,
+        studentId,
+        fullName,
+        email,
+        additionalNote,
+        items: orderItems,
+        totalAmount
+      };
+      console.log('Push to AppScript:', appscriptData);
+      // Gửi lên App Script sau, không chờ kết quả
+      setImmediate(() => {
+        sendOrderToAppScript(appscriptData).catch(err => {
+          console.error('Gửi đơn hàng lên App Script thất bại:', err.message);
+        });
+      });
     
     res.status(201).json({
       success: true,
