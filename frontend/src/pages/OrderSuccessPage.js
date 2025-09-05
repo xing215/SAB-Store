@@ -66,7 +66,7 @@ const OrderSuccessPage = () => {
                 </span>
               </div>
               <p className="text-xs text-gray-500 mt-2">
-                Vui lòng lưu lại mã này để tra cứu đơn hàng
+                Vui lòng <b>lưu lại mã này</b> để tra cứu đơn hàng
               </p>
             </div>
 
@@ -169,22 +169,6 @@ const OrderSuccessPage = () => {
             </div>
           </div>
         )}
-        {/* Email Notification */}
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-8">
-          <div className="flex items-start space-x-3">
-            <i className="fas fa-envelope text-blue-600 mt-1"></i>
-            <div className="text-left">
-              <h3 className="font-semibold text-blue-900 mb-1">
-                Đã gửi email xác nhận
-              </h3>
-              <p className="text-blue-700 text-sm">
-                Chúng mình đã gửi email xác nhận đơn hàng đến <strong>{customerInfo.email}</strong>. 
-                Bạn vui lòng kiểm tra hộp thư đến (và cả thư mục spam) để xem chi tiết đơn hàng.
-              </p>
-            </div>
-          </div>
-        </div>
-
 
         {/* Action Buttons */}
         <div className="flex flex-col sm:flex-row gap-4 justify-center">

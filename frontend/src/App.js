@@ -32,7 +32,7 @@ import SellerProtectedRoute from './components/seller/SellerProtectedRoute';
 
 function App() {
   return (
-    <Router>
+    <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
       <CartProvider>
         <div className="App">
           <Routes>
@@ -45,59 +45,53 @@ function App() {
             </Route>
 
             {/* Admin Routes */}
-            <Route path="/admin">
-              <Route index element={<Navigate to="/admin/login" replace />} />
-              <Route path="login" element={<AdminLoginPage />} />
-              <Route path="dashboard" element={
-                <ProtectedRoute>
-                  <AdminLayout>
-                    <AdminDashboard />
-                  </AdminLayout>
-                </ProtectedRoute>
-              } />
-              <Route path="products" element={
-                <ProtectedRoute>
-                  <AdminLayout>
-                    <ProductsManagement />
-                  </AdminLayout>
-                </ProtectedRoute>
-              } />
-              <Route path="sellers" element={
-                <ProtectedRoute>
-                  <AdminLayout>
-                    <SellersManagement />
-                  </AdminLayout>
-                </ProtectedRoute>
-              } />
-            </Route>
-
-            {/* Seller Routes */}
-            <Route path="/seller">
-              <Route index element={<Navigate to="/seller/login" replace />} />
-              <Route path="login" element={<SellerLoginPage />} />
-              <Route path="dashboard" element={
-                <SellerProtectedRoute>
-                  <SellerLayout>
-                    <SellerDashboard />
-                  </SellerLayout>
-                </SellerProtectedRoute>
-              } />
-              <Route path="direct-sales" element={
-                <SellerProtectedRoute>
-                  <SellerLayout>
-                    <DirectSalesPage />
-                  </SellerLayout>
-                </SellerProtectedRoute>
-              } />
-            </Route>
-
-            {/* Legacy redirect for old dashboard route */}
-            <Route path="/dashboard" element={
+            <Route path="/admin/login" element={<AdminLoginPage />} />
+            <Route path="/admin" element={<Navigate to="/admin/login" replace />} />
+            <Route path="/admin/dashboard" element={
               <ProtectedRoute>
                 <AdminLayout>
                   <AdminDashboard />
                 </AdminLayout>
               </ProtectedRoute>
+            } />
+            <Route path="/admin/products" element={
+              <ProtectedRoute>
+                <AdminLayout>
+                  <ProductsManagement />
+                </AdminLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/sellers" element={
+              <ProtectedRoute>
+                <AdminLayout>
+                  <SellersManagement />
+                </AdminLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/direct-sales" element={
+              <ProtectedRoute>
+                <AdminLayout>
+                  <DirectSalesPage />
+                </AdminLayout>
+              </ProtectedRoute>
+            } />
+
+            {/* Seller Routes */}
+            <Route path="/seller/login" element={<SellerLoginPage />} />
+            <Route path="/seller" element={<Navigate to="/seller/login" replace />} />
+            <Route path="/seller/dashboard" element={
+              <SellerProtectedRoute>
+                <SellerLayout>
+                  <SellerDashboard />
+                </SellerLayout>
+              </SellerProtectedRoute>
+            } />
+            <Route path="/seller/direct-sales" element={
+              <SellerProtectedRoute>
+                <SellerLayout>
+                  <DirectSalesPage />
+                </SellerLayout>
+              </SellerProtectedRoute>
             } />
           </Routes>
 

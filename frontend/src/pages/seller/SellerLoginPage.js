@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { sellerService } from '../../services/api';
 import LoadingSpinner from '../../components/LoadingSpinner';
+import Logo from '../../components/Logo';
 
 const SellerLoginPage = () => {
   const [formData, setFormData] = useState({
@@ -96,8 +97,10 @@ const SellerLoginPage = () => {
     <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
         <div className="text-center">
-          <i className="fas fa-store text-6xl text-primary-600 mb-4"></i>
-          <h2 className="text-3xl font-bold text-gray-900 mb-2">
+          <Link to="/" className="inline-flex items-center text-2xl font-bold text-primary-600 hover:text-primary-700">
+            <Logo/ >
+          </Link>
+          <h2 className="mt-6 text-3xl font-bold text-gray-900 mb-2">
             Đăng nhập Seller
           </h2>
           <p className="text-gray-600">

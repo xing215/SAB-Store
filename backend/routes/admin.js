@@ -306,6 +306,13 @@ router.put('/orders/:id', authenticateAdmin, validateOrderUpdate, async (req, re
     order.status = status;
     order.statusUpdatedAt = new Date();
     
+    // Build status history entry
+    const historyEntry = {
+      status,
+      updatedAt: new Date(),
+      updatedBy: req.admin.username
+    };
+    
     // Handle specific status requirements
     if (status === 'paid') {
       if (!transactionCode) {
@@ -315,6 +322,7 @@ router.put('/orders/:id', authenticateAdmin, validateOrderUpdate, async (req, re
         });
       }
       order.transactionCode = transactionCode;
+      historyEntry.transactionCode = transactionCode;
     }
     
     if (status === 'cancelled') {
@@ -325,7 +333,17 @@ router.put('/orders/:id', authenticateAdmin, validateOrderUpdate, async (req, re
         });
       }
       order.cancelReason = cancelReason;
+      historyEntry.cancelReason = cancelReason;
     }
+    
+    // Add note to history if provided
+    if (note) {
+      historyEntry.note = note;
+    }
+    
+    // Add to status history
+    order.statusHistory = order.statusHistory || [];
+    order.statusHistory.push(historyEntry);
     
     await order.save();
     
@@ -885,6 +903,133 @@ router.delete('/sellers/:id', authenticateAdmin, async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Lỗi server khi xóa seller'
+    });
+  }
+});
+
+/**
+ * @route   POST /api/admin/orders/direct
+ * @desc    Create direct sale order (admin)
+ * @access  Private (Admin)
+ */
+router.post('/orders/direct', authenticateAdmin, async (req, res) => {
+  try {
+    console.log('🔵 Admin Direct Order Request:', {
+      admin: req.admin.username,
+      body: req.body,
+      timestamp: new Date().toISOString()
+    });
+    
+    const { items } = req.body;
+
+    // Validate required fields
+    if (!items || !Array.isArray(items) || items.length === 0) {
+      console.error('❌ Validation failed: Missing or invalid items');
+      return res.status(400).json({
+        success: false,
+        message: 'Thiếu thông tin sản phẩm để tạo đơn hàng'
+      });
+    }
+
+    // Validate items
+    for (const item of items) {
+      if (!item.productId || !item.quantity || item.quantity <= 0) {
+        console.error('❌ Validation failed: Invalid item:', item);
+        return res.status(400).json({
+          success: false,
+          message: 'Thông tin sản phẩm không hợp lệ'
+        });
+      }
+    }
+
+    console.log('✅ Validation passed, processing items...');
+
+    // Calculate total amount
+    let totalAmount = 0;
+    const orderItems = [];
+
+    for (const item of items) {
+      const product = await Product.findById(item.productId);
+      if (!product) {
+        return res.status(404).json({
+          success: false,
+          message: `Không tìm thấy sản phẩm với ID: ${item.productId}`
+        });
+      }
+
+      if (!product.isAvailable) {
+        return res.status(400).json({
+          success: false,
+          message: `Sản phẩm "${product.name}" hiện không khả dụng`
+        });
+      }
+
+      const itemTotal = product.price * item.quantity;
+      totalAmount += itemTotal;
+
+      orderItems.push({
+        productId: product._id,
+        quantity: item.quantity,
+        price: product.price,
+        total: itemTotal
+      });
+    }
+
+    // Generate order code
+    const orderCount = await Order.countDocuments();
+    const orderCode = `ORD${String(orderCount + 1).padStart(6, '0')}`;
+    
+    console.log('📋 Creating order with code:', orderCode);
+    console.log('💰 Total amount:', totalAmount);
+    console.log('📦 Order items:', orderItems);
+
+    // Create order
+    const order = new Order({
+      orderCode,
+      fullName: 'Khách hàng tại quầy', // Default name for admin direct sales
+      studentId: 'N/A', // Not applicable for admin sales
+      email: 'admin@direct.sale', // Default email for admin sales
+      items: orderItems,
+      totalAmount,
+      status: 'confirmed', // Direct orders start as confirmed
+      isDirectSale: true,
+      createdBy: req.admin.username,
+      lastUpdatedBy: req.admin.username,
+      statusHistory: [{
+        status: 'confirmed',
+        updatedAt: new Date(),
+        updatedBy: req.admin.username
+      }]
+    });
+
+    await order.save();
+    console.log('✅ Order saved successfully:', order._id);
+
+    // Populate product details for response
+    await order.populate('items.productId', 'name imageUrl');
+    console.log('✅ Order populated and ready to send');
+
+    res.status(201).json({
+      success: true,
+      message: 'Tạo đơn hàng trực tiếp thành công',
+      data: order
+    });
+
+  } catch (error) {
+    console.error('❌ Create direct order error:', error);
+    console.error('❌ Error stack:', error.stack);
+    
+    if (error.name === 'ValidationError') {
+      console.error('❌ Mongoose validation error:', error.errors);
+      return res.status(400).json({
+        success: false,
+        message: 'Dữ liệu đơn hàng không hợp lệ'
+      });
+    }
+
+    res.status(500).json({
+      success: false,
+      message: 'Lỗi server khi tạo đơn hàng'
     });
   }
 });

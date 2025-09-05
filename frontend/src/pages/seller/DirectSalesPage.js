@@ -178,7 +178,8 @@ const DirectSalesPage = () => {
         handleReset();
       }
     } catch (error) {
-      toast.error('Lỗi khi cập nhật đơn hàng: ' + error.message);
+      console.error('Update order error:', error);
+      toast.error('Lỗi khi cập nhật đơn hàng: ' + (error.response?.data?.message || error.message));
     } finally {
       setProcessing(false);
     }

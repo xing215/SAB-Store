@@ -179,18 +179,6 @@ const AdminLoginPage = () => {
                 </button>
               </div>
             </form>
-
-            {/* Demo Credentials */}
-            <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-              <h4 className="font-semibold text-blue-900 mb-2">
-                <i className="fas fa-info-circle mr-1"></i>
-                Thông tin đăng nhập demo:
-              </h4>
-              <div className="text-blue-700 text-sm space-y-1">
-                <p><strong>Tên đăng nhập:</strong> admin</p>
-                <p><strong>Mật khẩu:</strong> admin123</p>
-              </div>
-            </div>
           </div>
         </div>
 

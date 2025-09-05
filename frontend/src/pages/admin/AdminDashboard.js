@@ -3,6 +3,7 @@ import { toast } from 'react-toastify';
 import Swal from 'sweetalert2';
 import { adminService, formatCurrency, formatDate, getStatusText, getStatusColor } from '../../services/api';
 import LoadingSpinner from '../../components/LoadingSpinner';
+import Modal from '../../components/Modal';
 
 const AdminDashboard = () => {
   const [stats, setStats] = useState(null);
@@ -20,6 +21,23 @@ const AdminDashboard = () => {
     limit: 10
   });
   const [pagination, setPagination] = useState(null);
+
+  // Handle ESC key to close modal
+  useEffect(() => {
+    const handleEscKey = (event) => {
+      if (event.key === 'Escape' && selectedOrderStatus) {
+        setSelectedOrderStatus(null);
+      }
+    };
+
+    document.addEventListener('keydown', handleEscKey);
+    return () => document.removeEventListener('keydown', handleEscKey);
+  }, [selectedOrderStatus]);
+
+  // Handle modal close
+  const closeModal = () => {
+    setSelectedOrderStatus(null);
+  };
 
   // Fetch dashboard stats
   useEffect(() => {
@@ -533,184 +551,163 @@ const AdminDashboard = () => {
       </div>
 
       {/* Status Details Modal */}
-      {selectedOrderStatus && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl max-w-md w-full max-h-96 overflow-y-auto">
-            <div className="px-6 py-4 border-b border-gray-200">
-              <div className="flex items-center justify-between">
-                <h3 className="text-lg font-semibold text-gray-900">
-                  Chi tiết trạng thái đơn hàng
-                </h3>
-                <button
-                  onClick={() => setSelectedOrderStatus(null)}
-                  className="text-gray-400 hover:text-gray-600"
-                >
-                  <i className="fas fa-times text-xl"></i>
-                </button>
-              </div>
+      <Modal
+        isOpen={!!selectedOrderStatus}
+        onClose={closeModal}
+        title="Chi tiết trạng thái đơn hàng"
+      >
+        {selectedOrderStatus && (
+          <div className="space-y-4">
+            {/* Order Code */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Mã đơn hàng
+              </label>
+              <p className="text-sm text-gray-900">#{selectedOrderStatus.orderCode}</p>
             </div>
-            
-            <div className="px-6 py-4 space-y-4">
-              {/* Order Code */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Mã đơn hàng
-                </label>
-                <p className="text-sm text-gray-900">#{selectedOrderStatus.orderCode}</p>
-              </div>
 
-              {/* Current Status */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Trạng thái hiện tại
-                </label>
-                <span className={`badge ${getStatusColor(selectedOrderStatus.status)}`}>
-                  {getStatusText(selectedOrderStatus.status)}
-                </span>
-              </div>
+            {/* Current Status */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Trạng thái hiện tại
+              </label>
+              <span className={`badge ${getStatusColor(selectedOrderStatus.status)}`}>
+                {getStatusText(selectedOrderStatus.status)}
+              </span>
+            </div>
 
-              {/* Status Updated Time */}
+            {/* Status Updated Time */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Cập nhật lần cuối
+              </label>
+              <p className="text-sm text-gray-900">
+                {formatDate(selectedOrderStatus.statusUpdatedAt || selectedOrderStatus.updatedAt)}
+              </p>
+            </div>
+
+            {/* Transaction Code for paid status */}
+            {selectedOrderStatus.status === 'paid' && selectedOrderStatus.transactionCode && (
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Cập nhật lần cuối
+                  Mã giao dịch
                 </label>
-                <p className="text-sm text-gray-900">
-                  {formatDate(selectedOrderStatus.statusUpdatedAt || selectedOrderStatus.updatedAt)}
+                <p className="text-sm text-gray-900 bg-gray-50 px-3 py-2 rounded border">
+                  {selectedOrderStatus.transactionCode}
                 </p>
               </div>
+            )}
 
-              {/* Transaction Code for paid status */}
-              {selectedOrderStatus.status === 'paid' && selectedOrderStatus.transactionCode && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Mã giao dịch
-                  </label>
-                  <p className="text-sm text-gray-900 bg-gray-50 px-3 py-2 rounded border">
-                    {selectedOrderStatus.transactionCode}
-                  </p>
-                </div>
-              )}
-
-              {/* Cancel Reason for cancelled status */}
-              {selectedOrderStatus.status === 'cancelled' && selectedOrderStatus.cancelReason && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Lý do hủy đơn hàng
-                  </label>
-                  <p className="text-sm text-gray-900 bg-red-50 px-3 py-2 rounded border border-red-200">
-                    {selectedOrderStatus.cancelReason}
-                  </p>
-                </div>
-              )}
-
-              {/* Order Timeline */}
+            {/* Cancel Reason for cancelled status */}
+            {selectedOrderStatus.status === 'cancelled' && selectedOrderStatus.cancelReason && (
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Lịch sử trạng thái
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Lý do hủy đơn hàng
                 </label>
-                <div className="space-y-2">
-                  {/* Initial creation */}
-                  <div className="flex items-center text-sm">
-                    <div className="w-2 h-2 bg-blue-400 rounded-full mr-3"></div>
-                    <div className="flex-1">
-                      <span className="text-gray-900">Đơn hàng được tạo</span>
-                      <span className="text-gray-500 ml-2">
-                        {formatDate(selectedOrderStatus.createdAt)}
-                      </span>
-                      <span className="text-gray-400 ml-2">• system</span>
-                    </div>
+                <p className="text-sm text-gray-900 bg-red-50 px-3 py-2 rounded border border-red-200">
+                  {selectedOrderStatus.cancelReason}
+                </p>
+              </div>
+            )}
+
+            {/* Order Timeline */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Lịch sử trạng thái
+              </label>
+              <div className="space-y-2">
+                {/* Initial creation */}
+                <div className="flex items-center text-sm">
+                  <div className="w-2 h-2 bg-blue-400 rounded-full mr-3"></div>
+                  <div className="flex-1">
+                    <span className="text-gray-900">Đơn hàng được tạo</span>
+                    <span className="text-gray-500 ml-2">
+                      {formatDate(selectedOrderStatus.createdAt)}
+                    </span>
+                    <span className="text-gray-400 ml-2">• system</span>
                   </div>
-                  
-                  {/* Status history */}
-                  {selectedOrderStatus.statusHistory && selectedOrderStatus.statusHistory.length > 0 ? (
-                    selectedOrderStatus.statusHistory.map((history, index) => (
-                      <div key={index} className="flex items-start text-sm">
-                        <div className={`w-2 h-2 rounded-full mr-3 mt-1 ${
-                          history.status === 'paid' ? 'bg-green-400' :
-                          history.status === 'delivered' ? 'bg-green-600' :
-                          history.status === 'cancelled' ? 'bg-red-400' : 'bg-gray-400'
-                        }`}></div>
-                        <div className="flex-1">
-                          <div>
-                            <span className="text-gray-900">{getStatusText(history.status)}</span>
-                            <span className="text-gray-500 ml-2">
-                              {formatDate(history.updatedAt)}
-                            </span>
-                            <span className="text-gray-400 ml-2">• {history.updatedBy}</span>
-                          </div>
-                          {history.transactionCode && (
-                            <div className="text-xs text-gray-600 mt-1">
-                              Mã GD: {history.transactionCode}
-                            </div>
-                          )}
-                          {history.cancelReason && (
-                            <div className="text-xs text-gray-600 mt-1">
-                              Lý do: {history.cancelReason}
-                            </div>
-                          )}
-                          {history.note && (
-                            <div className="text-xs text-gray-600 mt-1">
-                              Ghi chú: {history.note}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    ))
-                  ) : selectedOrderStatus.status !== 'confirmed' && (
-                    <div className="flex items-center text-sm">
-                      <div className={`w-2 h-2 rounded-full mr-3 ${
-                        selectedOrderStatus.status === 'paid' ? 'bg-green-400' :
-                        selectedOrderStatus.status === 'delivered' ? 'bg-green-600' :
-                        selectedOrderStatus.status === 'cancelled' ? 'bg-red-400' : 'bg-gray-400'
+                </div>
+                
+                {/* Status history */}
+                {selectedOrderStatus.statusHistory && selectedOrderStatus.statusHistory.length > 0 ? (
+                  selectedOrderStatus.statusHistory.map((history, index) => (
+                    <div key={index} className="flex items-start text-sm">
+                      <div className={`w-2 h-2 rounded-full mr-3 mt-1 ${
+                        history.status === 'paid' ? 'bg-green-400' :
+                        history.status === 'delivered' ? 'bg-green-600' :
+                        history.status === 'cancelled' ? 'bg-red-400' : 'bg-gray-400'
                       }`}></div>
                       <div className="flex-1">
-                        <span className="text-gray-900">
-                          {getStatusText(selectedOrderStatus.status)}
-                        </span>
-                        <span className="text-gray-500 ml-2">
-                          {formatDate(selectedOrderStatus.statusUpdatedAt || selectedOrderStatus.updatedAt)}
-                        </span>
-                        <span className="text-gray-400 ml-2">• {selectedOrderStatus.lastUpdatedBy || 'system'}</span>
+                        <div>
+                          <span className="text-gray-900">{getStatusText(history.status)}</span>
+                          <span className="text-gray-500 ml-2">
+                            {formatDate(history.updatedAt)}
+                          </span>
+                          <span className="text-gray-400 ml-2">• {history.updatedBy}</span>
+                        </div>
+                        {history.transactionCode && (
+                          <div className="text-xs text-gray-600 mt-1">
+                            Mã GD: {history.transactionCode}
+                          </div>
+                        )}
+                        {history.cancelReason && (
+                          <div className="text-xs text-gray-600 mt-1">
+                            Lý do: {history.cancelReason}
+                          </div>
+                        )}
+                        {history.note && (
+                          <div className="text-xs text-gray-600 mt-1">
+                            Ghi chú: {history.note}
+                          </div>
+                        )}
                       </div>
                     </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Customer Info */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Thông tin khách hàng
-                </label>
-                <div className="bg-gray-50 px-3 py-2 rounded border space-y-1">
-                  <p className="text-sm"><strong>Tên:</strong> {selectedOrderStatus.fullName}</p>
-                  <p className="text-sm"><strong>MSSV:</strong> {selectedOrderStatus.studentId}</p>
-                  <p className="text-sm"><strong>Email:</strong> {selectedOrderStatus.email}</p>
-                </div>
-              </div>
-
-              {/* Total Amount */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Tổng tiền
-                </label>
-                <p className="text-lg font-semibold text-gray-900">
-                  {formatCurrency(selectedOrderStatus.totalAmount)}
-                </p>
+                  ))
+                ) : selectedOrderStatus.status !== 'confirmed' && (
+                  <div className="flex items-center text-sm">
+                    <div className={`w-2 h-2 rounded-full mr-3 ${
+                      selectedOrderStatus.status === 'paid' ? 'bg-green-400' :
+                      selectedOrderStatus.status === 'delivered' ? 'bg-green-600' :
+                      selectedOrderStatus.status === 'cancelled' ? 'bg-red-400' : 'bg-gray-400'
+                    }`}></div>
+                    <div className="flex-1">
+                      <span className="text-gray-900">
+                        {getStatusText(selectedOrderStatus.status)}
+                      </span>
+                      <span className="text-gray-500 ml-2">
+                        {formatDate(selectedOrderStatus.statusUpdatedAt || selectedOrderStatus.updatedAt)}
+                      </span>
+                      <span className="text-gray-400 ml-2">• {selectedOrderStatus.lastUpdatedBy || 'system'}</span>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 
-            <div className="px-6 py-4 border-t border-gray-200 bg-gray-50">
-              <button
-                onClick={() => setSelectedOrderStatus(null)}
-                className="w-full btn-secondary"
-              >
-                Đóng
-              </button>
+            {/* Customer Info */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Thông tin khách hàng
+              </label>
+              <div className="bg-gray-50 px-3 py-2 rounded border space-y-1">
+                <p className="text-sm"><strong>Tên:</strong> {selectedOrderStatus.fullName}</p>
+                <p className="text-sm"><strong>MSSV:</strong> {selectedOrderStatus.studentId}</p>
+                <p className="text-sm"><strong>Email:</strong> {selectedOrderStatus.email}</p>
+              </div>
+            </div>
+
+            {/* Total Amount */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Tổng tiền
+              </label>
+              <p className="text-lg font-semibold text-gray-900">
+                {formatCurrency(selectedOrderStatus.totalAmount)}
+              </p>
             </div>
           </div>
-        </div>
-      )}
+        )}
+      </Modal>
     </div>
   );
 };

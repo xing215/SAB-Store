@@ -9,6 +9,7 @@ const OrderTrackingPage = () => {
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [paymentQR, setPaymentQR] = useState(null);
 
   const handleSearch = async (e) => {
     e.preventDefault();
@@ -32,6 +33,13 @@ const OrderTrackingPage = () => {
       
       if (response.success) {
         setOrder(response.data);
+        const qrUrl = generateOrderPaymentQR(
+          response.data.totalAmount,
+          response.data.orderCode,
+          response.data.studentId,
+          response.data.fullName
+        );
+        setPaymentQR(qrUrl);
       }
     } catch (err) {
       setError(err.message);
@@ -123,11 +131,6 @@ const OrderTrackingPage = () => {
                   </p>
                 )}
               </div>
-              
-              <p className="text-gray-500 text-sm">
-                <i className="fas fa-info-circle mr-1"></i>
-                Mã đơn hàng gồm 5 ký tự (chữ và số), được gửi qua email xác nhận
-              </p>
             </div>
           </form>
         </div>
@@ -256,101 +259,79 @@ const OrderTrackingPage = () => {
             </div>
 
             {/* Payment QR Code - Show only if not paid and not cancelled */}
-            {order.status !== 'paid' && order.status !== 'delivered' && order.status !== 'cancelled' && (
-              <div className="card mt-6">
-                <div className="bg-gradient-to-br from-red-50 to-orange-50 border-2 border-red-200 px-6 py-4 border-b border-red-100">
-                  <h3 className="text-xl font-bold text-red-700 flex items-center">
-                    <i className="fas fa-exclamation-triangle mr-2"></i>
-                    Thanh toán đơn hàng
-                  </h3>
-                  <p className="text-red-600 text-sm mt-1">
-                    Để được xử lý nhanh nhất, bạn vui lòng thanh toán sớm nhất có thể
-                  </p>
-                </div>
-                
-                <div>
+            {paymentQR && order.status !== 'paid' && order.status !== 'delivered' && order.status !== 'cancelled' && (
+              <>
+                <div className="bg-gradient-to-br from-red-50 to-orange-50 border-2 border-red-200 rounded-lg p-6 mb-8">
                   <div className="text-center">
+                    {/* Urgent Payment Header */}
+                    <div className="mb-4">
+                      <h3 className="text-xl font-bold text-red-700 mb-2">
+                        <i className="fas fa-exclamation-triangle mr-2"></i>
+                        Thanh toán đơn đặt hàng.
+                      </h3>
+                      <p className="text-red-600 text-sm">
+                        Để được xử lý nhanh nhất, bạn vui lòng thanh toán trong vòng 1 giờ
+                      </p>
+                    </div>
+      
                     {/* QR Code */}
                     <div className="bg-white rounded-lg p-4 shadow-inner mb-4 inline-block">
                       <img 
-                        src={generateOrderPaymentQR(
-                          order.totalAmount,
-                          order.orderCode,
-                          order.studentId,
-                          order.fullName
-                        )}
+                        src={paymentQR}
                         alt="Payment QR Code"
-                        className="w-48 h-48 mx-auto"
+                        className="w-64 h-64 mx-auto"
                         onError={(e) => {
                           e.target.style.display = 'none';
                           e.target.nextSibling.style.display = 'block';
                         }}
                       />
                       <div 
-                        className="w-48 h-48 bg-gray-200 flex flex-col items-center justify-center text-gray-500"
+                        className="w-64 h-64 bg-gray-200 flex items-center justify-center text-gray-500"
                         style={{display: 'none'}}
                       >
-                        <i className="fas fa-image text-2xl mb-2"></i>
-                        <p className="text-sm">Không thể tải QR</p>
+                        <i className="fas fa-image text-4xl"></i>
+                        <p>Không thể tải QR</p>
                       </div>
                     </div>
-
+      
                     {/* Payment Instructions */}
                     <div className="text-left space-y-3">
-                      <h4 className="font-semibold text-red-800 text-center">
+                      <h4 className="font-semibold text-gray-900 text-center">
                         <i className="fas fa-mobile-alt mr-2"></i>
                         Hướng dẫn thanh toán
                       </h4>
                       
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                        <ol className="space-y-2 text-red-700">
+                        <ol className="space-y-2 text-gray-700">
                           <li className="flex items-start">
-                            <span className="bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs mr-2 mt-0.5">1</span>
+                            <span className="bg-primary-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs mr-2 mt-0.5">1</span>
                             Mở ứng dụng ngân hàng hoặc ví điện tử
                           </li>
                           <li className="flex items-start">
-                            <span className="bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs mr-2 mt-0.5">2</span>
-                            Quét mã VietQR bên trên
+                            <span className="bg-primary-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs mr-2 mt-0.5">2</span>
+                            Quét mã QR bên trái
                           </li>
                           <li className="flex items-start">
-                            <span className="bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs mr-2 mt-0.5">3</span>
+                            <span className="bg-primary-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs mr-2 mt-0.5">3</span>
                             Kiểm tra thông tin và xác nhận thanh toán
                           </li>
                         </ol>
                         
-                        <div className="bg-white border-2 border-red-200 rounded-lg p-3">
-                          <h5 className="font-semibold text-red-800 mb-2">Thông tin chuyển khoản</h5>
-                          <div className="space-y-1 text-xs text-red-600">
+                        <div className="bg-gray-50 rounded-lg p-3">
+                          <h5 className="font-semibold text-gray-900 mb-2">Thông tin chuyển khoản:</h5>
+                          <div className="space-y-1 text-xs text-gray-600">
                             <p><strong>Số tiền:</strong> {formatCurrency(order.totalAmount)}</p>
-                            <p><strong>Nội dung:</strong> {formatOrderPaymentDescription(
-                              order.orderCode,
-                              order.studentId,
-                              order.fullName
-                            )}</p>
-                            <p className="text-red-700 font-medium mt-2">
+                            <p><strong>Nội dung:</strong> {formatOrderPaymentDescription(orderCode, order.studentId, order.fullName)}</p>
+                            <p className="text-red-600 font-medium">
                               ⚠️ Không thay đổi nội dung chuyển khoản
                             </p>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Payment Notice */}
-                      <div className="bg-red-50 border-2 border-red-200 rounded-lg p-3 mt-4">
-                        <div className="flex items-start space-x-2">
-                          <i className="fas fa-info-circle text-red-600 mt-0.5"></i>
-                          <div className="text-red-800 text-sm">
-                            <p className="font-semibold mb-1">Lưu ý:</p>
-                            <ul className="space-y-1 text-xs">
-                              <li>• SAB sẽ kiểm tra thông tin thanh toán của bạn trong vòng tối đa 7 ngày.</li>
-                              <li>• Nếu cần hỗ trợ thêm, bạn có thể liên hệ với SAB qua email: <a href="mailto:sab@fit.hcmus.edu.vn" className="text-red-600 hover:text-red-800">sab@fit.hcmus.edu.vn</a></li>
-                            </ul>
                           </div>
                         </div>
                       </div>
                     </div>
                   </div>
                 </div>
-              </div>
+              </>
             )}
 
             {/* Actions */}

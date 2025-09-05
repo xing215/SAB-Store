@@ -18,14 +18,15 @@ const CheckoutPage = () => {
   
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [orderCompleted, setOrderCompleted] = useState(false);
 
-  // Redirect if cart is empty
+  // Redirect if cart is empty (but not if order was just completed)
   useEffect(() => {
-    if (cart.items.length === 0) {
+    if (cart.items.length === 0 && !orderCompleted && !isSubmitting) {
       toast.warning('Giỏ hàng trống. Vui lòng thêm sản phẩm trước khi thanh toán.');
       navigate('/');
     }
-  }, [cart.items.length, navigate]);
+  }, [cart.items.length, navigate, orderCompleted, isSubmitting]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -47,10 +48,11 @@ const CheckoutPage = () => {
     const newErrors = {};
 
     // Student ID validation
+  const mssvRegex = /^(1[6-9]|2[0-5])[0-9]{2}[257][0-9]{3}$/;
     if (!formData.studentId.trim()) {
       newErrors.studentId = 'Mã số sinh viên là bắt buộc';
-    } else if (formData.studentId.trim().length < 3) {
-      newErrors.studentId = 'Mã số sinh viên phải có ít nhất 3 ký tự';
+    } else if (!mssvRegex.test(formData.studentId.trim())) {
+      newErrors.studentId = 'Hiện tại Preorder chỉ hỗ trợ sinh viên ngành Trí tuệ nhân tạo và chương trình đề án. Bạn vui lòng liên hệ Fanpage SAB để được giải đáp.';
     }
 
     // Full name validation
@@ -108,24 +110,30 @@ const CheckoutPage = () => {
       const response = await orderService.createOrder(orderData);
 
       if (response.success) {
+        // Set order completed flag to prevent useEffect redirect
+        setOrderCompleted(true);
+        
         // Clear cart
         clearCart();
         
         // Show success message
         toast.success('Đơn hàng đã được tạo thành công!');
         
-        // Redirect to success page with order info
-        navigate('/order-success', {
-          state: {
-            orderCode: response.data.orderCode,
-            totalAmount: response.data.totalAmount,
-            customerInfo: {
-              studentId: formData.studentId.trim(),
-              fullName: formData.fullName.trim(),
-              email: formData.email.trim()
+        // Small delay to ensure toast is shown before navigation
+        setTimeout(() => {
+          // Redirect to success page with order info
+          navigate('/order-success', {
+            state: {
+              orderCode: response.data.orderCode,
+              totalAmount: response.data.totalAmount,
+              customerInfo: {
+                studentId: formData.studentId.trim(),
+                fullName: formData.fullName.trim(),
+                email: formData.email.trim()
+              }
             }
-          }
-        });
+          });
+        }, 100);
       }
     } catch (error) {
       console.error('Order creation error:', error);
@@ -137,7 +145,7 @@ const CheckoutPage = () => {
 
   const total = getCartTotal();
 
-  if (cart.items.length === 0) {
+  if (cart.items.length === 0 && !orderCompleted) {
     return null; // Will redirect in useEffect
   }
 
@@ -241,14 +249,14 @@ const CheckoutPage = () => {
                 {/* Additional Note */}
                 <div>
                   <label htmlFor="additionalNote" className="block text-sm font-medium text-gray-700 mb-2">
-                    Ghi chú thêm (không bắt buộc)
+                    Ghi chú
                   </label>
                   <textarea
                     id="additionalNote"
                     name="additionalNote"
                     value={formData.additionalNote}
                     onChange={handleInputChange}
-                    placeholder="Ghi chú đặc biệt cho đơn hàng (ví dụ: không cay, ít đá...)"
+                    placeholder="Nếu còn điều gì cần lưu ý với SAB, bạn hãy điền vào đây nhé!"
                     rows="3"
                     className={`form-input ${errors.additionalNote ? 'form-input-error' : ''}`}
                     maxLength="500"
@@ -271,7 +279,7 @@ const CheckoutPage = () => {
 
           {/* Order Summary */}
           <div className="xl:col-span-1">
-            <div className="card sticky top-24">
+            <div className="card sticky top-24 xl:w-[380px] w-full">
               <div className="bg-blue-50 px-6 py-4 border-b border-blue-100">
                 <h3 className="text-lg font-semibold text-gray-900">
                   Tóm tắt đơn hàng
@@ -317,9 +325,9 @@ const CheckoutPage = () => {
                     Lưu ý quan trọng:
                   </h4>
                   <ul className="text-warning-700 text-sm space-y-1">
-                    <li>• Email xác nhận sẽ được gửi sau khi đặt hàng</li>
-                    <li>• Đơn hàng sẽ được xử lý trong 15-30 phút</li>
-                    <li>• Vui lòng kiểm tra kỹ thông tin trước khi xác nhận</li>
+                    <li>Vui lòng kiểm tra kỹ thông tin trước khi xác nhận</li>
+                    <li>Sau khi xác nhận, bạn vui lòng quét mã chuyển khoản trong vòng 1 giờ</li>
+                    <li>SAB sẽ gửi thông tin xác nhận thanh toán <b>trong vòng 7 ngày</b></li>
                   </ul>
                 </div>
 

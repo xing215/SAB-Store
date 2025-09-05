@@ -52,13 +52,16 @@ export const generatePaymentQR = (amount, orderCode) => {
   // Payment description for QR
   const description = formatPaymentDescription(orderCode);
   
-  // Bank info - can be configured from environment
-  const bankId = process.env.REACT_APP_BANK_ID || '970422';
-  const accountNumber = process.env.REACT_APP_BANK_ACCOUNT || '19036081916016';
-  const accountName = process.env.REACT_APP_BANK_ACCOUNT_NAME || 'SAB PREORDER';
+  const bankId = process.env.REACT_APP_BANK_ID;
+  const accountNo = process.env.REACT_APP_ACCOUNT_NO;
+  
+  if (!bankId || !accountNo) {
+    console.error('Bank information not configured in environment variables');
+    return null;
+  }
   
   // Generate VietQR URL
-  const qrData = `https://img.vietqr.io/image/${bankId}-${accountNumber}-qr_only.png?amount=${amount}&addInfo=${encodeURIComponent(description)}&accountName=${encodeURIComponent(accountName)}`;
+  const qrData = `https://img.vietqr.io/image/${bankId}-${accountNo}-qr_only.png?amount=${amount}&addInfo=${encodeURIComponent(description)}`;
   
   return qrData;
 };
@@ -131,7 +134,7 @@ export const generateOrderPaymentQR = (amount, orderId, studentId, fullName) => 
   }
   
   const shortName = generateShortName(fullName);
-  const description = `${orderId} ${studentId} ${shortName}`;
+  const description = `SAB ${orderId} ${studentId} ${shortName}`;
   
   const baseUrl = 'https://img.vietqr.io/image';
   const qrUrl = `${baseUrl}/${bankId}-${accountNo}-qr_only.png?amount=${amount}&addInfo=${encodeURIComponent(description)}`;
@@ -148,5 +151,5 @@ export const generateOrderPaymentQR = (amount, orderId, studentId, fullName) => 
  */
 export const formatOrderPaymentDescription = (orderId, studentId, fullName) => {
   const shortName = generateShortName(fullName);
-  return `${orderId} ${studentId} ${shortName}`;
+  return `SAB ${orderId} ${studentId} ${shortName}`;
 };

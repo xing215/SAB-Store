@@ -3,7 +3,6 @@ const Order = require('../models/Order');
 const Product = require('../models/Product');
 const { validateOrder } = require('../middleware/validation');
 const { generateOrderCode, calculateTotal } = require('../utils/helpers');
-const { sendOrderConfirmationEmail } = require('../utils/emailService');
 const router = express.Router();
 
 /**
@@ -86,11 +85,6 @@ router.post('/', validateOrder, async (req, res) => {
     });
     
     await order.save();
-    
-    // Send confirmation email (non-blocking)
-    sendOrderConfirmationEmail(order).catch(error => {
-      console.error('Email sending failed:', error);
-    });
     
     res.status(201).json({
       success: true,

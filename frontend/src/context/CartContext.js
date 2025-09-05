@@ -166,10 +166,6 @@ export const CartProvider = ({ children }) => {
 
   const clearCart = () => {
     dispatch({ type: CART_ACTIONS.CLEAR_CART });
-    toast.success('Đã xóa tất cả sản phẩm khỏi giỏ hàng', {
-      position: "bottom-right",
-      autoClose: 2000
-    });
   };
 
   // Cart Calculations

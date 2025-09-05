@@ -287,7 +287,7 @@ router.get('/orders', authenticateSeller, async (req, res) => {
 router.put('/orders/:id/status', authenticateSeller, async (req, res) => {
   try {
     const { id } = req.params;
-    const { status, note } = req.body;
+    const { status, transactionCode, cancelReason, note } = req.body;
 
     // Validate status
     const validStatuses = ['pending', 'confirmed', 'paid', 'delivered', 'cancelled'];
@@ -298,17 +298,45 @@ router.put('/orders/:id/status', authenticateSeller, async (req, res) => {
       });
     }
 
+    // Build update object
+    const updateData = {
+      status,
+      lastUpdatedBy: req.seller.username
+    };
+
+    // Add transaction code if provided
+    if (transactionCode) {
+      updateData.transactionCode = transactionCode;
+    }
+
+    // Add cancel reason if provided
+    if (cancelReason) {
+      updateData.cancelReason = cancelReason;
+    }
+
+    // Build status history entry
+    const historyEntry = {
+      status,
+      updatedAt: new Date(),
+      updatedBy: req.seller.username
+    };
+
+    // Add transaction code to history if provided
+    if (transactionCode) {
+      historyEntry.transactionCode = transactionCode;
+    }
+
+    // Add cancel reason to history if provided
+    if (cancelReason) {
+      historyEntry.cancelReason = cancelReason;
+    }
+
     const order = await Order.findByIdAndUpdate(
       id,
       { 
-        status,
+        ...updateData,
         $push: {
-          statusHistory: {
-            status,
-            note: note || '',
-            updatedAt: new Date(),
-            updatedBy: req.seller.id
-          }
+          statusHistory: historyEntry
         }
       },
       { new: true }
@@ -469,9 +497,17 @@ router.post('/orders/direct', authenticateSeller, async (req, res) => {
       // For direct sales, don't include customer data fields
       items: orderItems,
       totalAmount,
-      status: 'pending',
+      status: 'confirmed',
       isDirectSale: true,
-      createdBy: req.seller?.id || null
+      createdBy: req.seller?.id || null,
+      lastUpdatedBy: req.seller?.username || req.admin?.username || 'unknown',
+      statusHistory: [
+        {
+          status: 'confirmed',
+          updatedBy: req.seller?.username || req.admin?.username || 'unknown',
+          updatedAt: new Date(),
+        }
+      ]
     });
 
     await order.save();

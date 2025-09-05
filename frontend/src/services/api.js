@@ -16,7 +16,7 @@ const api = axios.create({
 api.interceptors.request.use(
   (config) => {
     // Check for admin token first, then seller token
-    const adminToken = localStorage.getItem('admin_token');
+    const adminToken = localStorage.getItem('adminToken');
     const sellerToken = localStorage.getItem('sellerToken');
     
     if (adminToken && config.url.includes('/admin/')) {
@@ -44,7 +44,7 @@ api.interceptors.response.use(
     if (error.response?.status === 401) {
       // Token expired or invalid
       if (error.config.url.includes('/admin/')) {
-        localStorage.removeItem('admin_token');
+        localStorage.removeItem('adminToken');
         if (window.location.pathname.startsWith('/admin') || window.location.pathname === '/dashboard') {
           window.location.href = '/admin/login';
         }
@@ -122,7 +122,7 @@ export const adminService = {
     try {
       const response = await api.post('/admin/login', credentials);
       if (response.data.success && response.data.data.token) {
-        localStorage.setItem('admin_token', response.data.data.token);
+        localStorage.setItem('adminToken', response.data.data.token);
       }
       return response.data;
     } catch (error) {
@@ -132,12 +132,12 @@ export const adminService = {
 
   // Admin logout
   logout: () => {
-    localStorage.removeItem('admin_token');
+    localStorage.removeItem('adminToken');
   },
 
   // Check if admin is logged in
   isLoggedIn: () => {
-    return !!localStorage.getItem('admin_token');
+    return !!localStorage.getItem('adminToken');
   },
 
   // Get dashboard statistics
@@ -173,7 +173,13 @@ export const adminService = {
   // Update order status
   updateOrderStatus: async (id, updateData) => {
     try {
-      const response = await api.put(`/admin/orders/${id}`, updateData);
+      // Use appropriate endpoint based on current user type
+      const isSellerRoute = window.location.pathname.startsWith('/seller');
+      const endpoint = isSellerRoute 
+        ? `/seller/orders/${id}/status`
+        : `/admin/orders/${id}`;
+      
+      const response = await api.put(endpoint, updateData);
       return response.data;
     } catch (error) {
       throw new Error(error.response?.data?.message || 'Lỗi khi cập nhật đơn hàng');
@@ -280,6 +286,17 @@ export const adminService = {
     } catch (error) {
       throw new Error(error.response?.data?.message || 'Lỗi khi xuất file Excel');
     }
+  },
+
+  // Create direct sale order (admin)
+  createDirectOrder: async (orderData) => {
+    try {
+      const response = await api.post('/admin/orders/direct', orderData);
+      return response.data;
+    } catch (error) {
+      console.error('API Error - createDirectOrder:', error.response?.data || error.message);
+      throw error;
+    }
   }
 };
 
@@ -349,7 +366,7 @@ export const sellerService = {
   // Update order status
   updateOrderStatus: async (id, updateData) => {
     try {
-      const response = await api.put(`/seller/orders/${id}`, updateData);
+      const response = await api.put(`/seller/orders/${id}/status`, updateData);
       return response.data;
     } catch (error) {
       throw new Error(error.response?.data?.message || 'Lỗi khi cập nhật đơn hàng');
