@@ -1,5 +1,6 @@
 FROM node:18-alpine
 
+# SAB Lanyard Frontend
 WORKDIR /app
 
 COPY package*.json ./

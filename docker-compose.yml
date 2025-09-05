@@ -1,10 +1,10 @@
 version: '3.8'
 
 services:
-  # MongoDB Database
+  # SAB Lanyard MongoDB Database
   mongodb:
     image: mongo:6.0
-    container_name: minipreorder_mongodb
+    container_name: sablanyard_mongodb
     restart: unless-stopped
     environment:
       MONGO_INITDB_ROOT_USERNAME: admin
@@ -18,12 +18,12 @@ services:
     networks:
       - minipreorder_network
 
-  # Backend API
+  # SAB Lanyard Backend API
   backend:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    container_name: minipreorder_backend
+    container_name: sablanyard_backend
     restart: unless-stopped
     environment:
       NODE_ENV: production
@@ -46,12 +46,12 @@ services:
     networks:
       - minipreorder_network
 
-  # Frontend React App
+  # SAB Lanyard Frontend React App
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
-    container_name: minipreorder_frontend
+    container_name: sablanyard_frontend
     restart: unless-stopped
     environment:
       REACT_APP_API_URL: http://localhost:5000/api
@@ -63,11 +63,11 @@ services:
       - ./frontend:/app
       - /app/node_modules
     networks:
-      - minipreorder_network
+      - sablanyard_network
 
 volumes:
   mongodb_data:
 
 networks:
-  minipreorder_network:
+  sablanyard_network:
     driver: bridge
