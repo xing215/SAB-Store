@@ -8,7 +8,7 @@ import Logo from '../../components/Logo';
 const AdminLoginPage = () => {
 	const navigate = useNavigate();
 	const [formData, setFormData] = useState({
-		email: '',
+		username: '',
 		password: ''
 	});
 	const [errors, setErrors] = useState({});
@@ -48,10 +48,10 @@ const AdminLoginPage = () => {
 	const validateForm = () => {
 		const newErrors = {};
 
-		if (!formData.email.trim()) {
-			newErrors.email = 'Email là bắt buộc';
-		} else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-			newErrors.email = 'Email không hợp lệ';
+		if (!formData.username.trim()) {
+			newErrors.username = 'Tên đăng nhập là bắt buộc';
+		} else if (formData.username.length < 3) {
+			newErrors.username = 'Tên đăng nhập phải có ít nhất 3 ký tự';
 		}
 
 		if (!formData.password) {
@@ -75,9 +75,9 @@ const AdminLoginPage = () => {
 		setIsLoading(true);
 
 		try {
-			// Use better-auth email/password sign in
-			const { data, error } = await authClient.signIn.email({
-				email: formData.email.trim(),
+			// Use better-auth username/password sign in
+			const { data, error } = await authClient.signIn.username({
+				username: formData.username.trim(),
 				password: formData.password,
 			});
 
@@ -124,30 +124,30 @@ const AdminLoginPage = () => {
 				<div className="card">
 					<div className="px-6 py-8">
 						<form onSubmit={handleSubmit} className="space-y-6">
-							{/* Email */}
+							{/* Username */}
 							<div>
-								<label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
-									Email <span className="text-danger-500">*</span>
+								<label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-2">
+									Tên đăng nhập <span className="text-danger-500">*</span>
 								</label>
 								<div className="relative">
 									<div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-										<i className="fas fa-envelope text-gray-400"></i>
+										<i className="fas fa-user text-gray-400"></i>
 									</div>
 									<input
-										type="email"
-										id="email"
-										name="email"
-										value={formData.email}
+										type="text"
+										id="username"
+										name="username"
+										value={formData.username}
 										onChange={handleInputChange}
-										placeholder="Nhập email"
-										className={`form-input pl-10 ${errors.email ? 'form-input-error' : ''}`}
-										autoComplete="email"
+										placeholder="Nhập tên đăng nhập"
+										className={`form-input pl-10 ${errors.username ? 'form-input-error' : ''}`}
+										autoComplete="username"
 									/>
 								</div>
-								{errors.email && (
+								{errors.username && (
 									<p className="text-danger-500 text-sm mt-1">
 										<i className="fas fa-exclamation-circle mr-1"></i>
-										{errors.email}
+										{errors.username}
 									</p>
 								)}
 							</div>

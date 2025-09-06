@@ -7,7 +7,7 @@ import Logo from '../../components/Logo';
 
 const SellerLoginPage = () => {
 	const [formData, setFormData] = useState({
-		email: '',
+		username: '',
 		password: ''
 	});
 	const [isLoading, setIsLoading] = useState(false);
@@ -50,10 +50,10 @@ const SellerLoginPage = () => {
 	const validateForm = () => {
 		const newErrors = {};
 
-		if (!formData.email.trim()) {
-			newErrors.email = 'Email là bắt buộc';
-		} else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-			newErrors.email = 'Email không hợp lệ';
+		if (!formData.username.trim()) {
+			newErrors.username = 'Tên đăng nhập là bắt buộc';
+		} else if (formData.username.length < 3) {
+			newErrors.username = 'Tên đăng nhập phải có ít nhất 3 ký tự';
 		}
 
 		if (!formData.password) {
@@ -76,8 +76,8 @@ const SellerLoginPage = () => {
 		setIsLoading(true);
 
 		try {
-			const { data, error } = await authClient.signIn.email({
-				email: formData.email.trim(),
+			const { data, error } = await authClient.signIn.username({
+				username: formData.username.trim(),
 				password: formData.password,
 			});
 
@@ -125,26 +125,26 @@ const SellerLoginPage = () => {
 			<div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
 				<div className="bg-white py-8 px-4 shadow-lg sm:rounded-lg sm:px-10">
 					<form onSubmit={handleSubmit} className="space-y-6">
-						{/* Email */}
+						{/* Username */}
 						<div>
-							<label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
-								Email
+							<label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-2">
+								Tên đăng nhập
 							</label>
 							<input
-								type="email"
-								id="email"
-								name="email"
-								value={formData.email}
+								type="text"
+								id="username"
+								name="username"
+								value={formData.username}
 								onChange={handleInputChange}
-								placeholder="Nhập email"
-								className={`form-input ${errors.email ? 'form-input-error' : ''}`}
+								placeholder="Nhập tên đăng nhập"
+								className={`form-input ${errors.username ? 'form-input-error' : ''}`}
 								disabled={isLoading}
-								autoComplete="email"
+								autoComplete="username"
 							/>
-							{errors.email && (
+							{errors.username && (
 								<p className="text-danger-500 text-sm mt-1">
 									<i className="fas fa-exclamation-circle mr-1"></i>
-									{errors.email}
+									{errors.username}
 								</p>
 							)}
 						</div>
