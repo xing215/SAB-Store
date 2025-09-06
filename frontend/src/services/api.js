@@ -2,11 +2,11 @@ import axios from 'axios';
 import { authClient } from '../lib/auth-client';
 
 // API Base URL
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000' + '/api';
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
 
 // Create axios instance
 const api = axios.create({
-	baseURL: API_BASE_URL,
+	baseURL: `${API_BASE_URL}/api`,
 	timeout: 10000,
 	headers: {
 		'Content-Type': 'application/json',
