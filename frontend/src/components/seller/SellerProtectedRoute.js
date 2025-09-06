@@ -1,17 +1,26 @@
 import React from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
-import { sellerService } from '../../services/api';
+import { useSession } from '../../lib/auth-client';
+import LoadingSpinner from '../LoadingSpinner';
 
 const SellerProtectedRoute = ({ children }) => {
-  const location = useLocation();
-  const isLoggedIn = sellerService.isLoggedIn();
+	const location = useLocation();
+	const { data: session, isPending, error } = useSession();
 
-  if (!isLoggedIn) {
-    // Redirect to seller login page with the current location
-    return <Navigate to="/seller/login" state={{ from: location }} replace />;
-  }
+	if (isPending) {
+		return (
+			<div className="min-h-screen flex items-center justify-center">
+				<LoadingSpinner />
+			</div>
+		);
+	}
 
-  return children;
+	if (error || !session || !session.user || (session.user.role !== 'seller' && session.user.role !== 'admin')) {
+		// Redirect to seller login page with the current location
+		return <Navigate to="/seller/login" state={{ from: location }} replace />;
+	}
+
+	return children;
 };
 
 export default SellerProtectedRoute;

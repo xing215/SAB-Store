@@ -2,85 +2,39 @@ const express = require('express');
 const Order = require('../models/Order');
 const Product = require('../models/Product');
 const User = require('../models/User');
-const { authenticateSeller, generateSellerToken } = require('../middleware/auth');
+const { requireAuth } = require('../middleware/better-auth');
 const { validateSellerLogin } = require('../middleware/validation');
 const { getPaginationInfo, formatDate, formatCurrency } = require('../utils/helpers');
 const { sendOrderToAppScript } = require('../utils/appscript');
+const { auth } = require('../lib/auth');
 const router = express.Router();
-const bcrypt = require('bcryptjs');
 
 /**
  * @route   POST /api/seller/login
- * @desc    Seller login
+ * @desc    Seller login - Now handled by better-auth
  * @access  Public
+ * @deprecated Use better-auth login endpoint instead
  */
-router.post('/login', validateSellerLogin, async (req, res) => {
-	try {
-		const { username, password } = req.body;
-
-		const hashedPassword = bcrypt.hashSync(password, 10);
-
-		// Find seller by username
-		const seller = await User.findOne({
-			username,
-			role: 'seller',
-			isActive: true
-		});
-
-		if (!seller) {
-			return res.status(401).json({
-				success: false,
-				message: 'Tên đăng nhập hoặc mật khẩu không đúng'
-			});
-		}
-
-		// Check password
-		const isValidPassword = await seller.comparePassword(hashedPassword);
-
-		if (!isValidPassword) {
-			return res.status(401).json({
-				success: false,
-				message: 'Tên đăng nhập hoặc mật khẩu không đúng'
-			});
-		}
-
-		// Update last login
-		seller.lastLogin = new Date();
-		await seller.save();
-
-		// Generate token
-		const token = generateSellerToken(seller);
-
-		res.json({
-			success: true,
-			message: 'Đăng nhập thành công',
-			data: {
-				token,
-				seller: {
-					id: seller._id,
-					username: seller.username,
-					fullName: seller.fullName,
-					email: seller.email,
-					lastLogin: seller.lastLogin
-				}
-			}
-		});
-
-	} catch (error) {
-		console.error('Seller login error:', error);
-		res.status(500).json({
-			success: false,
-			message: 'Lỗi server khi đăng nhập'
-		});
-	}
-});
+// router.post('/login', validateSellerLogin, async (req, res) => {
+// 	try {
+// 		const { username, password } = req.body;
+// 		// This route is now handled by better-auth
+// 		// Use /api/auth/sign-in endpoint for authentication
+// 	} catch (error) {
+// 		console.error('Seller login error:', error);
+// 		res.status(500).json({
+// 			success: false,
+// 			message: 'Use /api/auth/sign-in endpoint for authentication'
+// 		});
+// 	}
+// });
 
 /**
  * @route   GET /api/seller/dashboard/stats
  * @desc    Get seller dashboard statistics
  * @access  Private (Seller)
  */
-router.get('/dashboard/stats', authenticateSeller, async (req, res) => {
+router.get('/dashboard/stats', requireAuth, async (req, res) => {
 	try {
 		const now = new Date();
 		const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -195,7 +149,7 @@ router.get('/dashboard/stats', authenticateSeller, async (req, res) => {
  * @desc    Get orders for seller management
  * @access  Private (Seller)
  */
-router.get('/orders', authenticateSeller, async (req, res) => {
+router.get('/orders', requireAuth, async (req, res) => {
 	try {
 		const {
 			page = 1,
@@ -288,7 +242,7 @@ router.get('/orders', authenticateSeller, async (req, res) => {
  * @desc    Update order status
  * @access  Private (Seller)
  */
-router.put('/orders/:id/status', authenticateSeller, async (req, res) => {
+router.put('/orders/:id/status', requireAuth, async (req, res) => {
 	try {
 		const { id } = req.params;
 		const { status, transactionCode, cancelReason, note } = req.body;
@@ -399,7 +353,7 @@ router.put('/orders/:id/status', authenticateSeller, async (req, res) => {
  * @desc    Get order details
  * @access  Private (Seller)
  */
-router.get('/orders/:id', authenticateSeller, async (req, res) => {
+router.get('/orders/:id', requireAuth, async (req, res) => {
 	try {
 		const { id } = req.params;
 
@@ -440,7 +394,7 @@ router.get('/orders/:id', authenticateSeller, async (req, res) => {
  * @desc    Create direct sale order
  * @access  Private (Seller)
  */
-router.post('/orders/direct', authenticateSeller, async (req, res) => {
+router.post('/orders/direct', requireAuth, async (req, res) => {
 	try {
 		const { items } = req.body;
 

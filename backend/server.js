@@ -1,10 +1,11 @@
+require('dotenv').config();
 const express = require('express');
-const mongoose = require('mongoose');
 const cors = require('cors');
 const helmet = require('helmet');
 const compression = require('compression');
 const rateLimit = require('express-rate-limit');
-require('dotenv').config();
+const { auth } = require('./lib/auth');
+const { connectDB } = require('./lib/database');
 
 const app = express();
 
@@ -40,15 +41,14 @@ app.use(cors({
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// Database connection
-mongoose.connect(process.env.MONGODB_URI, {
-	useNewUrlParser: true,
-	useUnifiedTopology: true,
-})
-	.then(() => console.log('✅ MongoDB connected successfully'))
-	.catch(err => console.error('❌ MongoDB connection error:', err));
+// Better-auth API routes
+app.all('/api/auth/*', (req, res) => {
+	return auth.handler(req, res);
+});
 
-// Routes
+console.log('✅ Better-auth initialized successfully');
+
+// Routes - temporarily disabled for auth testing
 app.use('/api/products', require('./routes/products'));
 app.use('/api/orders', require('./routes/orders'));
 app.use('/api/admin', require('./routes/admin'));
@@ -79,8 +79,21 @@ app.use('*', (req, res) => {
 
 const PORT = process.env.PORT || 5000;
 
-app.listen(PORT, () => {
-	console.log(`🚀 Server running on port ${PORT}`);
-	console.log(`📱 Environment: ${process.env.NODE_ENV}`);
-	console.log(`🔗 API URL: http://localhost:${PORT}/api`);
-});
+// Start server with database connection
+async function startServer() {
+	try {
+		// Connect to MongoDB via Mongoose
+		await connectDB();
+
+		app.listen(PORT, () => {
+			console.log(`🚀 Server running on port ${PORT}`);
+			console.log(`📱 Environment: ${process.env.NODE_ENV}`);
+			console.log(`🔗 API URL: http://localhost:${PORT}/api`);
+		});
+	} catch (error) {
+		console.error('❌ Failed to start server:', error);
+		process.exit(1);
+	}
+}
+
+startServer();

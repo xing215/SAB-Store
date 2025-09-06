@@ -1,15 +1,24 @@
 import React from 'react';
 import { Navigate } from 'react-router-dom';
-import { adminService } from '../../services/api';
+import { useSession } from '../../lib/auth-client';
+import LoadingSpinner from '../LoadingSpinner';
 
 const ProtectedRoute = ({ children }) => {
-  const isLoggedIn = adminService.isLoggedIn();
+	const { data: session, isPending, error } = useSession();
 
-  if (!isLoggedIn) {
-    return <Navigate to="/admin/login" replace />;
-  }
+	if (isPending) {
+		return (
+			<div className="min-h-screen flex items-center justify-center">
+				<LoadingSpinner />
+			</div>
+		);
+	}
 
-  return children;
+	if (error || !session || !session.user || session.user.role !== 'admin') {
+		return <Navigate to="/admin/login" replace />;
+	}
+
+	return children;
 };
 
 export default ProtectedRoute;
