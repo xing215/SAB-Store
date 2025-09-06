@@ -6,6 +6,7 @@ const compression = require('compression');
 const rateLimit = require('express-rate-limit');
 const { auth } = require('./lib/auth');
 const { connectDB } = require('./lib/database');
+const { toNodeHandler } = require('better-auth/node');
 
 
 
@@ -33,21 +34,23 @@ const limiter = rateLimit({
 		return req.url.includes('/health') || req.url.includes('/favicon');
 	}
 });
-// CORS configuration
+// CORS configuration - Must be before Better Auth handler
 app.use(cors({
 	origin: process.env.CORS_ORIGIN || 'http://localhost:3000',
-	credentials: true
+	credentials: true,
+	methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+	allowedHeaders: ['Content-Type', 'Authorization', 'Cookie'],
+	exposedHeaders: ['Set-Cookie']
 }));
+
 app.use('/api', limiter);
 
-// Body parsing middleware
+// Better-auth API routes - Must be before express.json() middleware
+app.all('/api/auth/*', toNodeHandler(auth));
+
+// Body parsing middleware - Applied AFTER Better Auth handler
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
-
-// Better-auth API routes
-app.all('/api/auth/*', (req, res) => {
-	return auth.handler(req, res);
-});
 
 console.log('✅ Better-auth initialized successfully');
 
