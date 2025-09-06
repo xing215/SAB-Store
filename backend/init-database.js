@@ -23,8 +23,8 @@ async function initDatabase() {
 		const adminPassword = process.env.ADMIN_PASSWORD || 'admin123';
 
 		// Check if admin user already exists in database
-		const existingUser = await User.findOne({ 
-			$or: [{ email: adminEmail }, { username: adminUsername }] 
+		const existingUser = await User.findOne({
+			$or: [{ email: adminEmail }, { username: adminUsername }]
 		});
 
 		if (existingUser) {
@@ -33,7 +33,7 @@ async function initDatabase() {
 			// Get better-auth password context for hashing
 			const ctx = await auth.$context;
 			const hashedPassword = await ctx.password.hash(adminPassword);
-			
+
 			// Generate unique IDs
 			const userId = generateId();
 			const accountId = generateId();
