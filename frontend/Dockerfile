@@ -5,10 +5,10 @@ WORKDIR /app
 
 COPY package*.json ./
 
-RUN npm ci
+RUN yarn ci
 
 COPY . .
 
 EXPOSE 3000
 
-CMD ["npm", "start"]
+CMD ["yarn", "start"]

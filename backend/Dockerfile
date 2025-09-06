@@ -5,7 +5,7 @@ WORKDIR /app
 
 COPY package*.json ./
 
-RUN npm ci --only=production
+RUN yarn ci --only=production
 
 COPY . .
 
@@ -13,4 +13,4 @@ EXPOSE 5000
 
 USER node
 
-CMD ["npm", "start"]
+CMD ["yarn", "start"]
