@@ -7,6 +7,8 @@ const rateLimit = require('express-rate-limit');
 const { auth } = require('./lib/auth');
 const { connectDB } = require('./lib/database');
 
+console.log('[DEBUG] All env vars:', Object.keys(process.env).filter(k => k.includes('CORS')));
+
 const app = express();
 
 // Trust proxy configuration - secure setup for rate limiting
