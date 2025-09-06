@@ -8,17 +8,25 @@ require('dotenv').config();
 
 const app = express();
 
-// Trust proxy configuration (for rate limiting and security behind proxies)
-app.set('trust proxy', true);
+// Trust proxy configuration - secure setup for rate limiting
+// Only trust first proxy (recommended for most deployments)
+// Set to false if not behind a proxy, or configure specific trusted IPs
+app.set('trust proxy', process.env.NODE_ENV === 'production' ? 1 : false);
 
 // Security middleware
 app.use(helmet());
 app.use(compression());
 
-// Rate limiting
+// Rate limiting with secure configuration
 const limiter = rateLimit({
 	windowMs: 15 * 60 * 1000, // 15 minutes
-	max: 1000 // limit each IP to 1000 requests per windowMs (increased for development)
+	max: process.env.NODE_ENV === 'development' ? 1000 : 100, // More restrictive in production
+	standardHeaders: true, // Return rate limit info in headers
+	legacyHeaders: false, // Disable legacy headers
+	// Skip successful requests to static files
+	skip: (req) => {
+		return req.url.includes('/health') || req.url.includes('/favicon');
+	}
 });
 app.use('/api', limiter);
 
