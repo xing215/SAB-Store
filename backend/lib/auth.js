@@ -23,6 +23,7 @@ const auth = betterAuth({
 		enabled: true,
 		minPasswordLength: 6,
 		maxPasswordLength: 128,
+		requireEmailVerification: false,
 	},
 	plugins: [
 		username({
