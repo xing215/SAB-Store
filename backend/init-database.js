@@ -1,7 +1,5 @@
 const { connectDB } = require('./lib/database');
 const { auth } = require('./lib/auth');
-const User = require('./models/User');
-const Account = require('./models/Account');
 const Product = require('./models/Product');
 require('dotenv').config();
 
@@ -16,40 +14,36 @@ async function initDatabase() {
 		const adminUsername = process.env.ADMIN_USERNAME || 'admin';
 		const adminPassword = process.env.ADMIN_PASSWORD || 'admin123';
 
-		// Check if admin user already exists
-		const existingAdmin = await User.findOne({ email: adminEmail });
-		if (existingAdmin) {
+		// Check if admin user already exists using better-auth
+		const existingAdminSession = await auth.api.listUsers({
+			query: {
+				searchValue: adminEmail,
+				searchField: "email",
+				limit: 1
+			}
+		});
+
+		if (existingAdminSession.users && existingAdminSession.users.length > 0) {
 			console.log('ℹ️  Admin user already exists');
 		} else {
-			// Create admin user using better-auth password hash
-			const ctx = await auth.$context;
-			const hashedPassword = await ctx.password.hash(adminPassword);
-			const adminUserId = new Date().toISOString();
-
-			// Create admin user using Mongoose
-			const adminUser = new User({
-				id: adminUserId,
+			// Create admin user using better-auth admin plugin
+			const adminResult = await auth.api.createUser({
 				email: adminEmail,
-				emailVerified: true,
 				name: 'System Administrator',
 				username: adminUsername,
+				password: adminPassword,
 				role: 'admin'
 			});
-			await adminUser.save();
 
-			// Create account record for the user
-			const adminAccount = new Account({
-				id: adminUserId + '_credential',
-				userId: adminUserId,
-				providerId: 'credential',
-				accountId: adminUserId,
-				password: hashedPassword
-			});
-			await adminAccount.save(); console.log('✅ Created admin user');
-			console.log(`   Email: ${adminEmail}`);
-			console.log(`   Username: ${adminUsername}`);
-			console.log('   Password: [HIDDEN]');
-			console.log('   Role: admin');
+			if (adminResult.user) {
+				console.log('✅ Created admin user');
+				console.log(`   Email: ${adminEmail}`);
+				console.log(`   Username: ${adminUsername}`);
+				console.log('   Password: [HIDDEN]');
+				console.log('   Role: admin');
+			} else {
+				console.error('❌ Failed to create admin user:', adminResult.error);
+			}
 		}
 
 		// Create sample products using Mongoose

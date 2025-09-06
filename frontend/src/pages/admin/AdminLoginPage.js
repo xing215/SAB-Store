@@ -75,6 +75,7 @@ const AdminLoginPage = () => {
 		setIsLoading(true);
 
 		try {
+			// Use better-auth email/password sign in
 			const { data, error } = await authClient.signIn.email({
 				email: formData.email.trim(),
 				password: formData.password,

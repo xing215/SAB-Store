@@ -3,77 +3,12 @@ const ExcelJS = require('exceljs');
 const Order = require('../models/Order');
 const Product = require('../models/Product');
 const User = require('../models/User');
-const { requireAuth } = require('../middleware/better-auth');
+const { authenticateAdmin } = require('../middleware/better-auth');
 const { validateOrderUpdate } = require('../middleware/validation');
 const { getPaginationInfo, formatDate, formatCurrency } = require('../utils/helpers');
 const router = express.Router();
-const { hashPassword } = require('../utils/auth');
 
-/**
- * @route   POST /api/admin/login
- * @desc    Admin login
- * @access  Public
- */
-router.post('/login', validateAdminLogin, async (req, res) => {
-	try {
-		console.log('Admin login attempt:', req.body.username);
-		const { username, password } = req.body;
-
-		const hashedPassword = hashPassword(password);
-
-		// Find admin by username
-		const admin = await Admin.findOne({ username, isActive: true });
-
-		if (!admin) {
-			return res.status(401).json({
-				success: false,
-				message: 'Tên đăng nhập hoặc mật khẩu không đúng'
-			});
-		}
-
-		// Check password
-		const isValidPassword = await admin.comparePassword(hashedPassword);
-
-		if (!isValidPassword) {
-			console.error('Invalid password for admin:', username);
-			console.error('Provided password:', password);
-			console.error('Provided password hash:', hashedPassword);
-			console.error('Stored password hash:', admin.password);
-			return res.status(401).json({
-				success: false,
-				message: 'Tên đăng nhập hoặc mật khẩu không đúng'
-			});
-		}
-
-		// Update last login
-		await admin.updateLastLogin();
-
-		// Generate token
-		const token = generateAdminToken(admin);
-
-		console.log('Admin logged in successfully:', username);
-
-		res.json({
-			success: true,
-			message: 'Đăng nhập thành công',
-			data: {
-				token,
-				admin: {
-					id: admin._id,
-					username: admin.username,
-					lastLogin: admin.lastLogin
-				}
-			}
-		});
-
-	} catch (error) {
-		console.error('Admin login error:', error);
-		res.status(500).json({
-			success: false,
-			message: 'Lỗi server khi đăng nhập'
-		});
-	}
-});
+// Remove custom login endpoint - now handled by better-auth at /api/auth/sign-in/email
 
 /**
  * @route   GET /api/admin/dashboard/stats
@@ -764,38 +699,42 @@ router.delete('/products/:id', authenticateAdmin, async (req, res) => {
  */
 router.get('/sellers', authenticateAdmin, async (req, res) => {
 	try {
-		const { page = 1, limit = 10, search = '', status = '' } = req.query;
+		const { page = 1, limit = 10, search = '' } = req.query;
 
-		// Build filter for sellers (users with role seller)
-		const filter = { role: 'seller' };
-		if (search) {
-			filter.$or = [
-				{ username: { $regex: search, $options: 'i' } },
-				{ email: { $regex: search, $options: 'i' } }
-			];
+		// Use better-auth admin API to list users with seller role
+		const { auth } = require('../lib/auth');
+		const listResult = await auth.api.listUsers({
+			query: {
+				searchValue: search,
+				searchField: search ? "email" : undefined,
+				filterField: "role",
+				filterValue: "seller",
+				filterOperator: "eq",
+				limit: parseInt(limit),
+				offset: (parseInt(page) - 1) * parseInt(limit),
+				sortBy: "createdAt",
+				sortDirection: "desc"
+			}
+		});
+
+		if (listResult.error) {
+			return res.status(500).json({
+				success: false,
+				message: 'Không thể lấy danh sách seller'
+			});
 		}
-		if (status !== '') {
-			filter.isActive = status === 'active';
-		}
 
-		const options = {
-			page: parseInt(page),
-			limit: parseInt(limit),
-			sort: { createdAt: -1 },
-			select: '-password' // Exclude password from results
-		};
-
-		const sellers = await User.paginate(filter, options);
+		const totalPages = Math.ceil(listResult.total / parseInt(limit));
 
 		res.json({
 			success: true,
 			data: {
-				sellers: sellers.docs,
+				sellers: listResult.users || [],
 				pagination: {
-					page: sellers.page,
-					pages: sellers.totalPages,
-					total: sellers.totalDocs,
-					limit: sellers.limit
+					page: parseInt(page),
+					pages: totalPages,
+					total: listResult.total || 0,
+					limit: parseInt(limit)
 				}
 			}
 		});
@@ -815,7 +754,7 @@ router.get('/sellers', authenticateAdmin, async (req, res) => {
  */
 router.post('/sellers', authenticateAdmin, async (req, res) => {
 	try {
-		const { username, email, password, isActive } = req.body;
+		const { username, email, password, name } = req.body;
 
 		// Validate required fields
 		if (!username || !email || !password) {
@@ -825,36 +764,27 @@ router.post('/sellers', authenticateAdmin, async (req, res) => {
 			});
 		}
 
-		// Check if username or email already exists
-		const existingUser = await User.findOne({
-			$or: [{ username }, { email }]
-		});
-
-		if (existingUser) {
-			return res.status(400).json({
-				success: false,
-				message: 'Username hoặc email đã tồn tại'
-			});
-		}
-
-		const seller = new User({
-			username,
+		// Use better-auth admin API to create seller
+		const { auth } = require('../lib/auth');
+		const createResult = await auth.api.createUser({
 			email,
 			password,
-			role: 'seller',
-			isActive: isActive !== undefined ? isActive : true
+			name: name || username,
+			username,
+			role: 'seller'
 		});
 
-		await seller.save();
-
-		// Remove password from response
-		const sellerResponse = seller.toObject();
-		delete sellerResponse.password;
+		if (createResult.error) {
+			return res.status(400).json({
+				success: false,
+				message: createResult.error.message || 'Không thể tạo tài khoản seller'
+			});
+		}
 
 		res.status(201).json({
 			success: true,
 			message: 'Tạo tài khoản seller thành công',
-			data: { seller: sellerResponse }
+			data: { seller: createResult.user }
 		});
 	} catch (error) {
 		console.error('Create seller error:', error);
@@ -873,13 +803,46 @@ router.post('/sellers', authenticateAdmin, async (req, res) => {
 router.put('/sellers/:id', authenticateAdmin, async (req, res) => {
 	try {
 		const { id } = req.params;
-		const updateData = { ...req.body };
+		const { password, role, ...updateData } = req.body;
 
-		// Remove password from update data if not provided or empty
-		if (!updateData.password) {
-			delete updateData.password;
+		// Use better-auth admin API to update user
+		const { auth } = require('../lib/auth');
+
+		// Update basic user info (email, name, username)
+		// Note: better-auth doesn't have a direct user update endpoint for admins
+		// We'll need to use the general user update functionality
+
+		// For password changes, use setUserPassword
+		if (password) {
+			const passwordResult = await auth.api.setUserPassword({
+				userId: id,
+				newPassword: password
+			});
+
+			if (passwordResult.error) {
+				return res.status(400).json({
+					success: false,
+					message: 'Không thể cập nhật mật khẩu: ' + passwordResult.error.message
+				});
+			}
 		}
 
+		// For role changes, use setRole
+		if (role && role !== 'seller') {
+			const roleResult = await auth.api.setRole({
+				userId: id,
+				role: role
+			});
+
+			if (roleResult.error) {
+				return res.status(400).json({
+					success: false,
+					message: 'Không thể cập nhật role: ' + roleResult.error.message
+				});
+			}
+		}
+
+		// For other updates, we'll use direct MongoDB update as better-auth doesn't expose all user update operations
 		const seller = await User.findByIdAndUpdate(
 			id,
 			updateData,
@@ -916,12 +879,16 @@ router.delete('/sellers/:id', authenticateAdmin, async (req, res) => {
 	try {
 		const { id } = req.params;
 
-		const seller = await User.findByIdAndDelete(id);
+		// Use better-auth admin API to remove user
+		const { auth } = require('../lib/auth');
+		const deleteResult = await auth.api.removeUser({
+			userId: id
+		});
 
-		if (!seller) {
-			return res.status(404).json({
+		if (deleteResult.error) {
+			return res.status(400).json({
 				success: false,
-				message: 'Không tìm thấy seller'
+				message: 'Không thể xóa seller: ' + deleteResult.error.message
 			});
 		}
 

@@ -3,31 +3,11 @@ const Order = require('../models/Order');
 const Product = require('../models/Product');
 const User = require('../models/User');
 const { requireAuth } = require('../middleware/better-auth');
-const { validateSellerLogin } = require('../middleware/validation');
 const { getPaginationInfo, formatDate, formatCurrency } = require('../utils/helpers');
 const { sendOrderToAppScript } = require('../utils/appscript');
 const { auth } = require('../lib/auth');
 const router = express.Router();
 
-/**
- * @route   POST /api/seller/login
- * @desc    Seller login - Now handled by better-auth
- * @access  Public
- * @deprecated Use better-auth login endpoint instead
- */
-// router.post('/login', validateSellerLogin, async (req, res) => {
-// 	try {
-// 		const { username, password } = req.body;
-// 		// This route is now handled by better-auth
-// 		// Use /api/auth/sign-in endpoint for authentication
-// 	} catch (error) {
-// 		console.error('Seller login error:', error);
-// 		res.status(500).json({
-// 			success: false,
-// 			message: 'Use /api/auth/sign-in endpoint for authentication'
-// 		});
-// 	}
-// });
 
 /**
  * @route   GET /api/seller/dashboard/stats
