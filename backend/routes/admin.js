@@ -37,6 +37,9 @@ router.post('/login', validateAdminLogin, async (req, res) => {
 
 		if (!isValidPassword) {
 			console.error('Invalid password for admin:', username);
+			console.error('Provided password:', password);
+			console.error('Provided password hash:', hashedPassword);
+			console.error('Stored password hash:', admin.password);
 			return res.status(401).json({
 				success: false,
 				message: 'Tên đăng nhập hoặc mật khẩu không đúng'
