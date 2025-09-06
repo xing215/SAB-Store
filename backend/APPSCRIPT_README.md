@@ -32,5 +32,5 @@ function doPost(e) {
 
 ## 3. Cấu hình backend
 - Tạo file `.env` và thêm biến `APPSCRIPT_URL`.
-- Đảm bảo đã cài package `axios` (`npm install axios`).
+- Đảm bảo đã cài package `axios` (`yarn install axios`).
 - Backend sẽ tự động gửi đơn hàng lên App Script khi tạo đơn hàng mới.
