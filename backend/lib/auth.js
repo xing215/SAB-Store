@@ -19,6 +19,7 @@ const auth = betterAuth({
 	database: mongodbAdapter(db),
 	baseURL: process.env.BASE_URL || "http://localhost:5000",
 	secret: process.env.JWT_SECRET,
+	trustedOrigins: (process.env.CORS_ORIGIN || "http://localhost:3000").split(',').map(origin => origin.trim()),
 	emailAndPassword: {
 		enabled: true,
 		minPasswordLength: 6,
