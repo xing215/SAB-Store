@@ -1,11 +1,11 @@
-FROM node:18-alpine
+FROM node:22-alpine
 
 # SAB Lanyard Frontend
 WORKDIR /app
 
-COPY package*.json ./
+COPY package*.json *.lock ./
 
-RUN yarn ci
+RUN yarn install --frozen-lockfile
 
 COPY . .
 

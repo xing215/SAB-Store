@@ -1,16 +1,14 @@
-FROM node:18-alpine
+FROM node:22-alpine
 
 # SAB Lanyard Backend
 WORKDIR /app
 
-COPY package*.json ./
+COPY package*.json *.lock  ./
 
-RUN yarn ci --only=production
+RUN yarn install --frozen-lockfile
 
 COPY . .
 
 EXPOSE 5000
-
-USER node
 
 CMD ["yarn", "start"]
