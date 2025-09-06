@@ -14,6 +14,12 @@ services:
       - mongodb_data:/data/db
     networks:
       - sablanyard_network
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
 
   # SAB Lanyard Backend API
   backend:
@@ -35,7 +41,8 @@ services:
     ports:
       - "5000:5000"
     depends_on:
-      - mongodb
+      mongodb:
+        condition: service_healthy
     volumes:
       - ./backend:/app
       - /app/node_modules

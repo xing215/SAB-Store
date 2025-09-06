@@ -2,7 +2,7 @@ const express = require('express');
 const Order = require('../models/Order');
 const Product = require('../models/Product');
 const User = require('../models/User');
-const { requireAuth } = require('../middleware/better-auth');
+const { authenticateSeller } = require('../middleware/better-auth');
 const { getPaginationInfo, formatDate, formatCurrency } = require('../utils/helpers');
 const { sendOrderToAppScript } = require('../utils/appscript');
 const { auth } = require('../lib/auth');
@@ -14,7 +14,7 @@ const router = express.Router();
  * @desc    Get seller dashboard statistics
  * @access  Private (Seller)
  */
-router.get('/dashboard/stats', requireAuth, async (req, res) => {
+router.get('/dashboard/stats', authenticateSeller, async (req, res) => {
 	try {
 		const now = new Date();
 		const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -129,7 +129,7 @@ router.get('/dashboard/stats', requireAuth, async (req, res) => {
  * @desc    Get orders for seller management
  * @access  Private (Seller)
  */
-router.get('/orders', requireAuth, async (req, res) => {
+router.get('/orders', authenticateSeller, async (req, res) => {
 	try {
 		const {
 			page = 1,
@@ -222,7 +222,7 @@ router.get('/orders', requireAuth, async (req, res) => {
  * @desc    Update order status
  * @access  Private (Seller)
  */
-router.put('/orders/:id/status', requireAuth, async (req, res) => {
+router.put('/orders/:id/status', authenticateSeller, async (req, res) => {
 	try {
 		const { id } = req.params;
 		const { status, transactionCode, cancelReason, note } = req.body;
@@ -333,7 +333,7 @@ router.put('/orders/:id/status', requireAuth, async (req, res) => {
  * @desc    Get order details
  * @access  Private (Seller)
  */
-router.get('/orders/:id', requireAuth, async (req, res) => {
+router.get('/orders/:id', authenticateSeller, async (req, res) => {
 	try {
 		const { id } = req.params;
 
@@ -374,7 +374,7 @@ router.get('/orders/:id', requireAuth, async (req, res) => {
  * @desc    Create direct sale order
  * @access  Private (Seller)
  */
-router.post('/orders/direct', requireAuth, async (req, res) => {
+router.post('/orders/direct', authenticateSeller, async (req, res) => {
 	try {
 		const { items } = req.body;
 

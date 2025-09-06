@@ -38,6 +38,4 @@ COPY . .
 
 EXPOSE 5000
 
-# Initialize database and start server
-RUN yarn init-db
 CMD ["yarn", "start"]
