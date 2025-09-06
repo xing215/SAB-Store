@@ -8,7 +8,7 @@ const { authenticateAdmin, generateAdminToken } = require('../middleware/auth');
 const { validateAdminLogin, validateOrderUpdate } = require('../middleware/validation');
 const { getPaginationInfo, formatDate, formatCurrency } = require('../utils/helpers');
 const router = express.Router();
-const bcrypt = require('bcryptjs');
+const { hashPassword } = require('../utils/auth');
 
 /**
  * @route   POST /api/admin/login
@@ -20,7 +20,7 @@ router.post('/login', validateAdminLogin, async (req, res) => {
 		console.log('Admin login attempt:', req.body.username);
 		const { username, password } = req.body;
 
-		const hashedPassword = bcrypt.hashSync(password, 10);
+		const hashedPassword = hashPassword(password);
 
 		// Find admin by username
 		const admin = await Admin.findOne({ username, isActive: true });

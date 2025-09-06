@@ -1,13 +1,13 @@
 const fs = require('fs');
-const bcrypt = require('bcryptjs');
 require('dotenv').config();
+const { hashPassword } = require('./utils/auth');
 
 // Get admin credentials from environment variables
 const adminUsername = process.env.ADMIN_USERNAME || 'admin';
 const adminPassword = process.env.ADMIN_PASSWORD || 'admin123';
 
 // Hash the password using bcrypt (same salt rounds as backend: 10)
-const hashedPassword = bcrypt.hashSync(adminPassword, 10);
+const hashedPassword = hashPassword(adminPassword);
 
 // Generate the MongoDB initialization script
 const initScript = `// Initialize database with sample data
