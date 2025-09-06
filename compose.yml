@@ -35,9 +35,22 @@ services:
         - ADMIN_EMAIL=sab@fit.hcmus.edu.vn
         - ADMIN_USERNAME=admin
         - ADMIN_PASSWORD=admin123
+        - APPSCRIPT_URL=your-appscript-url-here
+        - CORS_ORIGIN=http://localhost:3000
     pull_policy: always
     container_name: sablanyard_backend
     restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: 5000
+      BASE_URL: http://localhost:5000
+      MONGODB_URI: mongodb://admin:password123@mongodb:27017/minipreorder?authSource=admin
+      JWT_SECRET: your-super-secret-jwt-key-here
+      ADMIN_EMAIL: sab@fit.hcmus.edu.vn
+      ADMIN_USERNAME: admin
+      ADMIN_PASSWORD: admin123
+      APPSCRIPT_URL: your-appscript-url-here
+      CORS_ORIGIN: http://localhost:3000
     ports:
       - "5000:5000"
     depends_on:
