@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { authClient } from '../lib/auth-client';
 
 // API Base URL
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000' + '/api';
@@ -10,24 +11,14 @@ const api = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
+  withCredentials: true, // Important for better-auth session cookies
 });
 
-// Request interceptor to add auth token
+// Request interceptor to add session cookies
 api.interceptors.request.use(
-  (config) => {
-    // Check for admin token first, then seller token
-    const adminToken = localStorage.getItem('adminToken');
-    const sellerToken = localStorage.getItem('sellerToken');
-    
-    if (adminToken && config.url.includes('/admin/')) {
-      config.headers.Authorization = `Bearer ${adminToken}`;
-    } else if (sellerToken && config.url.includes('/seller/')) {
-      config.headers.Authorization = `Bearer ${sellerToken}`;
-    } else if (adminToken) {
-      config.headers.Authorization = `Bearer ${adminToken}`;
-    } else if (sellerToken) {
-      config.headers.Authorization = `Bearer ${sellerToken}`;
-    }
+  async (config) => {
+    // Better-auth handles session via cookies automatically
+    // No manual token handling needed
     return config;
   },
   (error) => {
@@ -40,19 +31,20 @@ api.interceptors.response.use(
   (response) => {
     return response;
   },
-  (error) => {
+  async (error) => {
     if (error.response?.status === 401) {
-      // Token expired or invalid
-      if (error.config.url.includes('/admin/')) {
-        localStorage.removeItem('adminToken');
+      // Session expired or invalid - sign out user
+      try {
+        await authClient.signOut();
+        
+        // Redirect based on current path
         if (window.location.pathname.startsWith('/admin') || window.location.pathname === '/dashboard') {
           window.location.href = '/admin/login';
-        }
-      } else if (error.config.url.includes('/seller/')) {
-        localStorage.removeItem('sellerToken');
-        if (window.location.pathname.startsWith('/seller')) {
+        } else if (window.location.pathname.startsWith('/seller')) {
           window.location.href = '/seller/login';
         }
+      } catch (signOutError) {
+        console.error('Error signing out:', signOutError);
       }
     }
     return Promise.reject(error);
@@ -117,27 +109,25 @@ export const orderService = {
 
 // Admin Services
 export const adminService = {
-  // Admin login
-  login: async (credentials) => {
+  // Check if admin is logged in
+  isLoggedIn: async () => {
     try {
-      const response = await api.post('/admin/login', credentials);
-      if (response.data.success && response.data.data.token) {
-        localStorage.setItem('adminToken', response.data.data.token);
-      }
-      return response.data;
+      const { data: session } = await authClient.getSession();
+      return session && session.user && session.user.role === 'admin';
     } catch (error) {
-      throw new Error(error.response?.data?.message || 'Lỗi đăng nhập');
+      return false;
     }
   },
 
   // Admin logout
-  logout: () => {
-    localStorage.removeItem('adminToken');
-  },
-
-  // Check if admin is logged in
-  isLoggedIn: () => {
-    return !!localStorage.getItem('adminToken');
+  logout: async () => {
+    try {
+      await authClient.signOut();
+      return { success: true };
+    } catch (error) {
+      console.error('Logout error:', error);
+      throw error;
+    }
   },
 
   // Get dashboard statistics
@@ -302,35 +292,25 @@ export const adminService = {
 
 // Seller Services
 export const sellerService = {
-  // Seller login
-  login: async (credentials) => {
+  // Check if seller is logged in
+  isLoggedIn: async () => {
     try {
-      const response = await api.post('/seller/login', credentials);
-      if (response.data.success && response.data.data.token) {
-        localStorage.setItem('sellerToken', response.data.data.token);
-        // Save seller info for later use
-        if (response.data.data.seller) {
-          localStorage.setItem('sellerInfo', JSON.stringify({
-            username: response.data.data.seller.username,
-            fullName: response.data.data.seller.fullName
-          }));
-        }
-      }
-      return response.data;
+      const { data: session } = await authClient.getSession();
+      return session && session.user && (session.user.role === 'seller' || session.user.role === 'admin');
     } catch (error) {
-      throw new Error(error.response?.data?.message || 'Lỗi đăng nhập');
+      return false;
     }
   },
 
   // Seller logout
-  logout: () => {
-    localStorage.removeItem('sellerToken');
-    localStorage.removeItem('sellerInfo');
-  },
-
-  // Check if seller is logged in
-  isLoggedIn: () => {
-    return !!localStorage.getItem('sellerToken');
+  logout: async () => {
+    try {
+      await authClient.signOut();
+      return { success: true };
+    } catch (error) {
+      console.error('Logout error:', error);
+      throw error;
+    }
   },
 
   // Get dashboard statistics
