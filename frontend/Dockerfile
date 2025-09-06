@@ -3,6 +3,11 @@ FROM node:22-alpine AS builder
 # SAB Lanyard Frontend
 WORKDIR /app
 
+# Accept build arguments from compose.yml
+ARG REACT_APP_API_URL=http://localhost:5000/api
+ARG REACT_APP_BANK_ID=VCB
+ARG REACT_APP_ACCOUNT_NO=SAB25
+
 # Copy package files and install dependencies
 COPY package*.json yarn.lock ./
 
@@ -15,6 +20,11 @@ COPY . .
 ENV NODE_ENV=production
 ENV GENERATE_SOURCEMAP=false
 ENV INLINE_RUNTIME_CHUNK=false
+
+# Set React environment variables from build arguments
+ENV REACT_APP_API_URL=$REACT_APP_API_URL
+ENV REACT_APP_BANK_ID=$REACT_APP_BANK_ID
+ENV REACT_APP_ACCOUNT_NO=$REACT_APP_ACCOUNT_NO
 
 # Build the application
 RUN yarn build
