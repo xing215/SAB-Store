@@ -52,8 +52,7 @@ const userSchema = new mongoose.Schema({
 });
 
 // Indexes for performance
-userSchema.index({ email: 1 });
-userSchema.index({ username: 1 });
+// Note: email and username already have unique indexes from schema definition  
 userSchema.index({ role: 1 });
 
 // Pre-save middleware to update 'updatedAt'

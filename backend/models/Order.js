@@ -146,9 +146,8 @@ const orderSchema = new mongoose.Schema({
   timestamps: true
 });
 
-// Indexes for better search performance
-orderSchema.index({ orderCode: 1 });
-orderSchema.index({ orderNumber: 1 });
+// Indexes for better search performance  
+// Note: orderCode and orderNumber already have unique indexes from schema definition
 orderSchema.index({ studentId: 1 });
 orderSchema.index({ email: 1 });
 orderSchema.index({ status: 1 });
