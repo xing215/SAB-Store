@@ -1,5 +1,5 @@
 const { connectDB } = require('./lib/database');
-const { auth } = require('./lib/auth');
+const { hashPassword } = require('better-auth/crypto');
 const Product = require('./models/Product');
 const User = require('./models/User');
 const Account = require('./models/Account');
@@ -30,9 +30,8 @@ async function initDatabase() {
 		if (existingUser) {
 			console.log('ℹ️  Admin user already exists');
 		} else {
-			// Get better-auth password context for hashing
-			const ctx = await auth.$context;
-			const hashedPassword = await ctx.password.hash(adminPassword);
+			// Use better-auth crypto hashPassword function
+			const hashedPassword = await hashPassword(adminPassword);
 
 			// Generate unique IDs
 			const userId = generateId();
