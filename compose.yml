@@ -23,6 +23,7 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
+    pull_policy: always
     container_name: sablanyard_backend
     restart: unless-stopped
     environment:
@@ -51,6 +52,7 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+    pull_policy: always
     container_name: sablanyard_frontend
     restart: unless-stopped
     environment:
