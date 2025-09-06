@@ -6,7 +6,6 @@ const Cart = () => {
     cart, 
     increaseQuantity, 
     decreaseQuantity, 
-    removeFromCart, 
     getCartTotal, 
     getCartItemCount, 
     formatCurrency,
