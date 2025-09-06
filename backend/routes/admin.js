@@ -36,6 +36,7 @@ router.post('/login', validateAdminLogin, async (req, res) => {
 		const isValidPassword = await admin.comparePassword(hashedPassword);
 
 		if (!isValidPassword) {
+			console.error('Invalid password for admin:', username);
 			return res.status(401).json({
 				success: false,
 				message: 'Tên đăng nhập hoặc mật khẩu không đúng'
@@ -47,6 +48,8 @@ router.post('/login', validateAdminLogin, async (req, res) => {
 
 		// Generate token
 		const token = generateAdminToken(admin);
+
+		console.log('Admin logged in successfully:', username);
 
 		res.json({
 			success: true,
