@@ -51,10 +51,30 @@ async function initializeDatabase() {
 
 async function startServer() {
 	console.log('Starting server...');
+	
+	// Debug environment variables before spawning
+	console.log('[START.JS DEBUG] Environment variables:');
+	console.log('NODE_ENV:', process.env.NODE_ENV);
+	console.log('CORS_ORIGIN:', process.env.CORS_ORIGIN);
+	console.log('PORT:', process.env.PORT);
+	console.log('MONGODB_URI:', process.env.MONGODB_URI ? '[SET]' : '[NOT SET]');
 
 	const serverProcess = spawn('node', ['server.js'], {
 		stdio: 'inherit',
-		env: process.env
+		env: {
+			...process.env,  // Spread all environment variables
+			// Explicitly pass critical variables
+			NODE_ENV: process.env.NODE_ENV,
+			CORS_ORIGIN: process.env.CORS_ORIGIN,
+			PORT: process.env.PORT,
+			MONGODB_URI: process.env.MONGODB_URI,
+			JWT_SECRET: process.env.JWT_SECRET,
+			BASE_URL: process.env.BASE_URL,
+			ADMIN_USERNAME: process.env.ADMIN_USERNAME,
+			ADMIN_PASSWORD: process.env.ADMIN_PASSWORD,
+			ADMIN_EMAIL: process.env.ADMIN_EMAIL,
+			APPSCRIPT_URL: process.env.APPSCRIPT_URL
+		}
 	});
 
 	serverProcess.on('error', (error) => {
@@ -62,9 +82,23 @@ async function startServer() {
 		process.exit(1);
 	});
 
+	serverProcess.on('exit', (code, signal) => {
+		console.log(`Server process exited with code ${code} and signal ${signal}`);
+		if (code !== 0) {
+			console.error('❌ Server exited unexpectedly');
+			process.exit(1);
+		}
+	});
+
 	// Forward signals to server process
-	process.on('SIGTERM', () => serverProcess.kill('SIGTERM'));
-	process.on('SIGINT', () => serverProcess.kill('SIGINT'));
+	process.on('SIGTERM', () => {
+		console.log('Received SIGTERM, shutting down gracefully');
+		serverProcess.kill('SIGTERM');
+	});
+	process.on('SIGINT', () => {
+		console.log('Received SIGINT, shutting down gracefully');
+		serverProcess.kill('SIGINT');
+	});
 }
 
 async function main() {
