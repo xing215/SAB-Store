@@ -7,7 +7,12 @@ const rateLimit = require('express-rate-limit');
 const { auth } = require('./lib/auth');
 const { connectDB } = require('./lib/database');
 
-console.log('[DEBUG] All env vars:', Object.keys(process.env).filter(k => k.includes('CORS')));
+// Debug environment variables
+console.log('[SERVER.JS DEBUG] Environment variables:');
+console.log('NODE_ENV:', process.env.NODE_ENV);
+console.log('CORS_ORIGIN:', process.env.CORS_ORIGIN);
+console.log('PORT:', process.env.PORT);
+console.log('All CORS env vars:', Object.keys(process.env).filter(k => k.includes('CORS')));
 
 const app = express();
 
@@ -33,10 +38,36 @@ const limiter = rateLimit({
 });
 app.use('/api', limiter);
 
-// CORS configuration
+// CORS configuration with enhanced debugging
+const corsOrigin = process.env.CORS_ORIGIN || 'http://localhost:3000';
+console.log('[CORS DEBUG] Using origin:', corsOrigin);
+console.log('[CORS DEBUG] NODE_ENV:', process.env.NODE_ENV);
+
 app.use(cors({
-	origin: process.env.CORS_ORIGIN || 'http://localhost:3000',
-	credentials: true
+	origin: (origin, callback) => {
+		console.log('[CORS] Request from origin:', origin);
+		console.log('[CORS] Allowed origin:', corsOrigin);
+		
+		// Allow requests with no origin (mobile apps, Postman, etc.)
+		if (!origin) {
+			console.log('[CORS] No origin provided - allowing request');
+			return callback(null, true);
+		}
+		
+		// Check if origin matches
+		if (origin === corsOrigin) {
+			console.log('[CORS] Origin matches - allowing request');
+			callback(null, true);
+		} else {
+			console.log('[CORS] Origin blocked - CORS policy violation');
+			console.log('[CORS] Expected:', corsOrigin, 'Got:', origin);
+			callback(new Error('Not allowed by CORS'));
+		}
+	},
+	credentials: true,
+	methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+	allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+	optionsSuccessStatus: 200
 }));
 
 // Body parsing middleware
