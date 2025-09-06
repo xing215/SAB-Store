@@ -17,6 +17,7 @@ const bcrypt = require('bcryptjs');
  */
 router.post('/login', validateAdminLogin, async (req, res) => {
 	try {
+		console.log('Admin login attempt:', req.body.username);
 		const { username, password } = req.body;
 
 		const hashedPassword = bcrypt.hashSync(password, 10);
