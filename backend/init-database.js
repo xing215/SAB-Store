@@ -1,7 +1,15 @@
 const { connectDB } = require('./lib/database');
 const { auth } = require('./lib/auth');
 const Product = require('./models/Product');
+const User = require('./models/User');
+const Account = require('./models/Account');
+const crypto = require('crypto');
 require('dotenv').config();
+
+// Generate a UUID v4-like string
+function generateId() {
+	return crypto.randomBytes(16).toString('hex').replace(/(.{8})(.{4})(.{4})(.{4})(.{12})/, '$1-$2-$3-$4-$5');
+}
 
 async function initDatabase() {
 	try {
@@ -14,36 +22,50 @@ async function initDatabase() {
 		const adminUsername = process.env.ADMIN_USERNAME || 'admin';
 		const adminPassword = process.env.ADMIN_PASSWORD || 'admin123';
 
-		// Check if admin user already exists using better-auth
-		const existingAdminSession = await auth.api.listUsers({
-			query: {
-				searchValue: adminEmail,
-				searchField: "email",
-				limit: 1
-			}
+		// Check if admin user already exists in database
+		const existingUser = await User.findOne({ 
+			$or: [{ email: adminEmail }, { username: adminUsername }] 
 		});
 
-		if (existingAdminSession.users && existingAdminSession.users.length > 0) {
+		if (existingUser) {
 			console.log('ℹ️  Admin user already exists');
 		} else {
-			// Create admin user using better-auth admin plugin
-			const adminResult = await auth.api.createUser({
+			// Get better-auth password context for hashing
+			const ctx = await auth.$context;
+			const hashedPassword = await ctx.password.hash(adminPassword);
+			
+			// Generate unique IDs
+			const userId = generateId();
+			const accountId = generateId();
+
+			// Create admin user directly in database
+			const adminUser = new User({
+				id: userId,
 				email: adminEmail,
-				name: 'System Administrator',
+				emailVerified: true,
 				username: adminUsername,
-				password: adminPassword,
+				name: 'System Administrator',
 				role: 'admin'
 			});
 
-			if (adminResult.user) {
-				console.log('✅ Created admin user');
-				console.log(`   Email: ${adminEmail}`);
-				console.log(`   Username: ${adminUsername}`);
-				console.log('   Password: [HIDDEN]');
-				console.log('   Role: admin');
-			} else {
-				console.error('❌ Failed to create admin user:', adminResult.error);
-			}
+			await adminUser.save();
+
+			// Create credential account for password authentication
+			const adminAccount = new Account({
+				id: accountId,
+				userId: userId,
+				providerId: 'credential',
+				accountId: adminEmail, // Use email as account identifier
+				password: hashedPassword
+			});
+
+			await adminAccount.save();
+
+			console.log('✅ Created admin user');
+			console.log(`   Email: ${adminEmail}`);
+			console.log(`   Username: ${adminUsername}`);
+			console.log('   Password: [HIDDEN]');
+			console.log('   Role: admin');
 		}
 
 		// Create sample products using Mongoose
