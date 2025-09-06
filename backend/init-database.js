@@ -49,16 +49,15 @@ async function initDatabase() {
 
 			await adminUser.save();
 
-			// Create credential account for password authentication
-			const adminAccount = new Account({
-				id: accountId,
-				userId: userId,
-				providerId: 'credential',
-				accountId: adminEmail, // Use email as account identifier
-				password: hashedPassword
-			});
-
-			await adminAccount.save();
+		// Create credential account for password authentication
+		// For username login, accountId should be username not email
+		const adminAccount = new Account({
+			id: accountId,
+			userId: userId,
+			providerId: 'credential',
+			accountId: adminUsername, // Use username for username login
+			password: hashedPassword
+		});			await adminAccount.save();
 
 			console.log('✅ Created admin user');
 			console.log(`   Email: ${adminEmail}`);
