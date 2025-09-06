@@ -24,6 +24,11 @@ const userSchema = new mongoose.Schema({
 		unique: true,
 		trim: true
 	},
+	displayUsername: {
+		type: String,
+		required: false,
+		trim: true
+	},
 	name: {
 		type: String,
 		required: true,
