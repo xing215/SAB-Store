@@ -48,11 +48,11 @@ const CheckoutPage = () => {
     const newErrors = {};
 
     // Student ID validation
-  const mssvRegex = /^(1[6-9]|2[0-5])[0-9]{2}[257][0-9]{3}$/;
+  const mssvRegex = /^(1[6-9]|2[0-5])[0-9]{6}$/;
     if (!formData.studentId.trim()) {
       newErrors.studentId = 'Mã số sinh viên là bắt buộc';
     } else if (!mssvRegex.test(formData.studentId.trim())) {
-      newErrors.studentId = 'Hiện tại Preorder chỉ hỗ trợ sinh viên ngành Trí tuệ nhân tạo và chương trình đề án. Bạn vui lòng liên hệ Fanpage SAB để được giải đáp.';
+      newErrors.studentId = 'Mã số sinh viên không hợp lệ';
     }
 
     // Full name validation
