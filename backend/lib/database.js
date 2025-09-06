@@ -15,10 +15,7 @@ async function connectDB() {
 			throw new Error('MONGODB_URI environment variable is required');
 		}
 
-		await mongoose.connect(mongoUri, {
-			useNewUrlParser: true,
-			useUnifiedTopology: true,
-		});
+		await mongoose.connect(mongoUri);
 
 		isConnected = true;
 		console.log('✅ MongoDB connected successfully via Mongoose');
