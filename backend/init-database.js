@@ -43,21 +43,22 @@ async function initDatabase() {
 				email: adminEmail,
 				emailVerified: true,
 				username: adminUsername,
+				displayUsername: adminUsername, // Add displayUsername for username plugin
 				name: 'System Administrator',
 				role: 'admin'
 			});
 
 			await adminUser.save();
 
-		// Create credential account for password authentication
-		// For username login, accountId should be username not email
-		const adminAccount = new Account({
-			id: accountId,
-			userId: userId,
-			providerId: 'credential',
-			accountId: adminUsername, // Use username for username login
-			password: hashedPassword
-		});			await adminAccount.save();
+			// Create credential account for password authentication
+			// For username login, accountId should be username not email
+			const adminAccount = new Account({
+				id: accountId,
+				userId: userId,
+				providerId: 'credential',
+				accountId: adminUsername, // Use username for username login
+				password: hashedPassword
+			}); await adminAccount.save();
 
 			console.log('✅ Created admin user');
 			console.log(`   Email: ${adminEmail}`);
