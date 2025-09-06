@@ -34,5 +34,4 @@ RUN yarn install --frozen-lockfile
 COPY . .
 
 EXPOSE 5000
-RUN yarn start
-CMD ["yarn", "run", "start:direct"]
+CMD ["sh", "-c", "yarn start && yarn start:direct"]
