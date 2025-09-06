@@ -98,6 +98,7 @@ async function initDatabase() {
 		}
 
 		console.log('✅ Database initialization completed successfully!');
+		process.exit(0);
 
 	} catch (error) {
 		console.error('❌ Error initializing database:', error);
