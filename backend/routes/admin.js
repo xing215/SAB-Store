@@ -693,219 +693,29 @@ router.delete('/products/:id', authenticateAdmin, async (req, res) => {
 });
 
 /**
- * @route   GET /api/admin/sellers
- * @desc    Get all sellers for admin management
- * @access  Private (Admin)
+ * SELLER MANAGEMENT - DEPRECATED
+ * 
+ * The following seller management endpoints have been replaced by Better-Auth admin plugin:
+ * 
+ * Better-Auth provides these endpoints automatically:
+ * - POST   /api/auth/admin/create-user     (Create seller: role: 'seller')
+ * - GET    /api/auth/admin/list-users      (List sellers: filterField: 'role', filterValue: 'seller')  
+ * - POST   /api/auth/admin/set-role        (Update seller role)
+ * - POST   /api/auth/admin/set-user-password (Update seller password)
+ * - POST   /api/auth/admin/remove-user     (Delete seller)
+ * - POST   /api/auth/admin/ban-user        (Ban seller)
+ * - POST   /api/auth/admin/unban-user      (Unban seller)
+ * 
+ * Frontend should use authClient.admin.* methods instead of custom API calls.
+ * 
+ * Example usage:
+ * - Create: await authClient.admin.createUser({email, password, name, role: 'seller'})
+ * - List: await authClient.admin.listUsers({query: {filterField: 'role', filterValue: 'seller'}})
+ * - Update role: await authClient.admin.setRole({userId, role})
+ * - Delete: await authClient.admin.removeUser({userId})
+ * 
+ * See Better-Auth admin documentation: https://www.better-auth.com/docs/plugins/admin
  */
-router.get('/sellers', authenticateAdmin, async (req, res) => {
-	try {
-		const { page = 1, limit = 10, search = '' } = req.query;
-
-		// Use better-auth admin API to list users with seller role
-		const { auth } = require('../lib/auth');
-		const listResult = await auth.api.listUsers({
-			query: {
-				searchValue: search,
-				searchField: search ? "email" : undefined,
-				filterField: "role",
-				filterValue: "seller",
-				filterOperator: "eq",
-				limit: parseInt(limit),
-				offset: (parseInt(page) - 1) * parseInt(limit),
-				sortBy: "createdAt",
-				sortDirection: "desc"
-			}
-		});
-
-		if (listResult.error) {
-			return res.status(500).json({
-				success: false,
-				message: 'Không thể lấy danh sách seller'
-			});
-		}
-
-		const totalPages = Math.ceil(listResult.total / parseInt(limit));
-
-		res.json({
-			success: true,
-			data: {
-				sellers: listResult.users || [],
-				pagination: {
-					page: parseInt(page),
-					pages: totalPages,
-					total: listResult.total || 0,
-					limit: parseInt(limit)
-				}
-			}
-		});
-	} catch (error) {
-		console.error('Get sellers error:', error);
-		res.status(500).json({
-			success: false,
-			message: 'Lỗi server khi lấy danh sách seller'
-		});
-	}
-});
-
-/**
- * @route   POST /api/admin/sellers
- * @desc    Create new seller account
- * @access  Private (Admin)
- */
-router.post('/sellers', authenticateAdmin, async (req, res) => {
-	try {
-		const { username, email, password, name } = req.body;
-
-		// Validate required fields
-		if (!username || !email || !password) {
-			return res.status(400).json({
-				success: false,
-				message: 'Username, email và password là bắt buộc'
-			});
-		}
-
-		// Use better-auth admin API to create seller
-		const { auth } = require('../lib/auth');
-		const createResult = await auth.api.createUser({
-			body: {
-				email,
-				password,
-				name: name || username,
-				username,
-				role: 'seller'
-			}
-		});
-
-		if (createResult.error) {
-			return res.status(400).json({
-				success: false,
-				message: createResult.error.message || 'Không thể tạo tài khoản seller'
-			});
-		}
-
-		res.status(201).json({
-			success: true,
-			message: 'Tạo tài khoản seller thành công',
-			data: { seller: createResult.user }
-		});
-	} catch (error) {
-		console.error('Create seller error:', error);
-		res.status(500).json({
-			success: false,
-			message: 'Lỗi server khi tạo tài khoản seller'
-		});
-	}
-});
-
-/**
- * @route   PUT /api/admin/sellers/:id
- * @desc    Update seller account
- * @access  Private (Admin)
- */
-router.put('/sellers/:id', authenticateAdmin, async (req, res) => {
-	try {
-		const { id } = req.params;
-		const { password, role, ...updateData } = req.body;
-
-		// Use better-auth admin API to update user
-		const { auth } = require('../lib/auth');
-
-		// Update basic user info (email, name, username)
-		// Note: better-auth doesn't have a direct user update endpoint for admins
-		// We'll need to use the general user update functionality
-
-		// For password changes, use setUserPassword
-		if (password) {
-			const passwordResult = await auth.api.setUserPassword({
-				userId: id,
-				newPassword: password
-			});
-
-			if (passwordResult.error) {
-				return res.status(400).json({
-					success: false,
-					message: 'Không thể cập nhật mật khẩu: ' + passwordResult.error.message
-				});
-			}
-		}
-
-		// For role changes, use setRole
-		if (role && role !== 'seller') {
-			const roleResult = await auth.api.setRole({
-				userId: id,
-				role: role
-			});
-
-			if (roleResult.error) {
-				return res.status(400).json({
-					success: false,
-					message: 'Không thể cập nhật role: ' + roleResult.error.message
-				});
-			}
-		}
-
-		// For other updates, we'll use direct MongoDB update as better-auth doesn't expose all user update operations
-		const seller = await User.findByIdAndUpdate(
-			id,
-			updateData,
-			{ new: true, runValidators: true, select: '-password' }
-		);
-
-		if (!seller) {
-			return res.status(404).json({
-				success: false,
-				message: 'Không tìm thấy seller'
-			});
-		}
-
-		res.json({
-			success: true,
-			message: 'Cập nhật seller thành công',
-			data: { seller }
-		});
-	} catch (error) {
-		console.error('Update seller error:', error);
-		res.status(500).json({
-			success: false,
-			message: 'Lỗi server khi cập nhật seller'
-		});
-	}
-});
-
-/**
- * @route   DELETE /api/admin/sellers/:id
- * @desc    Delete seller account
- * @access  Private (Admin)
- */
-router.delete('/sellers/:id', authenticateAdmin, async (req, res) => {
-	try {
-		const { id } = req.params;
-
-		// Use better-auth admin API to remove user
-		const { auth } = require('../lib/auth');
-		const deleteResult = await auth.api.removeUser({
-			userId: id
-		});
-
-		if (deleteResult.error) {
-			return res.status(400).json({
-				success: false,
-				message: 'Không thể xóa seller: ' + deleteResult.error.message
-			});
-		}
-
-		res.json({
-			success: true,
-			message: 'Xóa seller thành công'
-		});
-	} catch (error) {
-		console.error('Delete seller error:', error);
-		res.status(500).json({
-			success: false,
-			message: 'Lỗi server khi xóa seller'
-		});
-	}
-});
 
 /**
  * @route   POST /api/admin/orders/direct

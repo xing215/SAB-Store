@@ -17,7 +17,7 @@ const SellerProtectedRoute = ({ children }) => {
 
 	if (error || !session || !session.user || (session.user.role !== 'seller' && session.user.role !== 'admin')) {
 		// Redirect to seller login page with the current location
-		return <Navigate to="/seller/login" state={{ from: location }} replace />;
+		return <Navigate to="/login" state={{ from: location }} replace />;
 	}
 
 	return children;

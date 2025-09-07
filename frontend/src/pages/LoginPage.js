@@ -1,12 +1,19 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import { authClient } from '../../lib/auth-client';
-import LoadingSpinner from '../../components/LoadingSpinner';
-import Logo from '../../components/Logo';
+import { authClient } from '../lib/auth-client';
+import LoadingSpinner from '../components/LoadingSpinner';
+import Logo from '../components/Logo';
 
-const AdminLoginPage = () => {
+const ROLE_REDIRECTS = {
+	admin: '/admin/dashboard',
+	seller: '/seller/dashboard'
+};
+
+const LoginPage = () => {
 	const navigate = useNavigate();
+	const location = useLocation();
+
 	const [formData, setFormData] = useState({
 		username: '',
 		password: ''
@@ -14,13 +21,18 @@ const AdminLoginPage = () => {
 	const [errors, setErrors] = useState({});
 	const [isLoading, setIsLoading] = useState(false);
 
-	// Redirect if already logged in
+	// Check if already logged in and redirect appropriately
 	useEffect(() => {
 		const checkSession = async () => {
 			try {
 				const { data: session } = await authClient.getSession();
-				if (session && session.user.role === 'admin') {
-					navigate('/admin/dashboard', { replace: true });
+				if (session && session.user) {
+					const userRole = session.user.role;
+					const redirectPath = ROLE_REDIRECTS[userRole];
+
+					if (redirectPath) {
+						navigate(redirectPath, { replace: true });
+					}
 				}
 			} catch (error) {
 				// No session or error getting session, stay on login page
@@ -64,6 +76,43 @@ const AdminLoginPage = () => {
 		return Object.keys(newErrors).length === 0;
 	};
 
+	const getErrorMessage = (error) => {
+		// Better Auth error handling with Vietnamese translations
+		if (!error) return 'Đăng nhập thất bại';
+
+		const { message, code } = error;
+
+		// Map common better-auth error codes to Vietnamese messages
+		const errorMessages = {
+			'INVALID_CREDENTIALS': 'Tên đăng nhập hoặc mật khẩu không chính xác',
+			'USER_NOT_FOUND': 'Tài khoản không tồn tại',
+			'INVALID_PASSWORD': 'Mật khẩu không chính xác',
+			'ACCOUNT_LOCKED': 'Tài khoản đã bị khóa',
+			'TOO_MANY_REQUESTS': 'Quá nhiều lần đăng nhập thất bại. Vui lòng thử lại sau',
+			'NETWORK_ERROR': 'Lỗi kết nối mạng. Vui lòng thử lại',
+			'SERVER_ERROR': 'Lỗi server. Vui lòng thử lại sau'
+		};
+
+		if (code && errorMessages[code]) {
+			return errorMessages[code];
+		}
+
+		// Fallback to message or generic error
+		if (message) {
+			// Handle some common English error messages
+			if (message.toLowerCase().includes('invalid') ||
+				message.toLowerCase().includes('credentials')) {
+				return 'Tên đăng nhập hoặc mật khẩu không chính xác';
+			}
+			if (message.toLowerCase().includes('not found')) {
+				return 'Tài khoản không tồn tại';
+			}
+			return message;
+		}
+
+		return 'Đăng nhập thất bại';
+	};
+
 	const handleSubmit = async (e) => {
 		e.preventDefault();
 
@@ -82,16 +131,33 @@ const AdminLoginPage = () => {
 			});
 
 			if (error) {
-				throw new Error(error.message || 'Đăng nhập thất bại');
+				throw error;
 			}
 
 			if (data && data.user) {
+				const userRole = data.user.role;
+
 				toast.success('Đăng nhập thành công!');
-				navigate('/admin/dashboard', { replace: true });
+
+				// Redirect based on user role automatically
+				const redirectPath = ROLE_REDIRECTS[userRole];
+
+				if (!redirectPath) {
+					toast.error('Tài khoản này không có quyền truy cập hệ thống');
+					await authClient.signOut();
+					return;
+				}
+
+				// Check if there's a redirect from location state
+				const from = location.state?.from?.pathname;
+				const finalRedirectPath = from || redirectPath;
+
+				navigate(finalRedirectPath, { replace: true });
 			}
 		} catch (error) {
 			console.error('Login error:', error);
-			toast.error(error.message || 'Đăng nhập thất bại');
+			const errorMessage = getErrorMessage(error);
+			toast.error(errorMessage);
 		} finally {
 			setIsLoading(false);
 		}
@@ -106,10 +172,10 @@ const AdminLoginPage = () => {
 						<Logo />
 					</Link>
 					<h2 className="mt-6 text-3xl font-bold text-gray-900">
-						Đăng nhập Admin
+						Đăng nhập hệ thống
 					</h2>
 					<p className="mt-2 text-sm text-gray-600">
-						Truy cập bảng điều khiển quản trị
+						Hệ thống sẽ tự động chuyển hướng dựa trên quyền của bạn
 					</p>
 				</div>
 			</div>
@@ -136,6 +202,7 @@ const AdminLoginPage = () => {
 										placeholder="Nhập tên đăng nhập"
 										className={`form-input pl-10 ${errors.username ? 'form-input-error' : ''}`}
 										autoComplete="username"
+										disabled={isLoading}
 									/>
 								</div>
 								{errors.username && (
@@ -164,6 +231,7 @@ const AdminLoginPage = () => {
 										placeholder="Nhập mật khẩu"
 										className={`form-input pl-10 ${errors.password ? 'form-input-error' : ''}`}
 										autoComplete="current-password"
+										disabled={isLoading}
 									/>
 								</div>
 								{errors.password && (
@@ -210,4 +278,4 @@ const AdminLoginPage = () => {
 	);
 };
 
-export default AdminLoginPage;
+export default LoginPage;

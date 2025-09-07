@@ -15,7 +15,7 @@ const ProtectedRoute = ({ children }) => {
 	}
 
 	if (error || !session || !session.user || session.user.role !== 'admin') {
-		return <Navigate to="/admin/login" replace />;
+		return <Navigate to="/login" replace />;
 	}
 
 	return children;

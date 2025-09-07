@@ -37,12 +37,8 @@ api.interceptors.response.use(
 			try {
 				await authClient.signOut();
 
-				// Redirect based on current path
-				if (window.location.pathname.startsWith('/admin') || window.location.pathname === '/dashboard') {
-					window.location.href = '/admin/login';
-				} else if (window.location.pathname.startsWith('/seller')) {
-					window.location.href = '/seller/login';
-				}
+				// Redirect to unified login page
+				window.location.href = '/login';
 			} catch (signOutError) {
 				console.error('Error signing out:', signOutError);
 			}
@@ -213,40 +209,129 @@ export const adminService = {
 		}
 	},
 
-	// Seller management
+	// Seller management - DEPRECATED
+	// These methods have been replaced by Better-Auth admin plugin
+	// Use authClient.admin.* methods instead:
+	// - authClient.admin.listUsers({query: {filterField: 'role', filterValue: 'seller'}})
+	// - authClient.admin.createUser({email, password, name, role: 'seller'})
+	// - authClient.admin.setRole({userId, role}) / authClient.admin.setUserPassword({userId, newPassword})
+	// - authClient.admin.removeUser({userId})
+	//
+	// These legacy methods are kept for backwards compatibility but should be migrated:
 	getSellers: async () => {
+		console.warn('DEPRECATED: Use authClient.admin.listUsers() with role filter instead');
 		try {
-			const response = await api.get('/admin/sellers');
-			return response.data;
+			// Import authClient here to avoid circular dependency
+			const { authClient } = await import('../lib/auth-client');
+			const result = await authClient.admin.listUsers({
+				query: {
+					filterField: 'role',
+					filterValue: 'seller',
+					filterOperator: 'eq',
+					limit: 100
+				}
+			});
+
+			if (result.error) {
+				throw new Error(result.error.message);
+			}
+
+			return {
+				success: true,
+				data: {
+					sellers: result.data.users || [],
+					pagination: {
+						total: result.data.total || 0
+					}
+				}
+			};
 		} catch (error) {
-			throw new Error(error.response?.data?.message || 'Lỗi khi lấy danh sách seller');
+			throw new Error(error.message || 'Lỗi khi lấy danh sách seller');
 		}
 	},
 
 	createSeller: async (sellerData) => {
+		console.warn('DEPRECATED: Use authClient.admin.createUser() instead');
 		try {
-			const response = await api.post('/admin/sellers', sellerData);
-			return response.data;
+			const { authClient } = await import('../lib/auth-client');
+			const result = await authClient.admin.createUser({
+				email: sellerData.email,
+				password: sellerData.password,
+				name: sellerData.name || sellerData.username,
+				username: sellerData.username,
+				role: 'seller'
+			});
+
+			if (result.error) {
+				throw new Error(result.error.message);
+			}
+
+			return {
+				success: true,
+				message: 'Tạo tài khoản seller thành công',
+				data: { seller: result.data }
+			};
 		} catch (error) {
-			throw new Error(error.response?.data?.message || 'Lỗi khi tạo seller');
+			throw new Error(error.message || 'Lỗi khi tạo seller');
 		}
 	},
 
 	updateSeller: async (id, sellerData) => {
+		console.warn('DEPRECATED: Use authClient.admin.setUserPassword() and authClient.admin.setRole() instead');
 		try {
-			const response = await api.put(`/admin/sellers/${id}`, sellerData);
-			return response.data;
+			const { authClient } = await import('../lib/auth-client');
+
+			// Update password if provided
+			if (sellerData.password) {
+				const passwordResult = await authClient.admin.setUserPassword({
+					userId: id,
+					newPassword: sellerData.password
+				});
+
+				if (passwordResult.error) {
+					throw new Error(passwordResult.error.message);
+				}
+			}
+
+			// Update role if provided and different from seller
+			if (sellerData.role && sellerData.role !== 'seller') {
+				const roleResult = await authClient.admin.setRole({
+					userId: id,
+					role: sellerData.role
+				});
+
+				if (roleResult.error) {
+					throw new Error(roleResult.error.message);
+				}
+			}
+
+			return {
+				success: true,
+				message: 'Cập nhật seller thành công'
+			};
 		} catch (error) {
-			throw new Error(error.response?.data?.message || 'Lỗi khi cập nhật seller');
+			throw new Error(error.message || 'Lỗi khi cập nhật seller');
 		}
 	},
 
 	deleteSeller: async (id) => {
+		console.warn('DEPRECATED: Use authClient.admin.removeUser() instead');
 		try {
-			const response = await api.delete(`/admin/sellers/${id}`);
-			return response.data;
+			const { authClient } = await import('../lib/auth-client');
+			const result = await authClient.admin.removeUser({
+				userId: id
+			});
+
+			if (result.error) {
+				throw new Error(result.error.message);
+			}
+
+			return {
+				success: true,
+				message: 'Xóa seller thành công'
+			};
 		} catch (error) {
-			throw new Error(error.response?.data?.message || 'Lỗi khi xóa seller');
+			throw new Error(error.message || 'Lỗi khi xóa seller');
 		}
 	},
 
