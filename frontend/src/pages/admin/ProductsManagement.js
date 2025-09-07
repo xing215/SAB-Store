@@ -353,7 +353,7 @@ const ProductsManagement = () => {
                     URL hình ảnh
                   </label>
                   <input
-                    type="url"
+                    type="text"
                     name="image"
                     value={formData.image}
                     onChange={handleInputChange}
