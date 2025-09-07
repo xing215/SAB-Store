@@ -69,14 +69,14 @@ services:
       dockerfile: Dockerfile
       args:
         - NODE_ENV=production
-        - REACT_APP_API_URL=http://localhost:5000/api
+        - REACT_APP_API_URL=http://localhost:5000
         - REACT_APP_BANK_NAME_ID=your-bank-name-id-here
         - REACT_APP_ACCOUNT_NO=ACCOUNT_NUMBER
     pull_policy: always
     container_name: sablanyard_frontend
     restart: unless-stopped
     ports:
-      - "3000:3000"
+      - "3000:80"
     volumes:
       - ./frontend:/app
       - /app/node_modules
