@@ -64,44 +64,6 @@ router.get('/', async (req, res) => {
 });
 
 /**
- * @route   GET /api/products/:id
- * @desc    Get single product by ID
- * @access  Public
- */
-router.get('/:id', async (req, res) => {
-	try {
-		const product = await Product.findById(req.params.id);
-
-		if (!product) {
-			return res.status(404).json({
-				success: false,
-				message: 'Không tìm thấy sản phẩm'
-			});
-		}
-
-		res.json({
-			success: true,
-			data: product
-		});
-
-	} catch (error) {
-		console.error('Error fetching product:', error);
-
-		if (error.name === 'CastError') {
-			return res.status(400).json({
-				success: false,
-				message: 'ID sản phẩm không hợp lệ'
-			});
-		}
-
-		res.status(500).json({
-			success: false,
-			message: 'Lỗi server khi lấy thông tin sản phẩm'
-		});
-	}
-});
-
-/**
  * @route   GET /api/products/direct-sales
  * @desc    Get products available for direct sales (filters by isActive instead of available)
  * @access  Public
@@ -155,6 +117,44 @@ router.get('/direct-sales', async (req, res) => {
 		res.status(500).json({
 			success: false,
 			message: 'Lỗi server khi lấy danh sách sản phẩm bán trực tiếp'
+		});
+	}
+});
+
+/**
+ * @route   GET /api/products/:id
+ * @desc    Get single product by ID
+ * @access  Public
+ */
+router.get('/:id', async (req, res) => {
+	try {
+		const product = await Product.findById(req.params.id);
+
+		if (!product) {
+			return res.status(404).json({
+				success: false,
+				message: 'Không tìm thấy sản phẩm'
+			});
+		}
+
+		res.json({
+			success: true,
+			data: product
+		});
+
+	} catch (error) {
+		console.error('Error fetching product:', error);
+
+		if (error.name === 'CastError') {
+			return res.status(400).json({
+				success: false,
+				message: 'ID sản phẩm không hợp lệ'
+			});
+		}
+
+		res.status(500).json({
+			success: false,
+			message: 'Lỗi server khi lấy thông tin sản phẩm'
 		});
 	}
 });
