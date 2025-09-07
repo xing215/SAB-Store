@@ -1,15 +1,10 @@
 const { connectDB } = require('./lib/database');
-const { hashPassword } = require('better-auth/crypto');
+const { auth } = require('./lib/auth');
 const Product = require('./models/Product');
 const User = require('./models/User');
 const Account = require('./models/Account');
 const crypto = require('crypto');
 require('dotenv').config();
-
-// Generate a UUID v4-like string
-function generateId() {
-	return crypto.randomBytes(16).toString('hex').replace(/(.{8})(.{4})(.{4})(.{4})(.{12})/, '$1-$2-$3-$4-$5');
-}
 
 async function initDatabase() {
 	try {
@@ -28,44 +23,32 @@ async function initDatabase() {
 		});
 
 		if (existingUser) {
-			console.log('ℹ️  Admin user already exists');
-		} else {
-			// Use better-auth crypto hashPassword function
-			const hashedPassword = await hashPassword(adminPassword);
-
-			// Generate unique IDs
-			const userId = generateId();
-			const accountId = generateId();
-
-			// Create admin user directly in database
-			const adminUser = new User({
-				id: userId,
-				email: adminEmail,
-				emailVerified: true,
-				username: adminUsername,
-				displayUsername: adminUsername, // Add displayUsername for username plugin
-				name: 'System Administrator',
-				role: 'admin'
-			});
-
-			await adminUser.save();
-
-			// Create credential account for password authentication
-			// For username login, accountId should be username not email
-			const adminAccount = new Account({
-				id: accountId,
-				userId: userId,
-				providerId: 'credential',
-				accountId: adminUsername, // Use username for username login
-				password: hashedPassword
-			}); await adminAccount.save();
-
-			console.log('✅ Created admin user');
-			console.log(`   Email: ${adminEmail}`);
-			console.log(`   Username: ${adminUsername}`);
-			console.log('   Password: [HIDDEN]');
-			console.log('   Role: admin');
+			console.log('⚠️ Existing admin user found');
 		}
+
+		const data = await auth.api.createUser({
+			body: {
+				email: adminEmail,
+				name: 'System Administrator',
+				password: adminPassword,
+				role: 'admin',
+				data: {
+					username: adminUsername,
+					displayUsername: 'Admin',
+				}
+			},
+		});
+
+		// CHECK ADMIN ACCOUNT
+		const adminAccount = await Account.findOne({ userId: adminUser._id.toString()});
+		console.log('✅ Admin account created:');
+		console.log(`JSON: ${JSON.stringify(adminAccount, null, 2)}`);
+
+		// log all accounts and users in the database
+		const allUsers = await User.find();
+		const allAccounts = await Account.find();
+		console.log(`All users in DB: ${JSON.stringify(allUsers, null, 2)}`);
+		console.log(`All accounts in DB: ${JSON.stringify(allAccounts, null, 2)}`);
 
 		// Create sample products using Mongoose
 		const existingProducts = await Product.countDocuments();
