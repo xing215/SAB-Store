@@ -2,11 +2,6 @@ const mongoose = require('mongoose');
 
 // Better-auth Account schema
 const accountSchema = new mongoose.Schema({
-	id: {
-		type: String,
-		required: true,
-		unique: true
-	},
 	userId: {
 		type: String,
 		required: true,

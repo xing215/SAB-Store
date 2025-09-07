@@ -83,9 +83,11 @@ const SellersManagement = () => {
 				const { error } = await authClient.admin.createUser({
 					email: formData.email,
 					password: formData.password,
-					username: formData.username,
 					name: formData.name,
-					role: 'seller'
+					role: 'seller',
+					data: {
+						username: formData.username
+					}
 				});
 
 				if (error) {

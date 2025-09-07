@@ -25,26 +25,27 @@ async function initDatabase() {
 		if (existingUser) {
 			console.log('⚠️ Existing admin user found');
 		}
+		else {
 
-		await auth.api.createUser({
-			body: {
-				email: adminEmail,
-				name: 'System Administrator',
-				password: adminPassword,
-				role: 'admin',
-				data: {
-					username: adminUsername,
-					displayUsername: 'Admin',
-				}
-			},
-		});
+			await auth.api.createUser({
+				body: {
+					email: adminEmail,
+					name: 'System Administrator',
+					password: adminPassword,
+					role: 'admin',
+					data: {
+						username: adminUsername,
+						displayUsername: 'Admin',
+					}
+				},
+			});
+		}
 
 		// log all accounts and users in the database
 		const allUsers = await User.find();
 		const allAccounts = await Account.find();
 		console.log(`All users in DB: ${JSON.stringify(allUsers, null, 2)}`);
 		console.log(`All accounts in DB: ${JSON.stringify(allAccounts, null, 2)}`);
-
 		// Create sample products using Mongoose
 		const existingProducts = await Product.countDocuments();
 
