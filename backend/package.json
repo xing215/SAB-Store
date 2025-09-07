@@ -9,7 +9,6 @@
 		"dev": "nodemon server.js",
 		"test": "jest",
 		"init-db": "node init-database.js",
-		"generate-schema": "node generate-init-mongo.js",
 		"debug": "node check-env.js && node start.js"
 	},
 	"dependencies": {

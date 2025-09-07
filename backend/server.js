@@ -45,15 +45,12 @@ app.use(cors({
 
 app.use('/api', limiter);
 
-// Better-auth API routes - Must be before express.json() middleware
-app.all('/api/auth/*', toNodeHandler(auth));
-
-// Body parsing middleware - Applied AFTER Better Auth handler
+// Body parsing middleware - Must be BEFORE Better Auth handler
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-console.log('✅ Better-auth initialized successfully');
-
+// Better-auth API routes - Must be AFTER body parsing middleware
+app.all('/api/auth/*', toNodeHandler(auth));
 // Routes - temporarily disabled for auth testing
 app.use('/api/products', require('./routes/products'));
 app.use('/api/orders', require('./routes/orders'));
