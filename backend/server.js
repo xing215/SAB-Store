@@ -112,6 +112,27 @@ app.use('/api', limiter);
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
+// Global CORS headers middleware for all responses
+app.use((req, res, next) => {
+	const allowedOrigins = [
+		...(process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(',').map(o => o.trim()) : []),
+		'https://store.sab.edu.vn',
+		'https://api.store.sab.edu.vn',
+		'http://localhost:3000',
+		'http://127.0.0.1:3000'
+	];
+
+	const origin = req.headers.origin;
+	if (!origin || allowedOrigins.includes(origin)) {
+		res.header('Access-Control-Allow-Origin', origin || '*');
+		res.header('Access-Control-Allow-Credentials', 'true');
+		res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+		res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, Cookie, X-Requested-With');
+	}
+	
+	next();
+});
+
 // Better-auth API routes - Must be AFTER body parsing middleware
 app.all('/api/auth/*', toNodeHandler(auth));
 // Routes - temporarily disabled for auth testing
@@ -154,7 +175,11 @@ app.put('/api/test-cors', (req, res) => {
 
 // Error handling middleware
 app.use((err, req, res, next) => {
-	console.error(err.stack);
+	console.error('[ERROR] Unhandled error:', err);
+	console.error('[ERROR] Stack trace:', err.stack);
+	console.error('[ERROR] Request URL:', req.url);
+	console.error('[ERROR] Request method:', req.method);
+	console.error('[ERROR] Request origin:', req.headers.origin);
 
 	// Ensure CORS headers are present in error responses
 	const allowedOrigins = [
@@ -173,9 +198,15 @@ app.use((err, req, res, next) => {
 		res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, Cookie, X-Requested-With');
 	}
 
+	// Send appropriate error response
 	res.status(500).json({
-		message: 'Something went wrong!',
-		error: process.env.NODE_ENV === 'development' ? err.message : {}
+		success: false,
+		message: process.env.NODE_ENV === 'development' ? err.message : 'Internal server error',
+		error: process.env.NODE_ENV === 'development' ? {
+			message: err.message,
+			stack: err.stack,
+			name: err.name
+		} : {}
 	});
 });
 
