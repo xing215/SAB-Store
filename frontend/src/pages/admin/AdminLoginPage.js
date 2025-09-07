@@ -86,12 +86,6 @@ const AdminLoginPage = () => {
 			}
 
 			if (data && data.user) {
-				if (data.user.role !== 'admin') {
-					toast.error('Tài khoản này không có quyền truy cập admin');
-					await authClient.signOut();
-					return;
-				}
-
 				toast.success('Đăng nhập thành công!');
 				navigate('/admin/dashboard', { replace: true });
 			}
