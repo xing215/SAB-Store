@@ -76,9 +76,6 @@ const corsOptions = {
 			'http://127.0.0.1:3000'  // Development
 		];
 
-		console.log(`[CORS] Request from origin: ${origin}`);
-		console.log(`[CORS] Allowed origins: ${allowedOrigins.join(', ')}`);
-
 		if (allowedOrigins.includes(origin)) {
 			return callback(null, true);
 		}
@@ -98,7 +95,6 @@ app.use(cors(corsOptions));
 
 // Handle preflight OPTIONS requests explicitly
 app.options('*', (req, res) => {
-	console.log(`[CORS] OPTIONS request from origin: ${req.headers.origin}`);
 	res.header('Access-Control-Allow-Origin', req.headers.origin);
 	res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
 	res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, Cookie, X-Requested-With');
@@ -129,7 +125,7 @@ app.use((req, res, next) => {
 		res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
 		res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, Cookie, X-Requested-With');
 	}
-	
+
 	next();
 });
 
