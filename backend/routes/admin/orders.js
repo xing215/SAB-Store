@@ -4,7 +4,7 @@ const Product = require('../../models/Product');
 const { authenticateAdmin } = require('../../middleware/better-auth');
 const { validateOrderUpdate } = require('../../middleware/validation');
 const { getPaginationInfo } = require('../../utils/helpers');
-const { pushToAppScript } = require('../../utils/appscript');
+const { sendOrderToAppScript } = require('../../utils/appscript');
 const router = express.Router();
 
 /**
@@ -190,7 +190,7 @@ router.put('/:id', authenticateAdmin, validateOrderUpdate, async (req, res) => {
 		};
 		console.log('Push to AppScript:', appscriptData);
 		setImmediate(() => {
-			pushToAppScript(appscriptData).catch(err => {
+			sendOrderToAppScript(appscriptData).catch(err => {
 				console.error('AppScript push error:', err.message);
 			});
 		});

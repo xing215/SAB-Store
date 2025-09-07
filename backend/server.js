@@ -108,15 +108,6 @@ app.options('*', (req, res) => {
 
 app.use('/api', limiter);
 
-// Request logging middleware - Add this to debug what requests reach the server
-app.use((req, res, next) => {
-	console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
-	console.log(`[DEBUG] Origin: ${req.headers.origin}`);
-	console.log(`[DEBUG] User-Agent: ${req.headers['user-agent']}`);
-	console.log(`[DEBUG] Headers:`, JSON.stringify(req.headers, null, 2));
-	next();
-});
-
 // Body parsing middleware - Must be BEFORE Better Auth handler
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
