@@ -767,11 +767,13 @@ router.post('/sellers', authenticateAdmin, async (req, res) => {
 		// Use better-auth admin API to create seller
 		const { auth } = require('../lib/auth');
 		const createResult = await auth.api.createUser({
-			email,
-			password,
-			name: name || username,
-			username,
-			role: 'seller'
+			body: {
+				email,
+				password,
+				name: name || username,
+				username,
+				role: 'seller'
+			}
 		});
 
 		if (createResult.error) {

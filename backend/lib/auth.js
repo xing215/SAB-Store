@@ -1,7 +1,7 @@
 const { betterAuth } = require("better-auth");
 const { MongoClient } = require("mongodb");
 const { mongodbAdapter } = require("better-auth/adapters/mongodb");
-const { admin } = require("better-auth/plugins");
+const { admin, openAPI } = require("better-auth/plugins");
 const { username } = require("better-auth/plugins");
 const { jwt } = require("better-auth/plugins");
 
@@ -28,6 +28,7 @@ const auth = betterAuth({
 		sendEmailVerificationOnSignUp: false,
 	},
 	plugins: [
+		openAPI(),
 		username({
 			minUsernameLength: 3,
 			maxUsernameLength: 30,
@@ -60,12 +61,21 @@ const auth = betterAuth({
 	},
 	user: {
 		additionalFields: {
+			username: {
+				type: "string",
+				required: true,
+			},
+			displayUsername: {
+				type: "string",
+				required: false,
+			},
 			role: {
 				type: "string",
 				defaultValue: "user",
 				required: false,
 			},
 		},
+		modelName: "user",
 	},
 });
 

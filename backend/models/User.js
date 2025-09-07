@@ -2,11 +2,7 @@ const mongoose = require('mongoose');
 
 // Better-auth User schema
 const userSchema = new mongoose.Schema({
-	id: {
-		type: String,
-		required: true,
-		unique: true
-	},
+	// Remove id field - let better-auth handle it automatically
 	email: {
 		type: String,
 		required: true,
