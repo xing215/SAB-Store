@@ -59,6 +59,16 @@ export const productService = {
 		}
 	},
 
+	// Get products for direct sales (filters by isActive instead of available)
+	getDirectSalesProducts: async (params = {}) => {
+		try {
+			const response = await api.get('/products/direct-sales', { params });
+			return response.data;
+		} catch (error) {
+			throw new Error(error.response?.data?.message || 'Lỗi khi lấy danh sách sản phẩm bán trực tiếp');
+		}
+	},
+
 	// Get single product
 	getProduct: async (id) => {
 		try {
