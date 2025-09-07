@@ -20,7 +20,13 @@ const auth = betterAuth({
 	database: mongodbAdapter(db),
 	baseURL: process.env.BASE_URL || "http://localhost:5000",
 	secret: process.env.JWT_SECRET,
-	trustedOrigins: (process.env.CORS_ORIGIN || "http://localhost:3000").split(',').map(origin => origin.trim()),
+	trustedOrigins: [
+		...(process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(',').map(origin => origin.trim()) : []),
+		'https://store.sab.edu.vn',
+		'https://api.store.sab.edu.vn',
+		'http://localhost:3000',
+		'http://127.0.0.1:3000'
+	],
 	emailAndPassword: {
 		enabled: true,
 		minPasswordLength: 6,

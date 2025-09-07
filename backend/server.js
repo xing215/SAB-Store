@@ -39,7 +39,11 @@ const limiter = rateLimit({
 	handler: (req, res) => {
 		// Add CORS headers to rate limit response
 		const allowedOrigins = [
-			process.env.CORS_ORIGIN
+			...(process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(',').map(o => o.trim()) : []),
+			'https://store.sab.edu.vn',
+			'https://api.store.sab.edu.vn',
+			'http://localhost:3000',
+			'http://127.0.0.1:3000'
 		];
 
 		const origin = req.headers.origin;
@@ -63,9 +67,17 @@ const corsOptions = {
 		// Allow requests with no origin (like mobile apps or curl requests)
 		if (!origin) return callback(null, true);
 
+		// Support multiple origins from environment variable (comma-separated)
 		const allowedOrigins = [
-			process.env.CORS_ORIGIN 
+			...(process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(',').map(o => o.trim()) : []),
+			'https://store.sab.edu.vn',
+			'https://api.store.sab.edu.vn',
+			'http://localhost:3000', // Development
+			'http://127.0.0.1:3000'  // Development
 		];
+
+		console.log(`[CORS] Request from origin: ${origin}`);
+		console.log(`[CORS] Allowed origins: ${allowedOrigins.join(', ')}`);
 
 		if (allowedOrigins.includes(origin)) {
 			return callback(null, true);
@@ -155,11 +167,11 @@ app.use((err, req, res, next) => {
 
 	// Ensure CORS headers are present in error responses
 	const allowedOrigins = [
-		process.env.CORS_ORIGIN || 'http://localhost:3000',
-		'http://localhost:3000',
+		...(process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(',').map(o => o.trim()) : []),
 		'https://store.sab.edu.vn',
-		'http://127.0.0.1:3000',
-		'http://localhost:3001'
+		'https://api.store.sab.edu.vn',
+		'http://localhost:3000',
+		'http://127.0.0.1:3000'
 	];
 
 	const origin = req.headers.origin;
@@ -180,11 +192,11 @@ app.use((err, req, res, next) => {
 app.use('*', (req, res) => {
 	// Ensure CORS headers are present in 404 responses
 	const allowedOrigins = [
-		process.env.CORS_ORIGIN || 'http://localhost:3000',
-		'http://localhost:3000',
+		...(process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(',').map(o => o.trim()) : []),
 		'https://store.sab.edu.vn',
-		'http://127.0.0.1:3000',
-		'http://localhost:3001'
+		'https://api.store.sab.edu.vn',
+		'http://localhost:3000',
+		'http://127.0.0.1:3000'
 	];
 
 	const origin = req.headers.origin;
