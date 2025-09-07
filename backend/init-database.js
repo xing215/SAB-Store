@@ -26,7 +26,7 @@ async function initDatabase() {
 			console.log('⚠️ Existing admin user found');
 		}
 
-		const data = await auth.api.createUser({
+		await auth.api.createUser({
 			body: {
 				email: adminEmail,
 				name: 'System Administrator',
@@ -38,11 +38,6 @@ async function initDatabase() {
 				}
 			},
 		});
-
-		// CHECK ADMIN ACCOUNT
-		const adminAccount = await Account.findOne({ userId: adminUser._id.toString()});
-		console.log('✅ Admin account created:');
-		console.log(`JSON: ${JSON.stringify(adminAccount, null, 2)}`);
 
 		// log all accounts and users in the database
 		const allUsers = await User.find();
