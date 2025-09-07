@@ -1,6 +1,7 @@
 import { createAuthClient } from "better-auth/react";
 import { adminClient } from "better-auth/client/plugins";
 import { usernameClient } from "better-auth/client/plugins";
+import { customSessionClient } from "better-auth/client/plugins";
 
 const apiUrl = process.env.REACT_APP_API_URL || "http://localhost:5000";
 const authBaseUrl = `${apiUrl}/api/auth`;
@@ -10,6 +11,7 @@ export const authClient = createAuthClient({
 	plugins: [
 		usernameClient(),
 		adminClient(),
+		customSessionClient(),
 	],
 });
 

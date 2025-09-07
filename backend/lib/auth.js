@@ -4,6 +4,7 @@ const { mongodbAdapter } = require("better-auth/adapters/mongodb");
 const { admin, openAPI } = require("better-auth/plugins");
 const { username } = require("better-auth/plugins");
 const { jwt } = require("better-auth/plugins");
+const { customSession } = require("better-auth/plugins");
 
 // Get MongoDB URI from environment variables
 const MONGODB_URI = process.env.MONGODB_URI;
@@ -37,6 +38,15 @@ const auth = betterAuth({
 			defaultRole: "user",
 			adminRoles: ["admin"],
 			adminUserIds: [],
+		}),
+		customSession(async ({ user, session }) => {
+			return {
+				user: {
+					...user,
+					role: user.role, // Ensure role is included in session
+				},
+				session
+			};
 		}),
 		jwt({
 			jwt: {

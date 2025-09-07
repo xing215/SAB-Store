@@ -46,7 +46,7 @@ const AdminLayout = ({ children }) => {
 						{/* Logo */}
 						<div className="flex items-center space-x-4">
 							<Link
-								to="/"
+								to="/admin/dashboard"
 								className="flex items-center space-x-3 text-xl font-bold text-blue-800 hover:text-blue-900"
 							>
 								<Logo size="md" />

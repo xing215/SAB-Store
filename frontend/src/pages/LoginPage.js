@@ -25,9 +25,30 @@ const LoginPage = () => {
 	useEffect(() => {
 		const checkSession = async () => {
 			try {
-				const { data: session } = await authClient.getSession();
+				let jwtToken = null;
+				const { data: session } = await authClient.getSession({
+					fetchOptions: {
+						onSuccess: (ctx) => {
+							jwtToken = ctx.response.headers.get("set-auth-jwt");
+						}
+					}
+				});
+
 				if (session && session.user) {
-					const userRole = session.user.role;
+					let userRole = session.user.role;
+
+					// If role not in session, try to extract from JWT payload
+					if (!userRole && jwtToken) {
+						try {
+							// Decode JWT payload (middle part of JWT)
+							const payload = JSON.parse(atob(jwtToken.split('.')[1]));
+							userRole = payload.role;
+						} catch (jwtError) {
+							console.error('Failed to decode JWT:', jwtError);
+						}
+					}
+
+					console.log('Session user role:', userRole);
 					const redirectPath = ROLE_REDIRECTS[userRole];
 
 					if (redirectPath) {
@@ -130,12 +151,42 @@ const LoginPage = () => {
 				password: formData.password,
 			});
 
+			console.log('Sign in response data:', data);
+			console.log('Sign in response error:', error);
+
 			if (error) {
 				throw error;
 			}
 
 			if (data && data.user) {
-				const userRole = data.user.role;
+				console.log('User from sign in:', data.user);
+				let userRole = data.user.role;
+
+				// If role not available in data.user, get session with JWT
+				if (!userRole) {
+					try {
+						let jwtToken = null;
+						const { data: session } = await authClient.getSession({
+							fetchOptions: {
+								onSuccess: (ctx) => {
+									jwtToken = ctx.response.headers.get("set-auth-jwt");
+								}
+							}
+						});
+
+						if (session && session.user && session.user.role) {
+							userRole = session.user.role;
+						} else if (jwtToken) {
+							// Decode JWT payload to extract role
+							const payload = JSON.parse(atob(jwtToken.split('.')[1]));
+							userRole = payload.role;
+						}
+					} catch (jwtError) {
+						console.error('Failed to get role from session/JWT:', jwtError);
+					}
+				}
+
+				console.log('User role from sign in:', userRole);
 
 				toast.success('Đăng nhập thành công!');
 

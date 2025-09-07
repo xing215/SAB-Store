@@ -72,7 +72,7 @@ function App() {
 						<Route path="/admin/direct-sales" element={
 							<ProtectedRoute>
 								<AdminLayout>
-									{/* <DirectSalesPage /> */}
+									<DirectSalesPage />
 								</AdminLayout>
 							</ProtectedRoute>
 						} />
