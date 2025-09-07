@@ -583,7 +583,9 @@ router.post('/products', authenticateAdmin, async (req, res) => {
 			description,
 			price,
 			category,
+			image,
 			imageUrl,
+			available,
 			isActive,
 			stockQuantity,
 			minOrderQuantity
@@ -597,12 +599,23 @@ router.post('/products', authenticateAdmin, async (req, res) => {
 			});
 		}
 
+		// Use image field from frontend (maps to required schema field)
+		const imageField = image || imageUrl;
+		if (!imageField) {
+			return res.status(400).json({
+				success: false,
+				message: 'Hình ảnh sản phẩm là bắt buộc'
+			});
+		}
+
 		const product = new Product({
 			name,
 			description,
 			price,
 			category,
-			imageUrl,
+			image: imageField,
+			imageUrl: imageField,
+			available: available !== undefined ? available : true,
 			isActive: isActive !== undefined ? isActive : true,
 			stockQuantity: stockQuantity || 0,
 			minOrderQuantity: minOrderQuantity || 1
@@ -617,6 +630,24 @@ router.post('/products', authenticateAdmin, async (req, res) => {
 		});
 	} catch (error) {
 		console.error('Create product error:', error);
+		
+		// Handle validation errors
+		if (error.name === 'ValidationError') {
+			const errorMessages = Object.values(error.errors).map(err => err.message);
+			return res.status(400).json({
+				success: false,
+				message: errorMessages.join(', ')
+			});
+		}
+
+		// Handle duplicate key errors
+		if (error.code === 11000) {
+			return res.status(400).json({
+				success: false,
+				message: 'Sản phẩm với thông tin này đã tồn tại'
+			});
+		}
+
 		res.status(500).json({
 			success: false,
 			message: 'Lỗi server khi tạo sản phẩm'
@@ -632,7 +663,14 @@ router.post('/products', authenticateAdmin, async (req, res) => {
 router.put('/products/:id', authenticateAdmin, async (req, res) => {
 	try {
 		const { id } = req.params;
-		const updateData = req.body;
+		const updateData = { ...req.body };
+
+		// Handle image field mapping (frontend sends 'image', model expects both 'image' and 'imageUrl')
+		if (updateData.image) {
+			updateData.imageUrl = updateData.image;
+		} else if (updateData.imageUrl) {
+			updateData.image = updateData.imageUrl;
+		}
 
 		const product = await Product.findByIdAndUpdate(
 			id,
@@ -654,6 +692,32 @@ router.put('/products/:id', authenticateAdmin, async (req, res) => {
 		});
 	} catch (error) {
 		console.error('Update product error:', error);
+		
+		// Handle validation errors
+		if (error.name === 'ValidationError') {
+			const errorMessages = Object.values(error.errors).map(err => err.message);
+			return res.status(400).json({
+				success: false,
+				message: errorMessages.join(', ')
+			});
+		}
+
+		// Handle cast errors (invalid ID)
+		if (error.name === 'CastError') {
+			return res.status(400).json({
+				success: false,
+				message: 'ID sản phẩm không hợp lệ'
+			});
+		}
+
+		// Handle duplicate key errors
+		if (error.code === 11000) {
+			return res.status(400).json({
+				success: false,
+				message: 'Sản phẩm với thông tin này đã tồn tại'
+			});
+		}
+
 		res.status(500).json({
 			success: false,
 			message: 'Lỗi server khi cập nhật sản phẩm'
