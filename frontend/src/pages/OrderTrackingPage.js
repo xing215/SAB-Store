@@ -267,7 +267,7 @@ const OrderTrackingPage = () => {
                     <div className="mb-4">
                       <h3 className="text-xl font-bold text-red-700 mb-2">
                         <i className="fas fa-exclamation-triangle mr-2"></i>
-                        Thanh toán đơn đặt hàng.
+                        Chờ xác nhận từ người bán
                       </h3>
                       <p className="text-red-600 text-sm">
                         Để được xử lý nhanh nhất, bạn vui lòng thanh toán trong vòng 1 giờ
