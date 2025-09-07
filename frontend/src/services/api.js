@@ -382,6 +382,17 @@ export const adminService = {
 			console.error('API Error - createDirectOrder:', error.response?.data || error.message);
 			throw error;
 		}
+	},
+
+	// Delete all orders (admin only - DANGEROUS)
+	deleteAllOrders: async () => {
+		try {
+			const response = await api.delete('/admin/orders');
+			return response.data;
+		} catch (error) {
+			console.error('API Error - deleteAllOrders:', error.response?.data || error.message);
+			throw new Error(error.response?.data?.message || 'Lỗi khi xóa toàn bộ đơn hàng');
+		}
 	}
 };
 

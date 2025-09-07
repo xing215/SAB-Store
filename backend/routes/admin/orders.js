@@ -227,6 +227,81 @@ router.put('/:id', authenticateAdmin, validateOrderUpdate, async (req, res) => {
 });
 
 /**
+ * @route   DELETE /api/admin/orders
+ * @desc    Delete all orders (DANGEROUS - Admin only)
+ * @access  Private (Admin)
+ */
+router.delete('/', authenticateAdmin, async (req, res) => {
+	try {
+		console.log('🚨 DELETE ALL ORDERS Request:', {
+			admin: req.admin.username,
+			timestamp: new Date().toISOString(),
+			userAgent: req.get('User-Agent')
+		});
+
+		// Count total orders before deletion for reporting
+		const totalCount = await Order.countDocuments();
+
+		if (totalCount === 0) {
+			return res.json({
+				success: true,
+				message: 'Không có đơn hàng nào để xóa',
+				data: {
+					deletedCount: 0,
+					totalCount: 0
+				}
+			});
+		}
+
+		console.log(`📊 Found ${totalCount} orders to delete`);
+
+		// Perform bulk deletion
+		const result = await Order.deleteMany({});
+
+		console.log('✅ Bulk deletion completed:', {
+			deletedCount: result.deletedCount,
+			acknowledged: result.acknowledged,
+			admin: req.admin.username
+		});
+
+		// Log the dangerous operation
+		console.warn('🔥 CRITICAL OPERATION - ALL ORDERS DELETED:', {
+			deletedCount: result.deletedCount,
+			performedBy: req.admin.username,
+			timestamp: new Date().toISOString(),
+			originalTotal: totalCount
+		});
+
+		res.json({
+			success: true,
+			message: `Đã xóa thành công ${result.deletedCount} đơn hàng`,
+			data: {
+				deletedCount: result.deletedCount,
+				totalCount: totalCount,
+				performedBy: req.admin.username,
+				timestamp: new Date().toISOString()
+			}
+		});
+
+	} catch (error) {
+		console.error('💥 Error deleting all orders:', error);
+
+		// Log the failed dangerous operation
+		console.error('🔥 CRITICAL OPERATION FAILED - DELETE ALL ORDERS:', {
+			error: error.message,
+			admin: req.admin.username,
+			timestamp: new Date().toISOString()
+		});
+
+		res.status(500).json({
+			success: false,
+			message: 'Lỗi server khi xóa đơn hàng',
+			error: process.env.NODE_ENV === 'development' ? error.message : undefined
+		});
+	}
+});
+
+/**
  * @route   POST /api/admin/orders/direct
  * @desc    Create direct sale order (admin)
  * @access  Private (Admin)
