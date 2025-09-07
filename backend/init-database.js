@@ -54,7 +54,7 @@ async function initDatabase() {
 				{
 					name: "Áo thun SAB",
 					price: 150000,
-					image: "https://example.com/image.jpg",
+					image: "/fallback-product.png",
 					description: "Áo thun chất lượng cao với logo SAB",
 					status: "active",
 					category: "Đồ mặc",
@@ -63,7 +63,7 @@ async function initDatabase() {
 				{
 					name: "Mũ SAB",
 					price: 100000,
-					image: "https://example.com/image.jpg",
+					image: "/fallback-product.png",
 					description: "Mũ snapback phong cách với logo SAB",
 					status: "active",
 					category: "Phụ kiện",
