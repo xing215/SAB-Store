@@ -339,6 +339,7 @@ const SellerDashboard = () => {
 											<div className="text-sm text-gray-900">{order.fullName}</div>
 											<div className="text-sm text-gray-500">{order.studentId}</div>
 											<div className="text-sm text-gray-500">{order.email}</div>
+											<div className="text-sm text-gray-500">{order.phoneNumber}</div>
 										</td>
 										<td className="px-6 py-4">
 											<div className="text-sm text-gray-900">

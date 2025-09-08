@@ -62,6 +62,7 @@ router.get('/orders/excel', authenticateAdmin, async (req, res) => {
 			{ header: 'Mã số sinh viên', key: 'studentId', width: 20 },
 			{ header: 'Họ tên', key: 'fullName', width: 25 },
 			{ header: 'Email', key: 'email', width: 30 },
+			{ header: 'Số điện thoại', key: 'phoneNumber', width: 15 },
 			{ header: 'Tổng tiền', key: 'totalAmount', width: 15 },
 			{ header: 'Trạng thái', key: 'status', width: 15 },
 			{ header: 'Ngày đặt', key: 'createdAt', width: 20 },
@@ -88,9 +89,10 @@ router.get('/orders/excel', authenticateAdmin, async (req, res) => {
 
 			worksheet.addRow({
 				orderCode: order.orderCode,
-				studentId: order.studentId,
-				fullName: order.fullName,
-				email: order.email,
+				studentId: order.studentId || '',
+				fullName: order.fullName || '',
+				email: order.email || '',
+				phone: order.phoneNumber || '',
 				totalAmount: formatCurrency(order.totalAmount),
 				status: getStatusText(order.status),
 				createdAt: formatDate(order.createdAt),

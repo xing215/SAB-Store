@@ -23,6 +23,9 @@ const SellerLayout = ({ children }) => {
 		return location.pathname === path;
 	};
 
+	// Lấy username từ localStorage (hoặc context nếu có)
+	const username = localStorage.getItem('username') || 'Seller';
+
 	return (
 		<div className="min-h-screen bg-gray-50">
 			{/* Header */}
@@ -67,7 +70,7 @@ const SellerLayout = ({ children }) => {
 						<div className="flex items-center space-x-4">
 							<div className="hidden md:block text-sm text-gray-700">
 								<i className="fas fa-user-circle mr-1"></i>
-								Seller
+								{username}
 							</div>
 							<button
 								onClick={handleLogout}
