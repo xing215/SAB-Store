@@ -4,6 +4,8 @@ import Swal from 'sweetalert2';
 import { authClient } from '../../lib/auth-client';
 import { formatDate } from '../../services/api';
 import LoadingSpinner from '../../components/LoadingSpinner';
+import RandomPasswordButton from '../../components/RandomPasswordButton';
+import { generateSimplePassword } from '../../utils/passwordGenerator';
 
 const SellersManagement = () => {
 	const [sellers, setSellers] = useState([]);
@@ -47,57 +49,73 @@ const SellersManagement = () => {
 		}
 	};
 
-	const generateRandomPassword = async () => {
-		try {
-			const response = await fetch('/api/admin/generate-password', {
-				method: 'POST',
-				headers: {
-					'Content-Type': 'application/json',
-				},
-				credentials: 'include'
-			});
-
-			const result = await response.json();
-
-			if (result.success) {
-				setFormData(prev => ({
-					...prev,
-					password: result.password
-				}));
-				toast.success('Đã tạo mật khẩu ngẫu nhiên');
-			} else {
-				throw new Error(result.message);
-			}
-		} catch (error) {
-			console.error('Error generating password:', error);
-			toast.error('Lỗi khi tạo mật khẩu ngẫu nhiên');
-		}
+	const handlePasswordGenerated = (newPassword) => {
+		setFormData(prev => ({
+			...prev,
+			password: newPassword
+		}));
 	};
 
 	const handleResetPassword = async (sellerId, sellerName) => {
 		const result = await Swal.fire({
 			title: 'Reset mật khẩu seller',
 			text: `Bạn muốn reset mật khẩu cho seller "${sellerName}"?`,
-			input: 'password',
-			inputLabel: 'Mật khẩu mới',
-			inputPlaceholder: 'Nhập mật khẩu mới...',
-			inputAttributes: {
-				minlength: 6,
-				maxlength: 50
-			},
+			html: `
+				<div class="text-left">
+					<p class="mb-4">Bạn muốn reset mật khẩu cho seller "<strong>${sellerName}</strong>"?</p>
+					<div class="mb-4">
+						<label for="new-password" class="block text-sm font-medium text-gray-700 mb-2">Mật khẩu mới:</label>
+						<div class="flex space-x-2">
+							<input 
+								type="password" 
+								id="new-password" 
+								class="swal2-input flex-1" 
+								placeholder="Nhập mật khẩu mới..." 
+								style="margin: 0; flex: 1;"
+							/>
+							<button 
+								type="button" 
+								id="generate-btn" 
+								class="swal2-confirm swal2-styled" 
+								style="margin: 0; padding: 8px 12px; font-size: 14px; background-color: #3b82f6;"
+								title="Tạo mật khẩu ngẫu nhiên"
+							>
+								<i class="fas fa-random"></i>
+							</button>
+						</div>
+						<small class="text-gray-500 mt-1 block">Mật khẩu phải có ít nhất 6 ký tự</small>
+					</div>
+				</div>
+			`,
 			showCancelButton: true,
 			confirmButtonColor: '#3b82f6',
 			cancelButtonColor: '#6b7280',
 			confirmButtonText: 'Reset mật khẩu',
 			cancelButtonText: 'Hủy',
-			inputValidator: (value) => {
-				if (!value) {
-					return 'Vui lòng nhập mật khẩu mới!';
+			didOpen: () => {
+				const generateBtn = document.getElementById('generate-btn');
+				const passwordInput = document.getElementById('new-password');
+
+				generateBtn.addEventListener('click', () => {
+					const randomPassword = generateSimplePassword(10);
+					passwordInput.value = randomPassword;
+					passwordInput.type = 'text'; // Temporarily show the generated password
+					setTimeout(() => {
+						passwordInput.type = 'password';
+					}, 2000); // Hide after 2 seconds
+				});
+			},
+			preConfirm: () => {
+				const password = document.getElementById('new-password').value;
+				if (!password) {
+					Swal.showValidationMessage('Vui lòng nhập mật khẩu mới!');
+					return false;
 				}
-				if (value.length < 6) {
-					return 'Mật khẩu phải có ít nhất 6 ký tự!';
+				if (password.length < 6) {
+					Swal.showValidationMessage('Mật khẩu phải có ít nhất 6 ký tự!');
+					return false;
 				}
-				return null;
+				return password;
 			}
 		});
 
@@ -405,14 +423,11 @@ const SellersManagement = () => {
 											minLength="6"
 										/>
 										{!editingSeller && (
-											<button
-												type="button"
-												onClick={generateRandomPassword}
-												className="px-3 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 whitespace-nowrap"
+											<RandomPasswordButton
+												onPasswordGenerated={handlePasswordGenerated}
+												length={10}
 												title="Tạo mật khẩu ngẫu nhiên"
-											>
-												<i className="fas fa-random"></i>
-											</button>
+											/>
 										)}
 									</div>
 								</div>

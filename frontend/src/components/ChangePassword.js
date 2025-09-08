@@ -3,6 +3,7 @@ import { toast } from 'react-toastify';
 import Swal from 'sweetalert2';
 import { validatePassword } from '../utils/passwordValidator';
 import PasswordStrengthIndicator from './PasswordStrengthIndicator';
+import RandomPasswordButton from './RandomPasswordButton';
 
 const ChangePassword = ({ userType = 'admin', title = 'Đổi mật khẩu' }) => {
 	const [formData, setFormData] = useState({
@@ -13,6 +14,15 @@ const ChangePassword = ({ userType = 'admin', title = 'Đổi mật khẩu' }) =
 	const [loading, setLoading] = useState(false);
 	const [showModal, setShowModal] = useState(false);
 	const [passwordValidation, setPasswordValidation] = useState(null);
+
+	const handlePasswordGenerated = (newPassword) => {
+		setFormData(prev => ({
+			...prev,
+			newPassword: newPassword,
+			confirmPassword: '' // Clear confirm password to force re-entry
+		}));
+		setPasswordValidation(validatePassword(newPassword));
+	};
 
 	const handleInputChange = (e) => {
 		const { name, value } = e.target;
@@ -144,20 +154,27 @@ const ChangePassword = ({ userType = 'admin', title = 'Đổi mật khẩu' }) =
 									<label className="block text-sm font-medium text-gray-700 mb-1">
 										Mật khẩu mới *
 									</label>
-									<input
-										type="password"
-										name="newPassword"
-										value={formData.newPassword}
-										onChange={handleInputChange}
-										className={`form-input ${passwordValidation && !passwordValidation.isValid
+									<div className="flex space-x-2">
+										<input
+											type="password"
+											name="newPassword"
+											value={formData.newPassword}
+											onChange={handleInputChange}
+											className={`form-input flex-1 ${passwordValidation && !passwordValidation.isValid
 												? 'border-red-300 focus:ring-red-500 focus:border-red-500'
 												: passwordValidation && passwordValidation.isValid
 													? 'border-green-300 focus:ring-green-500 focus:border-green-500'
 													: ''
-											}`}
-										required
-										placeholder="Nhập mật khẩu mới"
-									/>
+												}`}
+											required
+											placeholder="Nhập mật khẩu mới"
+										/>
+										<RandomPasswordButton
+											onPasswordGenerated={handlePasswordGenerated}
+											length={10}
+											title="Tạo mật khẩu ngẫu nhiên"
+										/>
+									</div>
 
 									{/* Password Strength Indicator */}
 									<PasswordStrengthIndicator
@@ -176,10 +193,10 @@ const ChangePassword = ({ userType = 'admin', title = 'Đổi mật khẩu' }) =
 										value={formData.confirmPassword}
 										onChange={handleInputChange}
 										className={`form-input ${formData.confirmPassword && formData.newPassword !== formData.confirmPassword
-												? 'border-red-300 focus:ring-red-500 focus:border-red-500'
-												: formData.confirmPassword && formData.newPassword === formData.confirmPassword
-													? 'border-green-300 focus:ring-green-500 focus:border-green-500'
-													: ''
+											? 'border-red-300 focus:ring-red-500 focus:border-red-500'
+											: formData.confirmPassword && formData.newPassword === formData.confirmPassword
+												? 'border-green-300 focus:ring-green-500 focus:border-green-500'
+												: ''
 											}`}
 										required
 										placeholder="Nhập lại mật khẩu mới"
