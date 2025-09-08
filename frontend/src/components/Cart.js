@@ -140,9 +140,31 @@ const Cart = () => {
 
 			{/* Cart Summary */}
 			<div className="border-t border-gray-200 p-4 space-y-3">
-				{/* Subtotal */}
+				{/* Original subtotal if combo is applied */}
+				{comboDetection.hasCombo && comboDetection.combo && (
+					<div className="flex justify-between items-center text-sm">
+						<span className="text-gray-500 line-through">Giá gốc:</span>
+						<span className="text-gray-500 line-through">
+							{formatCurrency(cart.items.reduce((total, item) => total + (item.price * item.quantity), 0))}
+						</span>
+					</div>
+				)}
+
+				{/* Combo discount */}
+				{comboDetection.hasCombo && comboDetection.savings > 0 && (
+					<div className="flex justify-between items-center text-sm">
+						<span className="text-green-600">Giảm giá combo:</span>
+						<span className="text-green-600 font-medium">
+							-{formatCurrency(comboDetection.savings)}
+						</span>
+					</div>
+				)}
+
+				{/* Current total */}
 				<div className="flex justify-between items-center text-sm">
-					<span className="text-gray-600">Tạm tính:</span>
+					<span className="text-gray-600">
+						{comboDetection.hasCombo ? 'Giá combo:' : 'Tạm tính:'}
+					</span>
 					<span className="font-medium text-gray-900">
 						{formatCurrency(total)}
 					</span>
@@ -151,7 +173,7 @@ const Cart = () => {
 				{/* Total */}
 				<div className="flex justify-between items-center text-lg font-bold border-t pt-3">
 					<span className="text-gray-900">Tổng cộng:</span>
-					<span className="text-primary-600">
+					<span className={comboDetection.hasCombo ? "text-green-600" : "text-primary-600"}>
 						{formatCurrency(total)}
 					</span>
 				</div>

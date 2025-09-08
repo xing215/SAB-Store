@@ -616,11 +616,18 @@ const AdminDashboard = () => {
 											<div className="text-sm text-gray-900">
 												{order.items.map((item, index) => {
 													const itemNameLength = item.productName.length;
-													// display last 4 characters only
+													// display last 4 characters only for easier packing
 													const displayedName = item.productName.slice(itemNameLength - 4, itemNameLength);
 													return (
 														<div key={index} className="flex justify-between items-center mb-1 last:mb-0">
-															<span className="text-gray-700">{displayedName}</span>
+															<div className="flex items-center">
+																<span className="text-gray-700">{displayedName}</span>
+																{item.fromCombo && (
+																	<span className="ml-1 text-xs bg-blue-100 text-blue-600 px-1 rounded" title={`Từ combo: ${item.comboName}`}>
+																		C
+																	</span>
+																)}
+															</div>
 															<span className="text-gray-500 ml-2">x{item.quantity}</span>
 														</div>
 													);

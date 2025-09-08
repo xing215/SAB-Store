@@ -246,7 +246,15 @@ export const CartProvider = ({ children }) => {
 
 	// Cart Calculations
 	const getCartTotal = () => {
-		return cart.items.reduce((total, item) => total + (item.price * item.quantity), 0);
+		// Get base total from individual items
+		const baseTotal = cart.items.reduce((total, item) => total + (item.price * item.quantity), 0);
+
+		// Apply combo discount if available
+		if (comboDetection.hasCombo && comboDetection.combo) {
+			return comboDetection.combo.price;
+		}
+
+		return baseTotal;
 	};
 
 	const getCartItemCount = () => {
