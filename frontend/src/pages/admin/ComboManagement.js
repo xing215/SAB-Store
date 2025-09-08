@@ -369,9 +369,12 @@ const ComboManagement = () => {
 				</div>
 
 				{/* Modal for Create/Edit Combo */}
-				{showModal && (
-					<Modal onClose={() => setShowModal(false)} title={editingCombo ? 'Chỉnh sửa combo' : 'Tạo combo mới'}>
-						<form onSubmit={handleSubmit} className="space-y-4">
+				<Modal 
+					isOpen={showModal}
+					onClose={() => setShowModal(false)} 
+					title={editingCombo ? 'Chỉnh sửa combo' : 'Tạo combo mới'}
+				>
+					<form onSubmit={handleSubmit} className="space-y-4">
 							{/* Basic Information */}
 							<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 								<div>
@@ -520,7 +523,6 @@ const ComboManagement = () => {
 							</div>
 						</form>
 					</Modal>
-				)}
 			</div>
 		</div>
 	);

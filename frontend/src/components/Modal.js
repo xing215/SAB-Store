@@ -1,17 +1,16 @@
 import React, { useEffect } from 'react';
 import { createPortal } from 'react-dom';
 
-const Modal = ({ isOpen, onClose, children, title }) => {
+const Modal = ({ isOpen = false, onClose, children, title }) => {
   useEffect(() => {
     const handleEscKey = (event) => {
-      if (event.key === 'Escape' && isOpen) {
+      if (event.key === 'Escape') {
         onClose();
       }
     };
 
     if (isOpen) {
       document.addEventListener('keydown', handleEscKey);
-      // Prevent body scroll when modal is open
       document.body.classList.add('modal-open');
     }
 
