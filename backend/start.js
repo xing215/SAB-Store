@@ -11,7 +11,7 @@ async function waitForMongoDB() {
 	while (retries < maxRetries) {
 		try {
 			await connectDB();
-			console.log('✅ MongoDB is ready');
+			console.log('[OK] MongoDB is ready');
 			return true;
 		} catch (error) {
 			retries++;
@@ -34,16 +34,16 @@ async function initializeDatabase() {
 
 		initProcess.on('close', (code) => {
 			if (code === 0) {
-				console.log('✅ Database initialized successfully');
+				console.log('[OK] Database initialized successfully');
 				resolve();
 			} else {
-				console.log('⚠️  Database initialization completed with warnings or was skipped');
+				console.log('[WARN] Database initialization completed with warnings or was skipped');
 				resolve(); // Don't fail if init has warnings
 			}
 		});
 
 		initProcess.on('error', (error) => {
-			console.error('❌ Database initialization error:', error);
+			console.error('[ERROR] Database initialization error:', error);
 			reject(error);
 		});
 	});
@@ -51,13 +51,6 @@ async function initializeDatabase() {
 
 async function startServer() {
 	console.log('Starting server...');
-	
-	// Debug environment variables before spawning
-	console.log('[START.JS DEBUG] Environment variables:');
-	console.log('NODE_ENV:', process.env.NODE_ENV);
-	console.log('CORS_ORIGIN:', process.env.CORS_ORIGIN);
-	console.log('PORT:', process.env.PORT);
-	console.log('MONGODB_URI:', process.env.MONGODB_URI ? '[SET]' : '[NOT SET]');
 
 	const serverProcess = spawn('node', ['server.js'], {
 		stdio: 'inherit',

@@ -140,7 +140,12 @@ const DirectSalesPage = () => {
 				);
 				setPaymentQR(qrUrl);
 
-				toast.success('Đã tạo đơn hàng thành công!');
+				// Show combo info if applied (silently without warning)
+				if (order.comboInfo && order.comboInfo.savings > 0) {
+					toast.success(`Đã tạo đơn hàng thành công! Áp dụng combo "${order.comboInfo.comboName}" tiết kiệm ${formatCurrency(order.comboInfo.savings)}`);
+				} else {
+					toast.success('Đã tạo đơn hàng thành công!');
+				}
 			}
 		} catch (error) {
 			toast.error('Lỗi khi tạo đơn hàng: ' + error.message);
@@ -342,6 +347,21 @@ const DirectSalesPage = () => {
 								<p className="text-gray-600">
 									Tổng tiền: <span className="font-bold text-blue-700">{formatCurrency(currentOrder.totalAmount)}</span>
 								</p>
+
+								{/* Combo Info */}
+								{currentOrder.comboInfo && currentOrder.comboInfo.savings > 0 && (
+									<div className="mt-3 inline-block bg-green-50 border border-green-200 rounded-lg px-4 py-2">
+										<div className="flex items-center space-x-2 text-sm">
+											<i className="fas fa-gift text-green-600"></i>
+											<span className="text-green-800 font-medium">
+												Đã áp dụng combo "{currentOrder.comboInfo.comboName}"
+											</span>
+											<span className="text-green-700">
+												- Tiết kiệm {formatCurrency(currentOrder.comboInfo.savings)}
+											</span>
+										</div>
+									</div>
+								)}
 							</div>
 
 							{/* QR Code */}

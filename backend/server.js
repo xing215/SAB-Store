@@ -8,11 +8,6 @@ const { connectDB } = require('./lib/database');
 const { toNodeHandler } = require('better-auth/node');
 
 
-
-console.log('[DEBUG] CORS_ORIGIN:', process.env.CORS_ORIGIN);
-console.log('[DEBUG] NODE_ENV:', process.env.NODE_ENV);
-console.log('[DEBUG] All env vars:', Object.keys(process.env).filter(k => k.includes('CORS')));
-
 const app = express();
 
 // Trust proxy configuration - secure setup for rate limiting
@@ -95,6 +90,7 @@ app.all('/api/auth/*', toNodeHandler(auth));
 // Routes - temporarily disabled for auth testing
 app.use('/api/products', require('./routes/products'));
 app.use('/api/orders', require('./routes/orders'));
+app.use('/api/combos', require('./routes/combos'));
 app.use('/api/admin', require('./routes/admin'));
 app.use('/api/seller', require('./routes/seller'));
 
@@ -107,28 +103,7 @@ app.get('/health', (req, res) => {
 	});
 });
 
-// CORS test endpoint - no auth required
-app.get('/api/test-cors', (req, res) => {
-	console.log(`[TEST] CORS test from origin: ${req.headers.origin}`);
-	res.json({
-		success: true,
-		message: 'CORS test successful',
-		origin: req.headers.origin,
-		timestamp: new Date().toISOString()
-	});
-});
 
-// CORS test endpoint with PUT method - no auth required
-app.put('/api/test-cors', (req, res) => {
-	console.log(`[TEST] CORS PUT test from origin: ${req.headers.origin}`);
-	res.json({
-		success: true,
-		message: 'CORS PUT test successful',
-		origin: req.headers.origin,
-		timestamp: new Date().toISOString(),
-		body: req.body
-	});
-});
 
 // Error handling middleware
 app.use((err, req, res, next) => {
@@ -198,12 +173,12 @@ async function startServer() {
 		await connectDB();
 
 		app.listen(PORT, () => {
-			console.log(`🚀 Server running on port ${PORT}`);
-			console.log(`📱 Environment: ${process.env.NODE_ENV}`);
-			console.log(`🔗 API URL: http://localhost:${PORT}/api`);
+			console.log(`[OK] Server running on port ${PORT}`);
+			console.log(`[ENV] Environment: ${process.env.NODE_ENV}`);
+			console.log(`[API] API URL: http://localhost:${PORT}/api`);
 		});
 	} catch (error) {
-		console.error('❌ Failed to start server:', error);
+		console.error('[ERROR] Failed to start server:', error);
 		process.exit(1);
 	}
 }

@@ -26,7 +26,7 @@ const Header = () => {
           >
             <Logo size="lg" />
             <span className="text-blue-800 hidden sm:inline">
-              <span className="text-yellow-500">|</span> Lanyard Preorder
+              <span className="text-yellow-500">|</span> Lanyard Order
             </span>
           </Link>
 

@@ -219,132 +219,6 @@ export const adminService = {
 		}
 	},
 
-	// Seller management - DEPRECATED
-	// These methods have been replaced by Better-Auth admin plugin
-	// Use authClient.admin.* methods instead:
-	// - authClient.admin.listUsers({query: {filterField: 'role', filterValue: 'seller'}})
-	// - authClient.admin.createUser({email, password, name, role: 'seller'})
-	// - authClient.admin.setRole({userId, role}) / authClient.admin.setUserPassword({userId, newPassword})
-	// - authClient.admin.removeUser({userId})
-	//
-	// These legacy methods are kept for backwards compatibility but should be migrated:
-	getSellers: async () => {
-		console.warn('DEPRECATED: Use authClient.admin.listUsers() with role filter instead');
-		try {
-			// Import authClient here to avoid circular dependency
-			const { authClient } = await import('../lib/auth-client');
-			const result = await authClient.admin.listUsers({
-				query: {
-					filterField: 'role',
-					filterValue: 'seller',
-					filterOperator: 'eq',
-					limit: 100
-				}
-			});
-
-			if (result.error) {
-				throw new Error(result.error.message);
-			}
-
-			return {
-				success: true,
-				data: {
-					sellers: result.data.users || [],
-					pagination: {
-						total: result.data.total || 0
-					}
-				}
-			};
-		} catch (error) {
-			throw new Error(error.message || 'Lỗi khi lấy danh sách seller');
-		}
-	},
-
-	createSeller: async (sellerData) => {
-		console.warn('DEPRECATED: Use authClient.admin.createUser() instead');
-		try {
-			const { authClient } = await import('../lib/auth-client');
-			const result = await authClient.admin.createUser({
-				email: sellerData.email,
-				password: sellerData.password,
-				name: sellerData.name || sellerData.username,
-				username: sellerData.username,
-				role: 'seller'
-			});
-
-			if (result.error) {
-				throw new Error(result.error.message);
-			}
-
-			return {
-				success: true,
-				message: 'Tạo tài khoản seller thành công',
-				data: { seller: result.data }
-			};
-		} catch (error) {
-			throw new Error(error.message || 'Lỗi khi tạo seller');
-		}
-	},
-
-	updateSeller: async (id, sellerData) => {
-		console.warn('DEPRECATED: Use authClient.admin.setUserPassword() and authClient.admin.setRole() instead');
-		try {
-			const { authClient } = await import('../lib/auth-client');
-
-			// Update password if provided
-			if (sellerData.password) {
-				const passwordResult = await authClient.admin.setUserPassword({
-					userId: id,
-					newPassword: sellerData.password
-				});
-
-				if (passwordResult.error) {
-					throw new Error(passwordResult.error.message);
-				}
-			}
-
-			// Update role if provided and different from seller
-			if (sellerData.role && sellerData.role !== 'seller') {
-				const roleResult = await authClient.admin.setRole({
-					userId: id,
-					role: sellerData.role
-				});
-
-				if (roleResult.error) {
-					throw new Error(roleResult.error.message);
-				}
-			}
-
-			return {
-				success: true,
-				message: 'Cập nhật seller thành công'
-			};
-		} catch (error) {
-			throw new Error(error.message || 'Lỗi khi cập nhật seller');
-		}
-	},
-
-	deleteSeller: async (id) => {
-		console.warn('DEPRECATED: Use authClient.admin.removeUser() instead');
-		try {
-			const { authClient } = await import('../lib/auth-client');
-			const result = await authClient.admin.removeUser({
-				userId: id
-			});
-
-			if (result.error) {
-				throw new Error(result.error.message);
-			}
-
-			return {
-				success: true,
-				message: 'Xóa seller thành công'
-			};
-		} catch (error) {
-			throw new Error(error.message || 'Lỗi khi xóa seller');
-		}
-	},
-
 	// Export orders to Excel
 	exportOrders: async (params = {}) => {
 		try {
@@ -392,6 +266,66 @@ export const adminService = {
 		} catch (error) {
 			console.error('API Error - deleteAllOrders:', error.response?.data || error.message);
 			throw new Error(error.response?.data?.message || 'Lỗi khi xóa toàn bộ đơn hàng');
+		}
+	},
+
+	// Combo management
+	getCombos: async () => {
+		try {
+			const response = await api.get('/combos');
+			return response.data;
+		} catch (error) {
+			throw new Error(error.response?.data?.message || 'Lỗi khi lấy danh sách combo');
+		}
+	},
+
+	getCombo: async (id) => {
+		try {
+			const response = await api.get(`/combos/${id}`);
+			return response.data;
+		} catch (error) {
+			throw new Error(error.response?.data?.message || 'Lỗi khi lấy thông tin combo');
+		}
+	},
+
+	createCombo: async (comboData) => {
+		try {
+			const response = await api.post('/combos', comboData);
+			return response.data;
+		} catch (error) {
+			throw new Error(error.response?.data?.message || 'Lỗi khi tạo combo');
+		}
+	},
+
+	updateCombo: async (id, comboData) => {
+		try {
+			const response = await api.put(`/combos/${id}`, comboData);
+			return response.data;
+		} catch (error) {
+			throw new Error(error.response?.data?.message || 'Lỗi khi cập nhật combo');
+		}
+	},
+
+	deleteCombo: async (id) => {
+		try {
+			const response = await api.delete(`/combos/${id}`);
+			return response.data;
+		} catch (error) {
+			throw new Error(error.response?.data?.message || 'Lỗi khi xóa combo');
+		}
+	},
+
+	getProductCategories: async () => {
+		try {
+			const response = await api.get('/products/categories/list');
+			return {
+				success: response.data.success,
+				data: {
+					categories: response.data.data // Map the response correctly
+				}
+			};
+		} catch (error) {
+			throw new Error(error.response?.data?.message || 'Lỗi khi lấy danh sách danh mục');
 		}
 	}
 };
@@ -576,6 +510,29 @@ export const databaseService = {
 			return response.data;
 		} catch (error) {
 			throw new Error(error.response?.data?.message || 'Lỗi khi lấy thống kê database');
+		}
+	}
+};
+
+// Combo Services
+export const comboService = {
+	// Detect applicable combos for given items
+	detectCombos: async (items) => {
+		try {
+			const response = await api.post('/combos/detect', { items });
+			return response.data;
+		} catch (error) {
+			throw new Error(error.response?.data?.message || 'Lỗi khi phát hiện combo');
+		}
+	},
+
+	// Get active combos
+	getActiveCombos: async () => {
+		try {
+			const response = await api.get('/combos/active');
+			return response.data;
+		} catch (error) {
+			throw new Error(error.response?.data?.message || 'Lỗi khi lấy danh sách combo');
 		}
 	}
 };

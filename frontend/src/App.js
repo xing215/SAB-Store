@@ -16,6 +16,7 @@ import LoginPage from './pages/LoginPage';
 // Admin Pages
 import AdminDashboard from './pages/admin/AdminDashboard';
 import ProductsManagement from './pages/admin/ProductsManagement';
+import ComboManagement from './pages/admin/ComboManagement';
 import SellersManagement from './pages/admin/SellersManagement';
 import DatabaseManagement from './pages/admin/DatabaseManagement';
 
@@ -60,6 +61,13 @@ function App() {
 							<ProtectedRoute>
 								<AdminLayout>
 									<ProductsManagement />
+								</AdminLayout>
+							</ProtectedRoute>
+						} />
+						<Route path="/admin/combos" element={
+							<ProtectedRoute>
+								<AdminLayout>
+									<ComboManagement />
 								</AdminLayout>
 							</ProtectedRoute>
 						} />

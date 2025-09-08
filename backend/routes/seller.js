@@ -6,6 +6,7 @@ const { authenticateSeller } = require('../middleware/better-auth');
 const { validatePasswordChange } = require('../middleware/validation');
 const { getPaginationInfo, formatDate, formatCurrency } = require('../utils/helpers');
 const { sendOrderToAppScript } = require('../utils/appscript');
+const ComboService = require('../services/ComboService');
 const { auth } = require('../lib/auth');
 const router = express.Router();
 
@@ -428,11 +429,30 @@ router.post('/orders/direct', async (req, res) => {
 			});
 		}
 
+		// Apply combo detection silently for direct sales
+		const comboResult = await ComboService.detectAndApplyBestCombo(items, true);
+		let finalItems = items;
+		let comboInfo = null;
+
+		if (comboResult.success && comboResult.hasCombo) {
+			finalItems = comboResult.finalItems;
+			comboInfo = {
+				comboId: comboResult.combo._id,
+				comboName: comboResult.combo.name,
+				savings: comboResult.savings
+			};
+		}
+
+		// Convert combo items back to individual products for order storage
+		const expandedItems = ComboService.expandComboItems(finalItems);
+
 		// Calculate total amount and validate products
 		let totalAmount = 0;
 		const orderItems = [];
 
-		for (const item of items) {
+		for (const item of expandedItems) {
+			if (!item.productId) continue; // Skip combo items without productId
+
 			const product = await Product.findById(item.productId);
 
 			if (!product || !product.isActive) {
@@ -450,19 +470,30 @@ router.post('/orders/direct', async (req, res) => {
 			}
 
 			const itemTotal = product.price * item.quantity;
-			totalAmount += itemTotal;
 
 			orderItems.push({
 				productId: product._id,
 				productName: product.name,
 				quantity: item.quantity,
 				price: product.price,
-				total: itemTotal
+				total: itemTotal,
+				fromCombo: item.fromCombo || false,
+				comboId: item.comboId || null,
+				comboName: item.comboName || null
 			});
 
 			// Update stock quantity
 			product.stockQuantity -= item.quantity;
 			await product.save();
+		}
+
+		// Calculate total with combo pricing if applicable
+		if (comboInfo && finalItems.some(item => item.isCombo)) {
+			totalAmount = finalItems.reduce((total, item) => {
+				return total + (item.price * item.quantity);
+			}, 0);
+		} else {
+			totalAmount = orderItems.reduce((total, item) => total + item.total, 0);
 		}
 
 		// Generate order number for direct sales
@@ -522,6 +553,7 @@ router.post('/orders/direct', async (req, res) => {
 			message: 'Tạo đơn hàng bán trực tiếp thành công',
 			data: {
 				...populatedOrder,
+				comboInfo: comboInfo, // Include combo information
 				statusText: getStatusInVietnamese(populatedOrder.status),
 				formattedTotal: formatCurrency(populatedOrder.totalAmount)
 			}

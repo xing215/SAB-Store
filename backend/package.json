@@ -37,8 +37,8 @@
 		"express",
 		"mongodb",
 		"api",
-		"preorder"
+		"order"
 	],
-	"author": "Your Name",
+	"author": "SAB",
 	"license": "MIT"
 }
