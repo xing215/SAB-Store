@@ -76,7 +76,7 @@ class WebSocketService {
 		});
 
 		this.socket.on('connect_error', (error) => {
-			console.error('[WS] Connection error:', error.message || 'Unknown error');
+			console.error(' [WS] Connection error:', 'websocket error');
 			this.connected = false;
 
 			// Emit error event for UI components to handle

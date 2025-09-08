@@ -32,9 +32,15 @@ app.use(helmet({
 				"ws://api.store.sab.edu.vn",
 				"wss://api.store.sab.edu.vn",
 				"https://api.store.sab.edu.vn",
-				"https://store.sab.edu.vn"
+				"ws://api.lanyard.sab.edu.vn",
+				"wss://api.lanyard.sab.edu.vn",
+				"https://api.lanyard.sab.edu.vn",
+				"https://store.sab.edu.vn",
+				"https://fonts.googleapis.com",
+				"https://fonts.gstatic.com",
+				"https://cdnjs.cloudflare.com"
 			],
-			scriptSrc: ["'self'", "'unsafe-inline'"],
+			scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
 			styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com", "https://cdnjs.cloudflare.com"],
 			fontSrc: ["'self'", "https://fonts.gstatic.com", "https://cdnjs.cloudflare.com"],
 			imgSrc: ["'self'", "data:", "blob:", "https:"],
@@ -60,6 +66,8 @@ const corsOptions = {
 			...(process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(',').map(o => o.trim()) : []),
 			'https://store.sab.edu.vn',
 			'https://api.store.sab.edu.vn',
+			'https://lanyard.sab.edu.vn',
+			'https://api.lanyard.sab.edu.vn',
 			'http://localhost:3000', // Development
 			'http://127.0.0.1:3000'  // Development
 		];
@@ -92,6 +100,8 @@ const io = new Server(server, {
 				...(process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(',').map(o => o.trim()) : []),
 				'https://store.sab.edu.vn',
 				'https://api.store.sab.edu.vn',
+				'https://lanyard.sab.edu.vn',
+				'https://api.lanyard.sab.edu.vn',
 				'http://localhost:3000',
 				'http://127.0.0.1:3000'
 			];

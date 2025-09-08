@@ -130,20 +130,46 @@ const AdminDashboard = () => {
 
 		const handleWebSocketError = (error) => {
 			console.error('[ADMIN] WebSocket error:', error);
+			// Show user-friendly error message only once to avoid spam
+			if (!sessionStorage.getItem('wsErrorShown')) {
+				toast.warning('Kết nối thời gian thực gặp sự cố. Dữ liệu có thể không được cập nhật tự động.', {
+					position: "top-right",
+					autoClose: 7000
+				});
+				sessionStorage.setItem('wsErrorShown', 'true');
+			}
+		};
+
+		const handleConnectionLost = () => {
+			console.log('[ADMIN] WebSocket connection lost, attempting to reconnect...');
+		};
+
+		const handleMaxReconnectAttempts = () => {
+			console.log('[ADMIN] Max WebSocket reconnection attempts reached');
+			toast.error('Không thể kết nối lại hệ thống thời gian thực. Vui lòng tải lại trang.', {
+				position: "top-right",
+				autoClose: 10000
+			});
 		};
 
 		// Connect and setup listeners
 		connectWebSocket();
 		wsService.on('orderCreated', handleOrderCreated);
 		wsService.on('orderStatusUpdated', handleOrderStatusUpdated);
-		wsService.on('error', handleWebSocketError);
+		wsService.on('connectionError', handleWebSocketError);
+		wsService.on('disconnected', handleConnectionLost);
+		wsService.on('maxReconnectAttemptsReached', handleMaxReconnectAttempts);
 
 		// Cleanup on component unmount
 		return () => {
 			wsService.off('orderCreated', handleOrderCreated);
 			wsService.off('orderStatusUpdated', handleOrderStatusUpdated);
-			wsService.off('error', handleWebSocketError);
+			wsService.off('connectionError', handleWebSocketError);
+			wsService.off('disconnected', handleConnectionLost);
+			wsService.off('maxReconnectAttemptsReached', handleMaxReconnectAttempts);
 			wsService.disconnect();
+			// Clear error flag on unmount
+			sessionStorage.removeItem('wsErrorShown');
 		};
 	}, []); // Empty dependency array - only run once on mount
 
