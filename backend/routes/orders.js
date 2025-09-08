@@ -121,20 +121,6 @@ router.post('/', validateOrder, async (req, res) => {
 
 		await order.save();
 
-		// Emit WebSocket event for new order
-		if (global.io) {
-			global.io.to('orders').emit('orderCreated', {
-				orderId: order._id,
-				orderCode: order.orderCode,
-				fullName: order.fullName,
-				totalAmount: order.totalAmount,
-				status: order.status,
-				createdAt: order.createdAt
-			});
-			console.log(`[WS] New order event emitted: ${order.orderCode}`);
-		}
-
-
 		// Log dữ liệu gửi App Script
 		const appscriptData = {
 			orderCode,

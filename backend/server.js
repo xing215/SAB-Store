@@ -1,39 +1,28 @@
 require('dotenv').config();
 const express = require('express');
-const http = require('http');
 const cors = require('cors');
 const helmet = require('helmet');
 const compression = require('compression');
-const { Server } = require('socket.io');
 const { auth } = require('./lib/auth');
 const { connectDB } = require('./lib/database');
 const { toNodeHandler } = require('better-auth/node');
 
 
 const app = express();
-const server = http.createServer(app);
 
 // Trust proxy configuration - secure setup for rate limiting
 // Only trust first proxy (recommended for most deployments)
 // Set to false if not behind a proxy, or configure specific trusted IPs
 app.set('trust proxy', process.env.NODE_ENV === 'production' ? 1 : false);
 
-// Security middleware with CSP configuration for WebSocket support
+// Security middleware
 app.use(helmet({
 	contentSecurityPolicy: {
 		directives: {
 			defaultSrc: ["'self'"],
 			connectSrc: [
 				"'self'",
-				"ws://localhost:5000",
-				"wss://localhost:5000",
-				"https://localhost:5000",
-				"http://localhost:5000",
-				"ws://api.store.sab.edu.vn",
-				"wss://api.store.sab.edu.vn",
 				"https://api.store.sab.edu.vn",
-				"ws://api.lanyard.sab.edu.vn",
-				"wss://api.lanyard.sab.edu.vn",
 				"https://api.lanyard.sab.edu.vn",
 				"https://store.sab.edu.vn",
 				"https://fonts.googleapis.com",
@@ -88,100 +77,6 @@ const corsOptions = {
 };
 
 app.use(cors(corsOptions));
-
-// Socket.IO setup with CORS configuration
-const io = new Server(server, {
-	cors: {
-		origin: function (origin, callback) {
-			// Allow requests with no origin (like mobile apps)
-			if (!origin) return callback(null, true);
-
-			const allowedOrigins = [
-				...(process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(',').map(o => o.trim()) : []),
-				'https://store.sab.edu.vn',
-				'https://api.store.sab.edu.vn',
-				'https://lanyard.sab.edu.vn',
-				'https://api.lanyard.sab.edu.vn',
-				'http://localhost:3000',
-				'http://127.0.0.1:3000'
-			];
-
-			if (allowedOrigins.includes(origin)) {
-				return callback(null, true);
-			}
-			callback(new Error('Not allowed by CORS'));
-		},
-		credentials: true,
-		methods: ['GET', 'POST']
-	}
-});
-
-// Socket.IO authentication middleware
-io.use(async (socket, next) => {
-	try {
-		// Get session from cookies or token
-		const cookies = socket.handshake.headers.cookie;
-		if (!cookies) {
-			return next(new Error('Authentication required'));
-		}
-
-		// Parse cookies and get session
-		const cookieObj = {};
-		cookies.split(';').forEach(cookie => {
-			const [key, value] = cookie.trim().split('=');
-			cookieObj[key] = value;
-		});
-
-		// Verify session with better-auth
-		const session = await auth.api.getSession({
-			headers: { cookie: cookies }
-		});
-
-		if (!session || !session.user) {
-			return next(new Error('Invalid session'));
-		}
-
-		// Attach user info to socket
-		socket.userId = session.user.id;
-		socket.userRole = session.user.role;
-		socket.userEmail = session.user.email;
-
-		console.log(`[SOCKET] User connected: ${session.user.email} (${session.user.role})`);
-		next();
-	} catch (error) {
-		console.error('[SOCKET] Authentication error:', error);
-		next(new Error('Authentication failed'));
-	}
-});
-
-// Socket.IO connection handling
-io.on('connection', (socket) => {
-	console.log(`[SOCKET] Client connected: ${socket.id} (${socket.userEmail})`);
-
-	// Join room based on user role
-	if (socket.userRole === 'admin') {
-		socket.join('admin');
-		socket.join('orders'); // Admins can see all orders
-	} else if (socket.userRole === 'seller') {
-		socket.join('seller');
-		socket.join('orders'); // Sellers can see relevant orders
-	} else {
-		socket.join('user');
-	}
-
-	// Handle disconnection
-	socket.on('disconnect', (reason) => {
-		console.log(`[SOCKET] Client disconnected: ${socket.id} (${socket.userEmail}) - ${reason}`);
-	});
-
-	// Handle ping/pong for connection health
-	socket.on('ping', () => {
-		socket.emit('pong');
-	});
-});
-
-// Make io globally available for routes
-global.io = io;
 
 // Handle preflight OPTIONS requests explicitly
 app.options('*', (req, res) => {
@@ -304,11 +199,10 @@ async function startServer() {
 		// Connect to MongoDB via Mongoose
 		await connectDB();
 
-		server.listen(PORT, () => {
+		app.listen(PORT, () => {
 			console.log(`[OK] Server running on port ${PORT}`);
 			console.log(`[ENV] Environment: ${process.env.NODE_ENV}`);
 			console.log(`[API] API URL: http://localhost:${PORT}/api`);
-			console.log(`[WS] WebSocket server initialized`);
 		});
 	} catch (error) {
 		console.error('[ERROR] Failed to start server:', error);
