@@ -3,6 +3,7 @@ const Order = require('../models/Order');
 const Product = require('../models/Product');
 const User = require('../models/User');
 const { authenticateSeller } = require('../middleware/better-auth');
+const { validatePasswordChange } = require('../middleware/validation');
 const { getPaginationInfo, formatDate, formatCurrency } = require('../utils/helpers');
 const { sendOrderToAppScript } = require('../utils/appscript');
 const { auth } = require('../lib/auth');
@@ -16,23 +17,9 @@ router.use(authenticateSeller);
  * @desc    Change seller password
  * @access  Private (Seller only)
  */
-router.post('/change-password', async (req, res) => {
+router.post('/change-password', validatePasswordChange, async (req, res) => {
 	try {
 		const { currentPassword, newPassword } = req.body;
-
-		if (!currentPassword || !newPassword) {
-			return res.status(400).json({
-				success: false,
-				message: 'Vui lòng cung cấp mật khẩu hiện tại và mật khẩu mới'
-			});
-		}
-
-		if (newPassword.length < 6) {
-			return res.status(400).json({
-				success: false,
-				message: 'Mật khẩu mới phải có ít nhất 6 ký tự'
-			});
-		}
 
 		// Use Better Auth changePassword endpoint
 		const result = await auth.api.changePassword({

@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { toast } from 'react-toastify';
 import Swal from 'sweetalert2';
+import { validatePassword } from '../utils/passwordValidator';
+import PasswordStrengthIndicator from './PasswordStrengthIndicator';
 
 const ChangePassword = ({ userType = 'admin', title = 'Đổi mật khẩu' }) => {
 	const [formData, setFormData] = useState({
@@ -10,6 +12,7 @@ const ChangePassword = ({ userType = 'admin', title = 'Đổi mật khẩu' }) =
 	});
 	const [loading, setLoading] = useState(false);
 	const [showModal, setShowModal] = useState(false);
+	const [passwordValidation, setPasswordValidation] = useState(null);
 
 	const handleInputChange = (e) => {
 		const { name, value } = e.target;
@@ -17,18 +20,26 @@ const ChangePassword = ({ userType = 'admin', title = 'Đổi mật khẩu' }) =
 			...prev,
 			[name]: value
 		}));
+
+		// Real-time password validation
+		if (name === 'newPassword') {
+			setPasswordValidation(validatePassword(value));
+		}
 	};
 
 	const handleSubmit = async (e) => {
 		e.preventDefault();
 
+		// Client-side validation
 		if (formData.newPassword !== formData.confirmPassword) {
 			toast.error('Mật khẩu mới và xác nhận mật khẩu không khớp');
 			return;
 		}
 
-		if (formData.newPassword.length < 6) {
-			toast.error('Mật khẩu mới phải có ít nhất 6 ký tự');
+		// Validate password strength
+		const validation = validatePassword(formData.newPassword);
+		if (!validation.isValid) {
+			toast.error('Mật khẩu không đáp ứng yêu cầu bảo mật');
 			return;
 		}
 
@@ -58,6 +69,7 @@ const ChangePassword = ({ userType = 'admin', title = 'Đổi mật khẩu' }) =
 					newPassword: '',
 					confirmPassword: ''
 				});
+				setPasswordValidation(null);
 				setShowModal(false);
 
 				// Show success message and suggest re-login
@@ -68,7 +80,13 @@ const ChangePassword = ({ userType = 'admin', title = 'Đổi mật khẩu' }) =
 					confirmButtonText: 'Đã hiểu'
 				});
 			} else {
-				throw new Error(result.message);
+				// Handle validation errors from server
+				if (result.errors && Array.isArray(result.errors)) {
+					const errorMessages = result.errors.map(err => err.message).join('. ');
+					toast.error(errorMessages);
+				} else {
+					throw new Error(result.message);
+				}
 			}
 		} catch (error) {
 			console.error('Error changing password:', error);
@@ -131,14 +149,21 @@ const ChangePassword = ({ userType = 'admin', title = 'Đổi mật khẩu' }) =
 										name="newPassword"
 										value={formData.newPassword}
 										onChange={handleInputChange}
-										className="form-input"
+										className={`form-input ${passwordValidation && !passwordValidation.isValid
+												? 'border-red-300 focus:ring-red-500 focus:border-red-500'
+												: passwordValidation && passwordValidation.isValid
+													? 'border-green-300 focus:ring-green-500 focus:border-green-500'
+													: ''
+											}`}
 										required
-										minLength="6"
 										placeholder="Nhập mật khẩu mới"
 									/>
-									<p className="text-xs text-gray-500 mt-1">
-										Mật khẩu phải có ít nhất 6 ký tự
-									</p>
+
+									{/* Password Strength Indicator */}
+									<PasswordStrengthIndicator
+										password={formData.newPassword}
+										showRequirements={true}
+									/>
 								</div>
 
 								<div>
@@ -150,11 +175,27 @@ const ChangePassword = ({ userType = 'admin', title = 'Đổi mật khẩu' }) =
 										name="confirmPassword"
 										value={formData.confirmPassword}
 										onChange={handleInputChange}
-										className="form-input"
+										className={`form-input ${formData.confirmPassword && formData.newPassword !== formData.confirmPassword
+												? 'border-red-300 focus:ring-red-500 focus:border-red-500'
+												: formData.confirmPassword && formData.newPassword === formData.confirmPassword
+													? 'border-green-300 focus:ring-green-500 focus:border-green-500'
+													: ''
+											}`}
 										required
-										minLength="6"
 										placeholder="Nhập lại mật khẩu mới"
 									/>
+									{formData.confirmPassword && formData.newPassword !== formData.confirmPassword && (
+										<p className="text-xs text-red-600 mt-1 flex items-center">
+											<i className="fas fa-exclamation-circle mr-1" />
+											Mật khẩu xác nhận không khớp
+										</p>
+									)}
+									{formData.confirmPassword && formData.newPassword === formData.confirmPassword && (
+										<p className="text-xs text-green-600 mt-1 flex items-center">
+											<i className="fas fa-check-circle mr-1" />
+											Mật khẩu xác nhận khớp
+										</p>
+									)}
 								</div>
 
 								<div className="flex justify-end space-x-3 pt-4">
@@ -169,7 +210,7 @@ const ChangePassword = ({ userType = 'admin', title = 'Đổi mật khẩu' }) =
 									<button
 										type="submit"
 										className="btn-primary"
-										disabled={loading}
+										disabled={loading || (passwordValidation && !passwordValidation.isValid)}
 									>
 										{loading ? (
 											<>
@@ -188,8 +229,13 @@ const ChangePassword = ({ userType = 'admin', title = 'Đổi mật khẩu' }) =
 								<div className="flex">
 									<i className="fas fa-info-circle text-blue-400 mr-2 mt-0.5"></i>
 									<div className="text-sm text-blue-700">
-										<p className="font-medium">Lưu ý bảo mật:</p>
-										<p>Sau khi đổi mật khẩu, tất cả phiên đăng nhập khác sẽ bị đăng xuất để đảm bảo an toàn.</p>
+										<p className="font-medium">Yêu cầu mật khẩu bảo mật:</p>
+										<ul className="list-disc list-inside mt-1 space-y-1">
+											<li>Ít nhất 6 ký tự</li>
+											<li>Chứa chữ thường và chữ hoa</li>
+											<li>Không sử dụng mật khẩu phổ biến</li>
+											<li>Tất cả phiên đăng nhập khác sẽ bị đăng xuất</li>
+										</ul>
 									</div>
 								</div>
 							</div>

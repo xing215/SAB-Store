@@ -1,4 +1,5 @@
 const { body, validationResult } = require('express-validator');
+const { createPasswordValidationRules } = require('../utils/passwordValidator');
 
 /**
  * Handle validation errors
@@ -121,9 +122,74 @@ const validateSearch = [
 	handleValidationErrors
 ];
 
+/**
+ * Validation rules for changing password
+ */
+const validatePasswordChange = [
+	body('currentPassword')
+		.notEmpty()
+		.withMessage('Mật khẩu hiện tại là bắt buộc')
+		.trim(),
+
+	...createPasswordValidationRules('newPassword'),
+
+	handleValidationErrors
+];
+
+/**
+ * Validation rules for user signup/registration  
+ */
+const validateUserRegistration = [
+	body('email')
+		.isEmail()
+		.withMessage('Email không hợp lệ')
+		.normalizeEmail()
+		.isLength({ max: 100 })
+		.withMessage('Email không được vượt quá 100 ký tự'),
+
+	body('username')
+		.notEmpty()
+		.withMessage('Tên đăng nhập là bắt buộc')
+		.isLength({ min: 3, max: 30 })
+		.withMessage('Tên đăng nhập phải từ 3-30 ký tự')
+		.matches(/^[a-zA-Z0-9_]+$/)
+		.withMessage('Tên đăng nhập chỉ được chứa chữ cái, số và dấu gạch dưới')
+		.trim(),
+
+	body('name')
+		.notEmpty()
+		.withMessage('Họ tên là bắt buộc')
+		.isLength({ min: 2, max: 100 })
+		.withMessage('Họ tên phải từ 2-100 ký tự')
+		.matches(/^[a-zA-ZÀ-ỹ\s]+$/)
+		.withMessage('Họ tên chỉ được chứa chữ cái và khoảng trắng')
+		.trim(),
+
+	...createPasswordValidationRules('password'),
+
+	handleValidationErrors
+];
+
+/**
+ * Validation rules for password reset
+ */
+const validatePasswordReset = [
+	body('token')
+		.notEmpty()
+		.withMessage('Token đặt lại mật khẩu là bắt buộc')
+		.trim(),
+
+	...createPasswordValidationRules('newPassword'),
+
+	handleValidationErrors
+];
+
 module.exports = {
 	validateOrder,
 	validateOrderUpdate,
 	validateSearch,
+	validatePasswordChange,
+	validateUserRegistration,
+	validatePasswordReset,
 	handleValidationErrors
 };
