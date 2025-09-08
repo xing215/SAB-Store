@@ -8,6 +8,13 @@ const Header = () => {
   const itemCount = getCartItemCount();
   const total = getCartTotal();
 
+  // Scroll to cart-sidebar when cart summary is clicked
+  const handleCartSummaryClick = () => {
+    const el = document.getElementById('cart-sidebar');
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
   return (
     <header className="bg-white shadow-md sticky top-0 z-50">
       <div className="container mx-auto px-4 py-4">
@@ -18,7 +25,7 @@ const Header = () => {
             className="flex items-center space-x-3 text-2xl font-bold text-blue-800 hover:text-blue-900 transition-colors"
           >
             <Logo size="lg" />
-            <span className="text-blue-800">
+            <span className="text-blue-800 hidden sm:inline">
               <span className="text-yellow-500">|</span> Lanyard Preorder
             </span>
           </Link>
@@ -42,7 +49,7 @@ const Header = () => {
           {/* Cart Summary */}
           <div className="flex items-center space-x-4">
             {/* Cart Icon with Count */}
-            <div className="relative">
+            <div className="relative cursor-pointer" onClick={handleCartSummaryClick}>
               <div className="flex items-center space-x-2 bg-gray-100 px-3 py-2 rounded-lg">
                 <i className="fas fa-shopping-bag text-gray-600"></i>
                 <div className="text-sm">

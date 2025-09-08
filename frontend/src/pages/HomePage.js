@@ -96,7 +96,7 @@ const HomePage = () => {
         </div>
 
         {/* Cart Sidebar - Increased width */}
-        <div className="xl:col-span-1">
+        <div className="xl:col-span-1" id='cart-sidebar'>
           <div className="sticky top-24">
             <Cart />
             

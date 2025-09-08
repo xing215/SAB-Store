@@ -33,7 +33,7 @@ const SellerLayout = ({ children }) => {
 						<div className="flex items-center">
 							<Link to="/seller/dashboard" className="flex items-center space-x-3">
 								<Logo size="md" />
-								<span className="text-xl font-bold text-blue-800">
+								<span className="text-xl font-bold text-blue-800 hidden sm:inline">
 									<span className="text-yellow-500">|</span> Seller Panel
 								</span>
 							</Link>

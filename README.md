@@ -205,13 +205,13 @@ cd frontend && npm run lint
 ### Development Logs
 ```bash
 # Xem logs tất cả services
-docker-compose logs -f
+docker compose logs -f
 
 # Chỉ xem logs backend
-docker-compose logs -f backend
+docker compose logs -f backend
 
 # Chỉ xem logs database
-docker-compose logs -f mongodb
+docker compose logs -f mongodb
 ```
 
 ### Production Monitoring
@@ -224,10 +224,10 @@ docker-compose logs -f mongodb
 ### Production với Docker
 ```bash
 # Build production images
-docker-compose -f compose.prod.yml build
+docker compose -f compose.prod.yml build
 
 # Deploy với production config
-docker-compose -f compose.prod.yml up -d
+docker compose -f compose.prod.yml up -d
 ```
 
 ### Environment Variables cho Production

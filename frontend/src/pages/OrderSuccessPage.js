@@ -139,21 +139,22 @@ const OrderSuccessPage = () => {
                 </h4>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                  <ol className="space-y-2 text-gray-700">
-                    <li className="flex items-start">
-                      <span className="bg-primary-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs mr-2 mt-0.5">1</span>
-                      Mở ứng dụng ngân hàng hoặc ví điện tử
-                    </li>
-                    <li className="flex items-start">
-                      <span className="bg-primary-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs mr-2 mt-0.5">2</span>
-                      Quét mã QR bên trái
-                    </li>
-                    <li className="flex items-start">
-                      <span className="bg-primary-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs mr-2 mt-0.5">3</span>
-                      Kiểm tra thông tin và xác nhận thanh toán
-                    </li>
-                  </ol>
-                  
+                  <div className="p-3">
+                    <ol className="space-y-2 text-gray-700">
+                      <li className="flex items-start">
+                        <span className="bg-primary-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs mr-2 mt-0.5">1</span>
+                        Mở ứng dụng ngân hàng hoặc ví điện tử
+                      </li>
+                      <li className="flex items-start">
+                        <span className="bg-primary-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs mr-2 mt-0.5">2</span>
+                        Quét mã QR
+                      </li>
+                      <li className="flex items-start">
+                        <span className="bg-primary-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs mr-2 mt-0.5">3</span>
+                        Kiểm tra thông tin và xác nhận thanh toán
+                      </li>
+                    </ol>
+                  </div>
                   <div className="bg-gray-50 rounded-lg p-3">
                     <h5 className="font-semibold text-gray-900 mb-2">Thông tin chuyển khoản:</h5>
                     <div className="space-y-1 text-xs text-gray-600">

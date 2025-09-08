@@ -50,7 +50,7 @@ const AdminLayout = ({ children }) => {
 								className="flex items-center space-x-3 text-xl font-bold text-blue-800 hover:text-blue-900"
 							>
 								<Logo size="md" />
-								<span className="text-blue-800">
+								<span className="text-blue-800 hidden sm:inline">
 									<span className="text-yellow-500">|</span> Admin Panel
 								</span>
 							</Link>
