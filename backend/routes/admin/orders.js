@@ -174,6 +174,23 @@ router.put('/:id', validateOrderUpdate, async (req, res) => {
 
 		await order.save();
 
+		// Emit WebSocket event for order status update
+		if (global.io) {
+			global.io.to('orders').emit('orderStatusUpdated', {
+				orderId: order._id,
+				orderCode: order.orderCode,
+				status: order.status,
+				statusUpdatedAt: order.statusUpdatedAt,
+				lastUpdatedBy: order.lastUpdatedBy,
+				fullName: order.fullName,
+				totalAmount: order.totalAmount,
+				transactionCode: order.transactionCode,
+				cancelReason: order.cancelReason,
+				note: note
+			});
+			console.log(`[WS] Order status update event emitted: ${order.orderCode} -> ${status}`);
+		}
+
 		// Tự động push lên App Script mỗi lần cập nhật trạng thái
 		const appscriptData = {
 			orderCode: order.orderCode,

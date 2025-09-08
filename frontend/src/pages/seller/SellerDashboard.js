@@ -5,6 +5,7 @@ import { sellerService, formatCurrency, formatDate, getStatusText, getStatusColo
 import LoadingSpinner from '../../components/LoadingSpinner';
 import Modal from '../../components/Modal';
 import ChangePassword from '../../components/ChangePassword';
+import wsService from '../../services/websocket';
 
 const SellerDashboard = () => {
 	// const [stats, setStats] = useState(null); // Xóa thống kê cho seller
@@ -53,6 +54,65 @@ const SellerDashboard = () => {
 
 		fetchOrders();
 	}, [filters]);
+
+	// WebSocket connection and event handlers
+	useEffect(() => {
+		const connectWebSocket = async () => {
+			const connected = await wsService.connect();
+			if (connected) {
+				console.log('[SELLER] WebSocket connected successfully');
+			}
+		};
+
+		// Setup WebSocket event listeners
+		const handleOrderCreated = (orderData) => {
+			console.log('[SELLER] New order received via WebSocket:', orderData);
+			toast.success(`Đơn hàng mới: ${orderData.orderCode} - ${orderData.fullName}`, {
+				position: "top-right",
+				autoClose: 5000
+			});
+
+			// Add new order to the beginning of the list if it matches current filters
+			if (!filters.status || filters.status === '' || filters.status === orderData.status) {
+				setOrders(prevOrders => [orderData, ...prevOrders]);
+			}
+		};
+
+		const handleOrderStatusUpdated = (orderData) => {
+			console.log('[SELLER] Order status updated via WebSocket:', orderData);
+			toast.info(`Đơn hàng ${orderData.orderCode} đã được cập nhật: ${getStatusText(orderData.status)}`, {
+				position: "top-right",
+				autoClose: 4000
+			});
+
+			// Update order in the list
+			setOrders(prevOrders =>
+				prevOrders.map(order =>
+					order._id === orderData.orderId || order.orderCode === orderData.orderCode
+						? { ...order, ...orderData, _id: orderData.orderId }
+						: order
+				)
+			);
+		};
+
+		const handleWebSocketError = (error) => {
+			console.error('[SELLER] WebSocket error:', error);
+		};
+
+		// Connect and setup listeners
+		connectWebSocket();
+		wsService.on('orderCreated', handleOrderCreated);
+		wsService.on('orderStatusUpdated', handleOrderStatusUpdated);
+		wsService.on('error', handleWebSocketError);
+
+		// Cleanup on component unmount
+		return () => {
+			wsService.off('orderCreated', handleOrderCreated);
+			wsService.off('orderStatusUpdated', handleOrderStatusUpdated);
+			wsService.off('error', handleWebSocketError);
+			wsService.disconnect();
+		};
+	}, []); // Empty dependency array - only run once on mount
 
 	// Handle filter changes
 	const handleFilterChange = (key, value) => {

@@ -1,7 +1,7 @@
 const express = require('express');
 const Combo = require('../models/Combo');
 const Product = require('../models/Product');
-const { auth, hasRole } = require('../middleware/better-auth');
+const { authenticateAdmin, authenticateSeller, authenticateUser } = require('../middleware/better-auth');
 const router = express.Router();
 
 /**
@@ -9,7 +9,7 @@ const router = express.Router();
  * @desc    Get all combos (admin only)
  * @access  Private/Admin
  */
-router.get('/', auth, hasRole('admin'), async (req, res) => {
+router.get('/', authenticateAdmin, async (req, res) => {
 	try {
 		const { active } = req.query;
 
@@ -130,7 +130,7 @@ router.post('/detect', async (req, res) => {
  * @desc    Create new combo
  * @access  Private/Admin
  */
-router.post('/', auth, hasRole('admin'), async (req, res) => {
+router.post('/', authenticateAdmin, async (req, res) => {
 	try {
 		const { name, description, price, categoryRequirements, priority } = req.body;
 
@@ -200,7 +200,7 @@ router.post('/', auth, hasRole('admin'), async (req, res) => {
  * @desc    Update combo
  * @access  Private/Admin
  */
-router.put('/:id', auth, hasRole('admin'), async (req, res) => {
+router.put('/:id', authenticateAdmin, async (req, res) => {
 	try {
 		const { id } = req.params;
 		const { name, description, price, categoryRequirements, priority, isActive } = req.body;
@@ -273,7 +273,7 @@ router.put('/:id', auth, hasRole('admin'), async (req, res) => {
  * @desc    Delete combo
  * @access  Private/Admin
  */
-router.delete('/:id', auth, hasRole('admin'), async (req, res) => {
+router.delete('/:id', authenticateAdmin, async (req, res) => {
 	try {
 		const { id } = req.params;
 
@@ -305,7 +305,7 @@ router.delete('/:id', auth, hasRole('admin'), async (req, res) => {
  * @desc    Get combo by ID
  * @access  Private/Admin
  */
-router.get('/:id', auth, hasRole('admin'), async (req, res) => {
+router.get('/:id', authenticateAdmin, async (req, res) => {
 	try {
 		const { id } = req.params;
 

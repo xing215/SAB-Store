@@ -1,0 +1,182 @@
+import { io } from 'socket.io-client';
+import { authClient } from '../lib/auth-client';
+
+class WebSocketService {
+	constructor() {
+		this.socket = null;
+		this.eventListeners = new Map();
+		this.connected = false;
+		this.reconnectAttempts = 0;
+		this.maxReconnectAttempts = 5;
+		this.reconnectInterval = 3000;
+	}
+
+	async connect() {
+		try {
+			// Get current session to ensure user is authenticated
+			const session = await authClient.getSession();
+			if (!session.data?.user) {
+				console.warn('[WS] User not authenticated, cannot connect to WebSocket');
+				return false;
+			}
+
+			const wsUrl = process.env.REACT_APP_WS_URL ||
+				(process.env.NODE_ENV === 'production'
+					? 'https://api.store.sab.edu.vn'
+					: 'http://localhost:5000');
+
+			this.socket = io(wsUrl, {
+				withCredentials: true,
+				transports: ['websocket', 'polling'],
+				timeout: 10000,
+				forceNew: true
+			});
+
+			this.setupEventHandlers();
+			return true;
+		} catch (error) {
+			console.error('[WS] Connection failed:', error);
+			return false;
+		}
+	}
+
+	setupEventHandlers() {
+		if (!this.socket) return;
+
+		this.socket.on('connect', () => {
+			console.log('[WS] Connected to WebSocket server');
+			this.connected = true;
+			this.reconnectAttempts = 0;
+
+			// Trigger connect event for listeners
+			this.emit('connected');
+		});
+
+		this.socket.on('disconnect', (reason) => {
+			console.log(`[WS] Disconnected from WebSocket server: ${reason}`);
+			this.connected = false;
+
+			// Trigger disconnect event for listeners
+			this.emit('disconnected', reason);
+
+			// Auto-reconnect if not manually disconnected
+			if (reason !== 'io client disconnect') {
+				this.handleReconnect();
+			}
+		});
+
+		this.socket.on('connect_error', (error) => {
+			console.error('[WS] Connection error:', error.message);
+			this.connected = false;
+			this.handleReconnect();
+		});
+
+		// Order event handlers
+		this.socket.on('orderCreated', (data) => {
+			console.log('[WS] New order created:', data);
+			this.emit('orderCreated', data);
+		});
+
+		this.socket.on('orderStatusUpdated', (data) => {
+			console.log('[WS] Order status updated:', data);
+			this.emit('orderStatusUpdated', data);
+		});
+
+		// Ping/pong for connection health
+		this.socket.on('pong', () => {
+			// Connection is healthy
+		});
+
+		// Send periodic ping
+		this.startHeartbeat();
+	}
+
+	handleReconnect() {
+		if (this.reconnectAttempts >= this.maxReconnectAttempts) {
+			console.error('[WS] Max reconnection attempts reached');
+			return;
+		}
+
+		this.reconnectAttempts++;
+		console.log(`[WS] Attempting to reconnect (${this.reconnectAttempts}/${this.maxReconnectAttempts})...`);
+
+		setTimeout(() => {
+			this.connect();
+		}, this.reconnectInterval);
+	}
+
+	startHeartbeat() {
+		if (this.heartbeatInterval) {
+			clearInterval(this.heartbeatInterval);
+		}
+
+		this.heartbeatInterval = setInterval(() => {
+			if (this.connected && this.socket) {
+				this.socket.emit('ping');
+			}
+		}, 30000); // Send ping every 30 seconds
+	}
+
+	disconnect() {
+		if (this.socket) {
+			this.socket.disconnect();
+			this.socket = null;
+		}
+
+		if (this.heartbeatInterval) {
+			clearInterval(this.heartbeatInterval);
+			this.heartbeatInterval = null;
+		}
+
+		this.connected = false;
+		console.log('[WS] WebSocket disconnected manually');
+	}
+
+	// Event listener management
+	on(event, callback) {
+		if (!this.eventListeners.has(event)) {
+			this.eventListeners.set(event, []);
+		}
+		this.eventListeners.get(event).push(callback);
+	}
+
+	off(event, callback) {
+		if (this.eventListeners.has(event)) {
+			const listeners = this.eventListeners.get(event);
+			const index = listeners.indexOf(callback);
+			if (index > -1) {
+				listeners.splice(index, 1);
+			}
+		}
+	}
+
+	emit(event, data) {
+		if (this.eventListeners.has(event)) {
+			this.eventListeners.get(event).forEach(callback => {
+				try {
+					callback(data);
+				} catch (error) {
+					console.error(`[WS] Error in event listener for ${event}:`, error);
+				}
+			});
+		}
+	}
+
+	// Utility methods
+	isConnected() {
+		return this.connected && this.socket?.connected;
+	}
+
+	getConnectionStatus() {
+		return {
+			connected: this.connected,
+			reconnectAttempts: this.reconnectAttempts,
+			socketId: this.socket?.id
+		};
+	}
+}
+
+// Create singleton instance
+const wsService = new WebSocketService();
+
+export default wsService;
