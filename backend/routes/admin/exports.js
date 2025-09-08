@@ -1,7 +1,6 @@
 const express = require('express');
 const ExcelJS = require('exceljs');
 const Order = require('../../models/Order');
-const { authenticateAdmin } = require('../../middleware/better-auth');
 const { formatDate, formatCurrency } = require('../../utils/helpers');
 const router = express.Router();
 
@@ -23,7 +22,7 @@ function getStatusText(status) {
  * @desc    Export orders to Excel
  * @access  Private (Admin)
  */
-router.get('/orders/excel', authenticateAdmin, async (req, res) => {
+router.get('/orders/excel', async (req, res) => {
 	try {
 		const { status, search, startDate, endDate } = req.query;
 
