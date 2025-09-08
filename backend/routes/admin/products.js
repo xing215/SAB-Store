@@ -67,7 +67,6 @@ router.post('/', async (req, res) => {
 			description,
 			price,
 			category,
-			image,
 			imageUrl,
 			available,
 			isActive,
@@ -83,22 +82,12 @@ router.post('/', async (req, res) => {
 			});
 		}
 
-		// Use image field from frontend (maps to required schema field)
-		const imageField = image || imageUrl;
-		if (!imageField) {
-			return res.status(400).json({
-				success: false,
-				message: 'Hình ảnh sản phẩm là bắt buộc'
-			});
-		}
-
 		const product = new Product({
 			name,
 			description,
 			price,
 			category,
-			image: imageField,
-			imageUrl: imageField,
+			imageUrl: imageUrl || '/fallback-product.png',
 			available: available !== undefined ? available : true,
 			isActive: isActive !== undefined ? isActive : true,
 			stockQuantity: stockQuantity || 0,
@@ -149,11 +138,9 @@ router.put('/:id', async (req, res) => {
 		const { id } = req.params;
 		const updateData = { ...req.body };
 
-		// Handle image field mapping (frontend sends 'image', model expects both 'image' and 'imageUrl')
-		if (updateData.image) {
-			updateData.imageUrl = updateData.image;
-		} else if (updateData.imageUrl) {
-			updateData.image = updateData.imageUrl;
+		// Handle imageUrl field - if empty, set to fallback
+		if (!updateData.imageUrl) {
+			updateData.imageUrl = '/fallback-product.png';
 		}
 
 		const product = await Product.findByIdAndUpdate(

@@ -18,12 +18,9 @@ const productSchema = new mongoose.Schema({
 		required: [true, 'Giá sản phẩm là bắt buộc'],
 		min: [0, 'Giá không được âm']
 	},
-	image: {
-		type: String,
-		required: [true, 'Hình ảnh sản phẩm là bắt buộc']
-	},
 	imageUrl: {
-		type: String
+		type: String,
+		default: '/fallback-product.png'
 	},
 	category: {
 		type: String,

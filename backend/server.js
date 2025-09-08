@@ -114,7 +114,12 @@ app.use((req, res, next) => {
 
 // Better-auth API routes - Must be AFTER body parsing middleware
 app.all('/api/auth/*', toNodeHandler(auth));
-// Routes - temporarily disabled for auth testing
+
+// Serve static files for uploaded images
+app.use('/uploads', express.static('uploads'));
+
+// Routes
+app.use('/api/upload', require('./routes/upload'));
 app.use('/api/products', require('./routes/products'));
 app.use('/api/orders', require('./routes/orders'));
 app.use('/api/combos', require('./routes/combos'));
