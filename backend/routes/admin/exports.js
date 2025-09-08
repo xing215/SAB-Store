@@ -83,7 +83,7 @@ router.get('/excel', async (req, res) => {
 		// Add data
 		orders.forEach(order => {
 			const itemDetails = order.items.map(item =>
-				`${item.productName} x${item.quantity} = ${formatCurrency(item.total)}`
+				`${item.productName} x${item.quantity} = ${formatCurrency(item.price * item.quantity)}`
 			).join('\n');
 
 			worksheet.addRow({
@@ -91,7 +91,7 @@ router.get('/excel', async (req, res) => {
 				studentId: order.studentId || '',
 				fullName: order.fullName || '',
 				email: order.email || '',
-				phone: order.phoneNumber || '',
+				phoneNumber: order.phoneNumber || '',
 				totalAmount: formatCurrency(order.totalAmount),
 				status: getStatusText(order.status),
 				createdAt: formatDate(order.createdAt),
