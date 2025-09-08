@@ -13,6 +13,7 @@ const CheckoutPage = () => {
     studentId: '',
     fullName: '',
     email: '',
+    phoneNumber: '',
     additionalNote: ''
   });
   
@@ -45,10 +46,16 @@ const CheckoutPage = () => {
   };
 
   const validateForm = () => {
+    // Phone number validation
     const newErrors = {};
+    if (!formData.phoneNumber.trim()) {
+      newErrors.phoneNumber = 'Số điện thoại là bắt buộc';
+    } else if (!/^0[0-9]{9}$/.test(formData.phoneNumber.trim())) {
+      newErrors.phoneNumber = 'Số điện thoại không hợp lệ';
+    }
 
     // Student ID validation
-  const mssvRegex = /^(1[6-9]|2[0-5])[0-9]{6}$/;
+    const mssvRegex = /^(1[6-9]|2[0-5])[0-9]{6}$/;
     if (!formData.studentId.trim()) {
       newErrors.studentId = 'Mã số sinh viên là bắt buộc';
     } else if (!mssvRegex.test(formData.studentId.trim())) {
@@ -100,6 +107,7 @@ const CheckoutPage = () => {
         studentId: formData.studentId.trim(),
         fullName: formData.fullName.trim(),
         email: formData.email.trim().toLowerCase(),
+        phoneNumber: formData.phoneNumber.trim(),
         additionalNote: formData.additionalNote.trim(),
         items: cart.items.map(item => ({
           productId: item.productId,
@@ -196,7 +204,7 @@ const CheckoutPage = () => {
                     </p>
                   )}
                 </div>
-
+                
                 {/* Full Name */}
                 <div>
                   <label htmlFor="fullName" className="block text-sm font-medium text-gray-700 mb-2">
@@ -243,6 +251,32 @@ const CheckoutPage = () => {
                   )}
                   <p className="text-gray-500 text-sm mt-1">
                     Email sẽ được sử dụng để gửi xác nhận đơn hàng
+                  </p>
+                </div>
+
+                {/* Phone Number */}
+                <div>
+                  <label htmlFor="phoneNumber" className="block text-sm font-medium text-gray-700 mb-2">
+                    Số điện thoại <span className="text-danger-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    id="phoneNumber"
+                    name="phoneNumber"
+                    value={formData.phoneNumber}
+                    onChange={handleInputChange}
+                    placeholder="Nhập số điện thoại"
+                    className={`form-input ${errors.phoneNumber ? 'form-input-error' : ''}`}
+                    maxLength="10"
+                  />
+                  {errors.phoneNumber && (
+                    <p className="text-danger-500 text-sm mt-1">
+                      <i className="fas fa-exclamation-circle mr-1"></i>
+                      {errors.phoneNumber}
+                    </p>
+                  )}
+                  <p className="text-gray-500 text-sm mt-1">
+                    Số điện thoại sẽ được sử dụng để liên hệ khi có vấn đề về đơn hàng
                   </p>
                 </div>
 
@@ -324,7 +358,7 @@ const CheckoutPage = () => {
                     <i className="fas fa-info-circle mr-1"></i>
                     Lưu ý quan trọng:
                   </h4>
-                  <ul className="text-warning-700 text-sm space-y-1">
+                  <ul className="text-warning-700 text-sm space-y-1 list-disc ml-4">
                     <li>Vui lòng kiểm tra kỹ thông tin trước khi xác nhận</li>
                     <li>Sau khi xác nhận, bạn vui lòng quét mã chuyển khoản trong vòng 1 giờ</li>
                     <li>SAB sẽ gửi thông tin xác nhận thanh toán <b>trong vòng 7 ngày</b></li>

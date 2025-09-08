@@ -54,6 +54,13 @@ const orderItemSchema = new mongoose.Schema({
 });
 
 const orderSchema = new mongoose.Schema({
+	phoneNumber: {
+		type: String,
+		required: true,
+		trim: true,
+		match: [/^0[0-9]{9}$/, 'Số điện thoại không hợp lệ'],
+		maxLength: [10, 'Số điện thoại không được vượt quá 10 ký tự']
+	},
 	orderCode: {
 		type: String,
 		required: true,

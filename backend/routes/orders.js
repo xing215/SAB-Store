@@ -13,7 +13,7 @@ const router = express.Router();
  */
 router.post('/', validateOrder, async (req, res) => {
   try {
-    const { studentId, fullName, email, additionalNote, items } = req.body;
+    const { studentId, fullName, email, phoneNumber, additionalNote, items } = req.body;
     
     // Validate products exist and get current prices
     const productIds = items.map(item => item.productId);
@@ -70,6 +70,7 @@ router.post('/', validateOrder, async (req, res) => {
       studentId,
       fullName,
       email,
+      phoneNumber,
       additionalNote,
       items: orderItems,
       totalAmount,
@@ -94,6 +95,7 @@ router.post('/', validateOrder, async (req, res) => {
         studentId,
         fullName,
         email,
+        phoneNumber,
         additionalNote,
         items: orderItems,
         totalAmount
