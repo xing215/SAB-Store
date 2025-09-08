@@ -18,8 +18,35 @@ const server = http.createServer(app);
 // Set to false if not behind a proxy, or configure specific trusted IPs
 app.set('trust proxy', process.env.NODE_ENV === 'production' ? 1 : false);
 
-// Security middleware
-app.use(helmet());
+// Security middleware with CSP configuration for WebSocket support
+app.use(helmet({
+	contentSecurityPolicy: {
+		directives: {
+			defaultSrc: ["'self'"],
+			connectSrc: [
+				"'self'",
+				"ws://localhost:5000",
+				"wss://localhost:5000",
+				"https://localhost:5000",
+				"http://localhost:5000",
+				"ws://api.store.sab.edu.vn",
+				"wss://api.store.sab.edu.vn",
+				"https://api.store.sab.edu.vn",
+				"https://store.sab.edu.vn"
+			],
+			scriptSrc: ["'self'", "'unsafe-inline'"],
+			styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com", "https://cdnjs.cloudflare.com"],
+			fontSrc: ["'self'", "https://fonts.gstatic.com", "https://cdnjs.cloudflare.com"],
+			imgSrc: ["'self'", "data:", "blob:", "https:"],
+			manifestSrc: ["'self'"],
+			objectSrc: ["'none'"],
+			baseUri: ["'self'"],
+			formAction: ["'self'"],
+			frameAncestors: ["'none'"],
+			upgradeInsecureRequests: process.env.NODE_ENV === 'production' ? [] : null
+		}
+	}
+}));
 app.use(compression());
 
 // CORS configuration - Must be before Better Auth handler

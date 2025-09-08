@@ -9,10 +9,18 @@ class WebSocketService {
 		this.reconnectAttempts = 0;
 		this.maxReconnectAttempts = 5;
 		this.reconnectInterval = 3000;
+		this.reconnectTimeout = null;
+		this.heartbeatInterval = null;
 	}
 
 	async connect() {
 		try {
+			// Clear any existing reconnect timeout
+			if (this.reconnectTimeout) {
+				clearTimeout(this.reconnectTimeout);
+				this.reconnectTimeout = null;
+			}
+
 			// Get current session to ensure user is authenticated
 			const session = await authClient.getSession();
 			if (!session.data?.user) {
@@ -25,6 +33,8 @@ class WebSocketService {
 					? 'https://api.store.sab.edu.vn'
 					: 'http://localhost:5000');
 
+			console.log(`[WS] Attempting to connect to: ${wsUrl}`);
+
 			this.socket = io(wsUrl, {
 				withCredentials: true,
 				transports: ['websocket', 'polling'],
@@ -36,6 +46,7 @@ class WebSocketService {
 			return true;
 		} catch (error) {
 			console.error('[WS] Connection failed:', error);
+			this.emit('connectionFailed', error);
 			return false;
 		}
 	}
@@ -66,8 +77,16 @@ class WebSocketService {
 		});
 
 		this.socket.on('connect_error', (error) => {
-			console.error('[WS] Connection error:', error.message);
+			console.error('[WS] Connection error:', error.message || 'Unknown error');
 			this.connected = false;
+
+			// Emit error event for UI components to handle
+			this.emit('connectionError', {
+				message: error.message || 'Connection failed',
+				attempt: this.reconnectAttempts + 1,
+				maxAttempts: this.maxReconnectAttempts
+			});
+
 			this.handleReconnect();
 		});
 
@@ -93,16 +112,24 @@ class WebSocketService {
 
 	handleReconnect() {
 		if (this.reconnectAttempts >= this.maxReconnectAttempts) {
-			console.error('[WS] Max reconnection attempts reached');
+			console.error(`[WS] Max reconnection attempts reached (${this.maxReconnectAttempts})`);
+			this.emit('maxReconnectAttemptsReached');
 			return;
 		}
 
 		this.reconnectAttempts++;
 		console.log(`[WS] Attempting to reconnect (${this.reconnectAttempts}/${this.maxReconnectAttempts})...`);
 
-		setTimeout(() => {
-			this.connect();
-		}, this.reconnectInterval);
+		// Use exponential backoff for reconnection
+		const backoffDelay = Math.min(this.reconnectInterval * Math.pow(2, this.reconnectAttempts - 1), 30000);
+
+		this.reconnectTimeout = setTimeout(async () => {
+			const success = await this.connect();
+			if (!success && this.reconnectAttempts < this.maxReconnectAttempts) {
+				// Only continue if we haven't reached max attempts and connection failed
+				this.handleReconnect();
+			}
+		}, backoffDelay);
 	}
 
 	startHeartbeat() {
@@ -128,7 +155,13 @@ class WebSocketService {
 			this.heartbeatInterval = null;
 		}
 
+		if (this.reconnectTimeout) {
+			clearTimeout(this.reconnectTimeout);
+			this.reconnectTimeout = null;
+		}
+
 		this.connected = false;
+		this.reconnectAttempts = 0; // Reset reconnect attempts
 		console.log('[WS] WebSocket disconnected manually');
 	}
 
@@ -173,6 +206,23 @@ class WebSocketService {
 			reconnectAttempts: this.reconnectAttempts,
 			socketId: this.socket?.id
 		};
+	}
+
+	// Reset connection state - useful for retrying after max attempts reached
+	resetConnectionState() {
+		this.reconnectAttempts = 0;
+		this.connected = false;
+		if (this.reconnectTimeout) {
+			clearTimeout(this.reconnectTimeout);
+			this.reconnectTimeout = null;
+		}
+		console.log('[WS] Connection state reset');
+	}
+
+	// Manual retry method
+	async retry() {
+		this.resetConnectionState();
+		return await this.connect();
 	}
 }
 
