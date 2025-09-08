@@ -97,6 +97,98 @@ comboSchema.methods.calculateSavings = function (products) {
 	return Math.max(0, individualTotal - this.price);
 };
 
+// Method to calculate maximum number of times this combo can be applied
+comboSchema.methods.getMaxApplications = function (products) {
+	const productsByCategory = {};
+
+	// Group products by category
+	products.forEach(item => {
+		if (!productsByCategory[item.product.category]) {
+			productsByCategory[item.product.category] = 0;
+		}
+		productsByCategory[item.product.category] += item.quantity;
+	});
+
+	// Find the limiting factor (minimum ratio)
+	let maxApplications = 0;
+
+	for (const requirement of this.categoryRequirements) {
+		const availableQuantity = productsByCategory[requirement.category] || 0;
+		const possibleApplications = Math.floor(availableQuantity / requirement.quantity);
+
+		if (maxApplications === 0) {
+			maxApplications = possibleApplications;
+		} else {
+			maxApplications = Math.min(maxApplications, possibleApplications);
+		}
+	}
+
+	return maxApplications;
+};
+
+// Method to calculate total savings with maximum applications
+comboSchema.methods.calculateMaxSavings = function (products) {
+	const maxApplications = this.getMaxApplications(products);
+	if (maxApplications <= 0) return 0;
+
+	// Calculate cost if all applicable items are in combos
+	const comboTotal = maxApplications * this.price;
+
+	// Calculate the cost of items used in combos at individual prices
+	const productsByCategory = {};
+	products.forEach(item => {
+		if (!productsByCategory[item.product.category]) {
+			productsByCategory[item.product.category] = [];
+		}
+		productsByCategory[item.product.category].push(item);
+	});
+
+	let usedItemsCost = 0;
+	for (const requirement of this.categoryRequirements) {
+		const categoryItems = productsByCategory[requirement.category] || [];
+		let remainingNeeded = requirement.quantity * maxApplications;
+
+		// Sort by price (highest first) to use most expensive items in combo
+		categoryItems.sort((a, b) => b.product.price - a.product.price);
+
+		for (const item of categoryItems) {
+			if (remainingNeeded <= 0) break;
+
+			const useQuantity = Math.min(item.quantity, remainingNeeded);
+			usedItemsCost += useQuantity * item.product.price;
+			remainingNeeded -= useQuantity;
+		}
+	}
+
+	return Math.max(0, usedItemsCost - comboTotal);
+};
+
+// Static method to find optimal combo combination
+comboSchema.statics.findOptimalCombination = async function (products) {
+	const activeCombos = await this.findActive();
+
+	// Calculate savings for each combo
+	const comboAnalysis = activeCombos.map(combo => ({
+		combo,
+		maxApplications: combo.getMaxApplications(products),
+		savingsPerApplication: combo.calculateSavings(products),
+		totalSavings: combo.calculateMaxSavings(products)
+	}));
+
+	// Filter out combos that can't be applied
+	const applicableCombos = comboAnalysis.filter(analysis => analysis.maxApplications > 0);
+
+	// Sort by total savings (highest first), then by priority
+	applicableCombos.sort((a, b) => {
+		if (b.totalSavings !== a.totalSavings) {
+			return b.totalSavings - a.totalSavings;
+		}
+		return b.combo.priority - a.combo.priority;
+	});
+
+	return applicableCombos;
+};
+
 // Add pagination plugin
 comboSchema.plugin(mongoosePaginate);
 

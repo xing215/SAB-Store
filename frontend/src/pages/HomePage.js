@@ -113,17 +113,24 @@ const HomePage = () => {
 
 					{/* Combo Detection Warning */}
 					{comboDetection.hasCombo && (
-						<div className="bg-orange-50 border border-orange-200 rounded-lg p-4 mb-6">
+						<div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
 							<div className="flex items-start">
-								<i className="fas fa-exclamation-triangle text-orange-500 mt-1 mr-3"></i>
+								<i className="fas fa-gift text-green-500 mt-1 mr-3"></i>
 								<div className="flex-1">
-									<h3 className="font-semibold text-orange-800 mb-1">Thông báo Combo</h3>
-									<p className="text-orange-700 text-sm">
-										Đã tự động chuyển sang combo vì rẻ hơn. Vui lòng kiểm tra đơn hàng.
+									<h3 className="font-semibold text-green-800 mb-1">Combo được áp dụng!</h3>
+									<p className="text-green-700 text-sm">
+										{comboDetection.message}
 									</p>
-									<p className="text-orange-600 text-xs mt-1">
-										Combo "{comboDetection.combo?.name}" - Tiết kiệm {formatCurrency(comboDetection.savings)}
-									</p>
+									{comboDetection.optimalPricing && comboDetection.optimalPricing.combos.length > 0 && (
+										<div className="mt-2 text-xs text-green-600">
+											{comboDetection.optimalPricing.combos.map((combo, index) => (
+												<div key={index} className="flex justify-between">
+													<span>{combo.name} x{combo.applications}</span>
+													<span>-{formatCurrency(combo.savings)}</span>
+												</div>
+											))}
+										</div>
+									)}
 								</div>
 							</div>
 						</div>

@@ -1,6 +1,7 @@
 const express = require('express');
 const Combo = require('../models/Combo');
 const Product = require('../models/Product');
+const ComboService = require('../services/ComboService');
 const { authenticateAdmin, authenticateSeller, authenticateUser } = require('../middleware/better-auth');
 const router = express.Router();
 
@@ -61,7 +62,7 @@ router.get('/active', async (req, res) => {
 
 /**
  * @route   POST /api/combos/detect
- * @desc    Detect applicable combos for given products
+ * @desc    Detect optimal combo combination for given products
  * @access  Public
  */
 router.post('/detect', async (req, res) => {
@@ -88,32 +89,118 @@ router.post('/detect', async (req, res) => {
 			};
 		}).filter(item => item.product); // Remove items where product not found
 
-		// Get active combos
-		const combos = await Combo.findActive();
+		if (productsWithQuantities.length === 0) {
+			return res.json({
+				success: true,
+				data: {
+					applicableCombos: [],
+					bestCombo: null,
+					optimalPricing: null
+				}
+			});
+		}
 
-		// Find applicable combos
-		const applicableCombos = combos.filter(combo => {
-			return combo.canApplyToProducts(productsWithQuantities);
-		});
+		// Find optimal combo combination
+		const optimalCombos = await Combo.findOptimalCombination(productsWithQuantities);
 
-		// Calculate savings for each applicable combo
-		const combosWithSavings = applicableCombos.map(combo => {
-			const savings = combo.calculateSavings(productsWithQuantities);
-			return {
-				...combo.toObject(),
-				savings,
-				isBetterDeal: savings > 0
+		// Calculate optimal pricing breakdown
+		let optimalPricing = null;
+		if (optimalCombos.length > 0) {
+			const bestCombo = optimalCombos[0];
+
+			// Calculate remaining items after applying best combo
+			const remainingItems = [...productsWithQuantities];
+			const productsByCategory = {};
+
+			remainingItems.forEach(item => {
+				if (!productsByCategory[item.product.category]) {
+					productsByCategory[item.product.category] = [];
+				}
+				productsByCategory[item.product.category].push(item);
+			});
+
+			// Remove items used in combo
+			let comboItemsUsed = [];
+			for (const requirement of bestCombo.combo.categoryRequirements) {
+				const categoryItems = productsByCategory[requirement.category] || [];
+				let remainingNeeded = requirement.quantity * bestCombo.maxApplications;
+
+				// Sort by price (highest first) to use most expensive items in combo
+				categoryItems.sort((a, b) => b.product.price - a.product.price);
+
+				for (let i = 0; i < categoryItems.length && remainingNeeded > 0; i++) {
+					const item = categoryItems[i];
+					const useQuantity = Math.min(item.quantity, remainingNeeded);
+
+					comboItemsUsed.push({
+						productId: item.product._id,
+						productName: item.product.name,
+						category: item.product.category,
+						price: item.product.price,
+						quantity: useQuantity,
+						subtotal: useQuantity * item.product.price
+					});
+
+					// Update remaining quantity
+					item.quantity -= useQuantity;
+					remainingNeeded -= useQuantity;
+				}
+			}
+
+			// Calculate remaining items cost
+			const remainingItemsCost = remainingItems.reduce((total, item) => {
+				return total + (item.product.price * item.quantity);
+			}, 0);
+
+			const comboTotal = bestCombo.maxApplications * bestCombo.combo.price;
+			const originalTotal = productsWithQuantities.reduce((total, item) => {
+				return total + (item.product.price * item.quantity);
+			}, 0);
+
+			optimalPricing = {
+				originalTotal,
+				comboApplications: bestCombo.maxApplications,
+				comboName: bestCombo.combo.name,
+				comboPrice: bestCombo.combo.price,
+				comboTotal,
+				comboItemsUsed,
+				remainingItemsCost,
+				finalTotal: comboTotal + remainingItemsCost,
+				totalSavings: originalTotal - (comboTotal + remainingItemsCost),
+				remainingItems: remainingItems.filter(item => item.quantity > 0).map(item => ({
+					productId: item.product._id,
+					productName: item.product.name,
+					price: item.product.price,
+					quantity: item.quantity,
+					subtotal: item.product.price * item.quantity
+				}))
 			};
-		});
+		}
 
-		// Sort by savings (highest first)
-		combosWithSavings.sort((a, b) => b.savings - a.savings);
+		// Format response for backward compatibility
+		const bestCombo = optimalCombos.length > 0 ? {
+			...optimalCombos[0].combo.toObject(),
+			maxApplications: optimalCombos[0].maxApplications,
+			totalSavings: optimalCombos[0].totalSavings,
+			savingsPerApplication: optimalCombos[0].savingsPerApplication,
+			isBetterDeal: optimalCombos[0].totalSavings > 0,
+			// Legacy fields for compatibility
+			savings: optimalCombos[0].totalSavings,
+			price: optimalPricing ? optimalPricing.finalTotal : optimalCombos[0].combo.price
+		} : null;
 
 		res.json({
 			success: true,
 			data: {
-				applicableCombos: combosWithSavings,
-				bestCombo: combosWithSavings.length > 0 ? combosWithSavings[0] : null
+				applicableCombos: optimalCombos.map(analysis => ({
+					...analysis.combo.toObject(),
+					maxApplications: analysis.maxApplications,
+					totalSavings: analysis.totalSavings,
+					savingsPerApplication: analysis.savingsPerApplication,
+					isBetterDeal: analysis.totalSavings > 0
+				})),
+				bestCombo,
+				optimalPricing
 			}
 		});
 	} catch (error) {
@@ -326,6 +413,37 @@ router.get('/:id', authenticateAdmin, async (req, res) => {
 		res.status(500).json({
 			success: false,
 			message: 'Lỗi server khi lấy thông tin combo'
+		});
+	}
+});
+
+/**
+ * @route   POST /api/combos/pricing
+ * @desc    Calculate optimal pricing for cart items
+ * @access  Public
+ */
+router.post('/pricing', async (req, res) => {
+	try {
+		const { items } = req.body;
+
+		if (!items || !Array.isArray(items)) {
+			return res.status(400).json({
+				success: false,
+				message: 'Danh sách sản phẩm là bắt buộc'
+			});
+		}
+
+		const pricingBreakdown = await ComboService.getPricingBreakdown(items);
+
+		res.json({
+			success: true,
+			data: pricingBreakdown
+		});
+	} catch (error) {
+		console.error('Calculate pricing error:', error);
+		res.status(500).json({
+			success: false,
+			message: 'Lỗi server khi tính toán giá'
 		});
 	}
 });

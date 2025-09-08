@@ -11,6 +11,8 @@ const DirectSalesPage = () => {
 	const [processing, setProcessing] = useState(false);
 	const [currentOrder, setCurrentOrder] = useState(null);
 	const [paymentQR, setPaymentQR] = useState('');
+	const [pricingInfo, setPricingInfo] = useState(null);
+	const [loadingPricing, setLoadingPricing] = useState(false);
 
 	// Refs for input focus management
 	const inputRefs = useRef({});
@@ -53,10 +55,54 @@ const DirectSalesPage = () => {
 	}, [products, loading]);
 
 	const updateQuantity = (productId, delta) => {
-		setQuantities(prev => ({
-			...prev,
-			[productId]: Math.max(0, (prev[productId] || 0) + delta)
-		}));
+		setQuantities(prev => {
+			const newQuantities = {
+				...prev,
+				[productId]: Math.max(0, (prev[productId] || 0) + delta)
+			};
+
+			// Trigger pricing calculation
+			calculatePricing(newQuantities);
+
+			return newQuantities;
+		});
+	};
+
+	// Calculate optimal pricing for current selection
+	const calculatePricing = async (currentQuantities = quantities) => {
+		const items = Object.entries(currentQuantities)
+			.filter(([_, qty]) => qty > 0)
+			.map(([productId, quantity]) => ({
+				productId,
+				quantity
+			}));
+
+		if (items.length === 0) {
+			setPricingInfo(null);
+			return;
+		}
+
+		setLoadingPricing(true);
+		try {
+			const response = await fetch('/api/combos/pricing', {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+				},
+				body: JSON.stringify({ items }),
+			});
+
+			if (response.ok) {
+				const result = await response.json();
+				if (result.success) {
+					setPricingInfo(result.data);
+				}
+			}
+		} catch (error) {
+			console.error('Pricing calculation error:', error);
+		} finally {
+			setLoadingPricing(false);
+		}
 	};
 
 	// Handle Tab navigation between quantity inputs
@@ -202,6 +248,12 @@ const DirectSalesPage = () => {
 	};
 
 	const getTotalAmount = () => {
+		// Use optimal pricing if available
+		if (pricingInfo && pricingInfo.summary) {
+			return pricingInfo.summary.finalTotal;
+		}
+
+		// Fallback to basic calculation
 		return Object.entries(quantities).reduce((total, [productId, quantity]) => {
 			const product = products.find(p => p._id === productId);
 			return total + (product ? product.price * quantity : 0);
@@ -275,10 +327,14 @@ const DirectSalesPage = () => {
 											ref={(el) => inputRefs.current[product._id] = el}
 											type="number"
 											value={quantities[product._id] || 0}
-											onChange={(e) => setQuantities(prev => ({
-												...prev,
-												[product._id]: Math.max(0, parseInt(e.target.value) || 0)
-											}))}
+											onChange={(e) => {
+												const newQuantities = {
+													...quantities,
+													[product._id]: Math.max(0, parseInt(e.target.value) || 0)
+												};
+												setQuantities(newQuantities);
+												calculatePricing(newQuantities);
+											}}
 											onKeyDown={(e) => handleKeyPress(e, product._id)}
 											className="w-16 px-2 py-1 text-center border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
 											min="0"
@@ -310,9 +366,40 @@ const DirectSalesPage = () => {
 									Tổng đơn hàng
 								</h3>
 								<span className="text-2xl font-bold text-blue-700">
-									{formatCurrency(getTotalAmount())}
+									{loadingPricing ? '...' : formatCurrency(getTotalAmount())}
 								</span>
 							</div>
+
+							{/* Pricing Breakdown */}
+							{pricingInfo && pricingInfo.summary.totalSavings > 0 && (
+								<div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg">
+									<div className="flex items-center justify-between mb-2">
+										<span className="text-green-800 font-medium">
+											<i className="fas fa-gift mr-2"></i>
+											Combo tối ưu được áp dụng
+										</span>
+										<span className="text-green-700 font-bold">
+											-{formatCurrency(pricingInfo.summary.totalSavings)}
+										</span>
+									</div>
+
+									{pricingInfo.combos.length > 0 && (
+										<div className="text-sm text-green-700 space-y-1">
+											{pricingInfo.combos.map((combo, index) => (
+												<div key={index} className="flex justify-between">
+													<span>{combo.name} x{combo.applications}</span>
+													<span>{formatCurrency(combo.totalPrice)}</span>
+												</div>
+											))}
+										</div>
+									)}
+
+									<div className="text-xs text-green-600 mt-2">
+										Giá gốc: {formatCurrency(pricingInfo.summary.originalTotal)} →
+										Giá sau combo: {formatCurrency(pricingInfo.summary.finalTotal)}
+									</div>
+								</div>
+							)}
 
 							<div className="flex justify-center">
 								<button

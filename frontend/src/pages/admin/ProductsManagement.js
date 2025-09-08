@@ -3,6 +3,13 @@ import { toast } from 'react-toastify';
 import Swal from 'sweetalert2';
 import { adminService, formatCurrency } from '../../services/api';
 import LoadingSpinner from '../../components/LoadingSpinner';
+import {
+	processImageFile,
+	validateImageFile,
+	getRatioDisplayText,
+	getImageDimensions,
+	needsCropping
+} from '../../utils/imageUtils';
 
 const ProductsManagement = () => {
 	const [products, setProducts] = useState([]);
@@ -22,6 +29,8 @@ const ProductsManagement = () => {
 	const [imagePreview, setImagePreview] = useState(null);
 	const [uploadMethod, setUploadMethod] = useState('url'); // 'url', 'upload', 'path'
 	const [uploading, setUploading] = useState(false);
+	const [processingImage, setProcessingImage] = useState(false);
+	const [imageInfo, setImageInfo] = useState(null);
 
 	// Fetch products
 	useEffect(() => {
@@ -51,16 +60,47 @@ const ProductsManagement = () => {
 		}));
 	};
 
-	const handleImageFileChange = (e) => {
+	const handleImageFileChange = async (e) => {
 		const file = e.target.files[0];
-		if (file) {
-			setImageFile(file);
-			// Create preview
-			const reader = new FileReader();
-			reader.onload = (e) => {
-				setImagePreview(e.target.result);
-			};
-			reader.readAsDataURL(file);
+		if (!file) return;
+
+		// Validate file
+		const validation = validateImageFile(file);
+		if (!validation.valid) {
+			toast.error(validation.error);
+			return;
+		}
+
+		try {
+			setProcessingImage(true);
+
+			// Get original dimensions
+			const dimensions = await getImageDimensions(file);
+
+			// Check if cropping is needed
+			const cropNeeded = needsCropping(dimensions.width, dimensions.height);
+
+			setImageInfo({
+				original: dimensions,
+				needsCrop: cropNeeded,
+				size: file.size
+			});
+
+			// Process image (crop and resize)
+			const processed = await processImageFile(file);
+
+			setImageFile(processed.file);
+			setImagePreview(processed.preview);
+
+			if (cropNeeded) {
+				toast.info('Hình ảnh đã được cắt theo tỉ lệ chuẩn 1.5:1');
+			}
+
+		} catch (error) {
+			console.error('Image processing error:', error);
+			toast.error('Lỗi khi xử lý hình ảnh: ' + error.message);
+		} finally {
+			setProcessingImage(false);
 		}
 	};
 
@@ -99,6 +139,7 @@ const ProductsManagement = () => {
 	const resetImageInputs = () => {
 		setImageFile(null);
 		setImagePreview(null);
+		setImageInfo(null);
 		setFormData(prev => ({ ...prev, imageUrl: '' }));
 	};
 
@@ -166,7 +207,15 @@ const ProductsManagement = () => {
 			stockQuantity: product.stockQuantity?.toString() || '0'
 		});
 		resetImageInputs();
-		setUploadMethod('url');
+
+		// Set preview for existing image
+		if (product.imageUrl) {
+			setImagePreview(product.imageUrl);
+			setUploadMethod('url');
+		} else {
+			setUploadMethod('url');
+		}
+
 		setShowModal(true);
 	};
 
@@ -426,6 +475,10 @@ const ProductsManagement = () => {
 									<label className="block text-sm font-medium text-gray-700 mb-1">
 										Hình ảnh sản phẩm
 									</label>
+									<div className="text-xs text-blue-600 mb-2">
+										<i className="fas fa-info-circle mr-1"></i>
+										{getRatioDisplayText()} - Hình ảnh sẽ được tự động cắt theo tỉ lệ này
+									</div>
 
 									{/* Upload method selector */}
 									<div className="mb-3">
@@ -486,19 +539,43 @@ const ProductsManagement = () => {
 												accept="image/*"
 												onChange={handleImageFileChange}
 												className="form-input"
+												disabled={processingImage}
 											/>
+
+											{processingImage && (
+												<div className="mt-2 text-sm text-blue-600">
+													<LoadingSpinner size="small" />
+													<span className="ml-2">Đang xử lý hình ảnh...</span>
+												</div>
+											)}
+
+											{imageInfo && (
+												<div className="mt-2 text-xs text-gray-600 bg-gray-50 p-2 rounded">
+													<div>Kích thước gốc: {imageInfo.original.width}×{imageInfo.original.height}px</div>
+													{imageInfo.needsCrop && (
+														<div className="text-orange-600">
+															<i className="fas fa-scissors mr-1"></i>
+															Đã cắt theo tỉ lệ chuẩn
+														</div>
+													)}
+												</div>
+											)}
+
 											{imagePreview && (
 												<div className="mt-2">
 													<img
 														src={imagePreview}
 														alt="Preview"
-														className="w-20 h-20 object-cover rounded-lg"
+														className="w-32 h-21 object-cover rounded-lg border"
+														style={{ aspectRatio: '1.5/1' }}
 													/>
 												</div>
 											)}
+
 											{uploading && (
 												<div className="mt-2 text-sm text-blue-600">
-													Đang upload...
+													<LoadingSpinner size="small" />
+													<span className="ml-2">Đang upload...</span>
 												</div>
 											)}
 										</div>
@@ -522,7 +599,8 @@ const ProductsManagement = () => {
 											<img
 												src={formData.imageUrl}
 												alt="Preview"
-												className="w-20 h-20 object-cover rounded-lg"
+												className="w-32 h-21 object-cover rounded-lg border"
+												style={{ aspectRatio: '1.5/1' }}
 												onError={(e) => {
 													e.target.src = '/fallback-product.png';
 												}}

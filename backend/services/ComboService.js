@@ -1,275 +1,272 @@
 const Combo = require('../models/Combo');
 const Product = require('../models/Product');
 
-/**
- * Service for handling combo logic
- */
 class ComboService {
 	/**
-	 * Detect and apply best combo to cart items
-	 * @param {Array} items - Array of { productId, quantity }
-	 * @param {boolean} silent - Whether to apply silently without warnings
-	 * @returns {Object} Result with applied combo info
+	 * Calculate optimal pricing for cart items including combos
+	 * @param {Array} items - Array of {productId, quantity}
+	 * @returns {Object} Pricing breakdown with combos
 	 */
-	static async detectAndApplyBestCombo(items, silent = false) {
-		try {
-			if (!items || !Array.isArray(items) || items.length === 0) {
-				return {
-					success: true,
-					hasCombo: false,
-					originalItems: items,
-					finalItems: items,
-					message: null
-				};
+	static async calculateOptimalPricing(items) {
+		if (!items || items.length === 0) {
+			return {
+				originalTotal: 0,
+				finalTotal: 0,
+				totalSavings: 0,
+				appliedCombos: [],
+				remainingItems: [],
+				breakdown: []
+			};
+		}
+
+		// Get product details
+		const productIds = items.map(item => item.productId);
+		const products = await Product.find({ _id: { $in: productIds } });
+
+		// Create products with quantities
+		let remainingProducts = items.map(item => {
+			const product = products.find(p => p._id.toString() === item.productId);
+			return {
+				productId: item.productId,
+				product,
+				quantity: item.quantity
+			};
+		}).filter(item => item.product);
+
+		if (remainingProducts.length === 0) {
+			return {
+				originalTotal: 0,
+				finalTotal: 0,
+				totalSavings: 0,
+				appliedCombos: [],
+				remainingItems: [],
+				breakdown: []
+			};
+		}
+
+		const originalTotal = remainingProducts.reduce((total, item) => {
+			return total + (item.product.price * item.quantity);
+		}, 0);
+
+		const appliedCombos = [];
+		const breakdown = [];
+		let currentTotal = 0;
+
+		// Keep applying combos until no more beneficial combos can be applied
+		while (remainingProducts.length > 0) {
+			const optimalCombos = await Combo.findOptimalCombination(remainingProducts);
+
+			if (optimalCombos.length === 0 || optimalCombos[0].totalSavings <= 0) {
+				break; // No more beneficial combos
 			}
 
-			// Get product details for all items
-			const productIds = items.map(item => item.productId);
-			const products = await Product.find({ _id: { $in: productIds } });
-
-			// Create products with quantities
-			const productsWithQuantities = items.map(item => {
-				const product = products.find(p => p._id.toString() === item.productId);
-				return {
-					product,
-					quantity: item.quantity,
-					originalItem: item
-				};
-			}).filter(item => item.product); // Remove items where product not found
-
-			// Get active combos sorted by priority
-			const combos = await Combo.findActive();
-
-			// Find the best applicable combo
-			let bestCombo = null;
-			let maxSavings = 0;
-
-			for (const combo of combos) {
-				if (combo.canApplyToProducts(productsWithQuantities)) {
-					const savings = combo.calculateSavings(productsWithQuantities);
-					if (savings > maxSavings) {
-						maxSavings = savings;
-						bestCombo = combo;
-					}
-				}
-			}
-
-			// If no beneficial combo found, return original items
-			if (!bestCombo || maxSavings <= 0) {
-				return {
-					success: true,
-					hasCombo: false,
-					originalItems: items,
-					finalItems: items,
-					message: null
-				};
-			}
+			const bestCombo = optimalCombos[0];
 
 			// Apply the best combo
-			const comboApplication = this.applyComboToItems(bestCombo, productsWithQuantities);
+			const comboApplication = this.applyComboToProducts(bestCombo, remainingProducts);
 
-			return {
-				success: true,
-				hasCombo: true,
-				combo: bestCombo,
-				savings: maxSavings,
-				originalItems: items,
-				finalItems: comboApplication.finalItems,
-				remainingItems: comboApplication.remainingItems,
-				message: silent ? null : `Đã tự động chuyển sang combo "${bestCombo.name}" vì rẻ hơn ${this.formatCurrency(maxSavings)}. Vui lòng kiểm tra đơn hàng.`
-			};
+			if (comboApplication.applicationsUsed > 0) {
+				appliedCombos.push({
+					combo: bestCombo.combo,
+					applications: comboApplication.applicationsUsed,
+					itemsUsed: comboApplication.itemsUsed,
+					totalPrice: comboApplication.applicationsUsed * bestCombo.combo.price,
+					savings: comboApplication.savings
+				});
 
-		} catch (error) {
-			console.error('Combo detection error:', error);
-			return {
-				success: false,
-				error: error.message,
-				hasCombo: false,
-				originalItems: items,
-				finalItems: items
-			};
-		}
-	}
+				breakdown.push({
+					type: 'combo',
+					name: bestCombo.combo.name,
+					applications: comboApplication.applicationsUsed,
+					pricePerApplication: bestCombo.combo.price,
+					totalPrice: comboApplication.applicationsUsed * bestCombo.combo.price,
+					itemsUsed: comboApplication.itemsUsed,
+					savings: comboApplication.savings
+				});
 
-	/**
-	 * Apply combo to cart items
-	 * @param {Object} combo - The combo to apply
-	 * @param {Array} productsWithQuantities - Products with quantities
-	 * @returns {Object} Application result
-	 */
-	static applyComboToItems(combo, productsWithQuantities) {
-		const finalItems = [];
-		const remainingItems = [];
-		const usedProducts = new Map();
+				currentTotal += comboApplication.applicationsUsed * bestCombo.combo.price;
 
-		// Track how many of each category we need for the combo
-		const categoryNeeds = new Map();
-		combo.categoryRequirements.forEach(req => {
-			categoryNeeds.set(req.category, req.quantity);
-		});
-
-		// Collect products by category
-		const productsByCategory = new Map();
-		productsWithQuantities.forEach(item => {
-			const category = item.product.category;
-			if (!productsByCategory.has(category)) {
-				productsByCategory.set(category, []);
-			}
-			productsByCategory.get(category).push(item);
-		});
-
-		// Apply combo - select products for combo
-		const comboProducts = [];
-		for (const [category, requiredQuantity] of categoryNeeds) {
-			const categoryProducts = productsByCategory.get(category) || [];
-			let selectedQuantity = 0;
-
-			for (const item of categoryProducts) {
-				const availableQuantity = item.quantity - (usedProducts.get(item.product._id.toString()) || 0);
-				const neededQuantity = Math.min(availableQuantity, requiredQuantity - selectedQuantity);
-
-				if (neededQuantity > 0) {
-					comboProducts.push({
-						productId: item.product._id,
-						productName: item.product.name,
-						price: item.product.price,
-						quantity: neededQuantity,
-						isComboItem: true,
-						comboId: combo._id,
-						comboName: combo.name
-					});
-
-					// Track used quantity
-					const productId = item.product._id.toString();
-					usedProducts.set(productId, (usedProducts.get(productId) || 0) + neededQuantity);
-					selectedQuantity += neededQuantity;
-
-					if (selectedQuantity >= requiredQuantity) {
-						break;
-					}
-				}
+				// Update remaining products
+				remainingProducts = comboApplication.remainingProducts;
+			} else {
+				break; // Can't apply any more combos
 			}
 		}
 
-		// Add combo as a single item with combo price
-		finalItems.push({
-			comboId: combo._id,
-			comboName: combo.name,
-			price: combo.price,
-			quantity: 1,
-			isCombo: true,
-			comboProducts: comboProducts
-		});
+		// Add remaining items at individual prices
+		const remainingTotal = remainingProducts.reduce((total, item) => {
+			return total + (item.product.price * item.quantity);
+		}, 0);
 
-		// Add remaining individual items
-		productsWithQuantities.forEach(item => {
-			const productId = item.product._id.toString();
-			const usedQuantity = usedProducts.get(productId) || 0;
-			const remainingQuantity = item.quantity - usedQuantity;
-
-			if (remainingQuantity > 0) {
-				const remainingItem = {
-					productId: item.product._id,
+		if (remainingTotal > 0) {
+			breakdown.push({
+				type: 'individual',
+				items: remainingProducts.map(item => ({
+					productId: item.productId,
 					productName: item.product.name,
 					price: item.product.price,
-					quantity: remainingQuantity
-				};
-				finalItems.push(remainingItem);
-				remainingItems.push(remainingItem);
-			}
-		});
+					quantity: item.quantity,
+					subtotal: item.product.price * item.quantity
+				})),
+				totalPrice: remainingTotal
+			});
+		}
+
+		currentTotal += remainingTotal;
 
 		return {
-			finalItems,
-			remainingItems,
-			comboProducts
+			originalTotal,
+			finalTotal: currentTotal,
+			totalSavings: originalTotal - currentTotal,
+			appliedCombos,
+			remainingItems: remainingProducts,
+			breakdown
 		};
 	}
 
 	/**
-	 * Get all active combos
+	 * Apply a specific combo to products and return updated state
+	 * @param {Object} comboAnalysis - Combo analysis from findOptimalCombination
+	 * @param {Array} products - Current products with quantities
+	 * @returns {Object} Application result
 	 */
-	static async getActiveCombos() {
-		try {
-			return await Combo.findActive();
-		} catch (error) {
-			console.error('Get active combos error:', error);
-			return [];
+	static applyComboToProducts(comboAnalysis, products) {
+		const { combo, maxApplications } = comboAnalysis;
+
+		if (maxApplications <= 0) {
+			return {
+				applicationsUsed: 0,
+				itemsUsed: [],
+				remainingProducts: products,
+				savings: 0
+			};
 		}
-	}
 
-	/**
-	 * Check if given products can satisfy any combo
-	 * @param {Array} items - Array of { productId, quantity }
-	 * @returns {Array} Array of applicable combos with savings
-	 */
-	static async getApplicableCombos(items) {
-		try {
-			const productIds = items.map(item => item.productId);
-			const products = await Product.find({ _id: { $in: productIds } });
-
-			const productsWithQuantities = items.map(item => {
-				const product = products.find(p => p._id.toString() === item.productId);
-				return {
-					product,
-					quantity: item.quantity
-				};
-			}).filter(item => item.product);
-
-			const combos = await Combo.findActive();
-
-			const applicableCombos = combos.filter(combo => {
-				return combo.canApplyToProducts(productsWithQuantities);
-			});
-
-			return applicableCombos.map(combo => {
-				const savings = combo.calculateSavings(productsWithQuantities);
-				return {
-					...combo.toObject(),
-					savings,
-					isBetterDeal: savings > 0
-				};
-			}).sort((a, b) => b.savings - a.savings);
-
-		} catch (error) {
-			console.error('Get applicable combos error:', error);
-			return [];
-		}
-	}
-
-	/**
-	 * Convert combo items back to individual product items for order processing
-	 * @param {Array} items - Items that may contain combos
-	 * @returns {Array} Individual product items
-	 */
-	static expandComboItems(items) {
-		const expandedItems = [];
-
-		items.forEach(item => {
-			if (item.isCombo && item.comboProducts) {
-				// Add individual products from combo
-				item.comboProducts.forEach(comboProduct => {
-					expandedItems.push({
-						productId: comboProduct.productId,
-						productName: comboProduct.productName,
-						price: comboProduct.price,
-						quantity: comboProduct.quantity,
-						fromCombo: true,
-						comboId: item.comboId,
-						comboName: item.comboName
-					});
-				});
-			} else if (!item.isCombo) {
-				// Add regular product item
-				expandedItems.push(item);
+		// Group products by category
+		const productsByCategory = {};
+		products.forEach(item => {
+			if (!productsByCategory[item.product.category]) {
+				productsByCategory[item.product.category] = [];
 			}
+			productsByCategory[item.product.category].push(item);
 		});
 
-		return expandedItems;
+		const itemsUsed = [];
+		const remainingProducts = [...products];
+
+		let totalUsedCost = 0;
+
+		// Apply combo requirements
+		for (const requirement of combo.categoryRequirements) {
+			const categoryItems = productsByCategory[requirement.category] || [];
+			let remainingNeeded = requirement.quantity * maxApplications;
+
+			// Sort by price (highest first) to maximize savings
+			categoryItems.sort((a, b) => b.product.price - a.product.price);
+
+			for (const item of categoryItems) {
+				if (remainingNeeded <= 0) break;
+
+				const useQuantity = Math.min(item.quantity, remainingNeeded);
+
+				if (useQuantity > 0) {
+					itemsUsed.push({
+						productId: item.productId,
+						productName: item.product.name,
+						category: item.product.category,
+						price: item.product.price,
+						quantity: useQuantity,
+						subtotal: useQuantity * item.product.price
+					});
+
+					totalUsedCost += useQuantity * item.product.price;
+
+					// Update remaining quantity
+					const remainingItem = remainingProducts.find(p => p.productId === item.productId);
+					if (remainingItem) {
+						remainingItem.quantity -= useQuantity;
+					}
+
+					remainingNeeded -= useQuantity;
+				}
+			}
+		}
+
+		// Remove items with 0 quantity
+		const filteredRemainingProducts = remainingProducts.filter(item => item.quantity > 0);
+
+		const comboTotalCost = maxApplications * combo.price;
+		const savings = totalUsedCost - comboTotalCost;
+
+		return {
+			applicationsUsed: maxApplications,
+			itemsUsed,
+			remainingProducts: filteredRemainingProducts,
+			savings
+		};
 	}
 
 	/**
-	 * Format currency for Vietnamese Dong
+	 * Get pricing breakdown for display
+	 * @param {Array} items - Cart items
+	 * @returns {Object} Formatted pricing info
+	 */
+	static async getPricingBreakdown(items) {
+		const pricing = await this.calculateOptimalPricing(items);
+
+		return {
+			summary: {
+				originalTotal: pricing.originalTotal,
+				finalTotal: pricing.finalTotal,
+				totalSavings: pricing.totalSavings,
+				savingsPercentage: pricing.originalTotal > 0
+					? ((pricing.totalSavings / pricing.originalTotal) * 100).toFixed(1)
+					: 0
+			},
+			combos: pricing.appliedCombos.map(combo => ({
+				name: combo.combo.name,
+				applications: combo.applications,
+				pricePerApplication: combo.combo.price,
+				totalPrice: combo.totalPrice,
+				savings: combo.savings,
+				itemsUsed: combo.itemsUsed
+			})),
+			individualItems: pricing.remainingItems.map(item => ({
+				productId: item.productId,
+				productName: item.product.name,
+				price: item.product.price,
+				quantity: item.quantity,
+				subtotal: item.product.price * item.quantity
+			})),
+			breakdown: pricing.breakdown
+		};
+	}
+
+	/**
+	 * Legacy method for backward compatibility
+	 * @param {Array} items 
+	 * @param {boolean} silent 
+	 * @returns {Object}
+	 */
+	static async detectAndApplyBestCombo(items, silent = false) {
+		const pricing = await this.calculateOptimalPricing(items);
+
+		return {
+			success: true,
+			hasCombo: pricing.appliedCombos.length > 0,
+			originalItems: items,
+			finalItems: items, // For compatibility - items structure unchanged
+			combo: pricing.appliedCombos.length > 0 ? pricing.appliedCombos[0].combo : null,
+			savings: pricing.totalSavings,
+			message: pricing.appliedCombos.length > 0
+				? `Đã áp dụng combo tiết kiệm ${this.formatCurrency(pricing.totalSavings)}`
+				: null,
+			pricing
+		};
+	}
+
+	/**
+	 * Format currency helper
 	 * @param {number} amount 
 	 * @returns {string}
 	 */
@@ -278,18 +275,6 @@ class ComboService {
 			style: 'currency',
 			currency: 'VND'
 		}).format(amount);
-	}
-
-	/**
-	 * Get product categories for combo configuration
-	 */
-	static async getProductCategories() {
-		try {
-			return await Product.distinct('category', { isActive: true, available: true });
-		} catch (error) {
-			console.error('Get product categories error:', error);
-			return [];
-		}
 	}
 }
 

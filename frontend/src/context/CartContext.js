@@ -1,6 +1,5 @@
-import React, { createContext, useContext, useReducer, useEffect, useState } from 'react';
+import React, { createContext, useContext, useReducer, useEffect, useState, useCallback } from 'react';
 import { toast } from 'react-toastify';
-import { comboService } from '../services/api';
 
 // Cart Context
 const CartContext = createContext();
@@ -89,7 +88,8 @@ export const CartProvider = ({ children }) => {
 		combo: null,
 		savings: 0,
 		message: null,
-		isChecking: false
+		isChecking: false,
+		optimalPricing: null
 	});
 
 	// Load cart from localStorage on component mount
@@ -119,13 +119,15 @@ export const CartProvider = ({ children }) => {
 				combo: null,
 				savings: 0,
 				message: null,
-				isChecking: false
+				isChecking: false,
+				optimalPricing: null
 			});
 		}
+		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [cart]);
 
-	// Check for applicable combos
-	const checkForCombos = async () => {
+	// Check for applicable combos and calculate optimal pricing
+	const checkForCombos = useCallback(async () => {
 		if (cart.items.length === 0) return;
 
 		setComboDetection(prev => ({ ...prev, isChecking: true }));
@@ -136,20 +138,34 @@ export const CartProvider = ({ children }) => {
 				quantity: item.quantity
 			}));
 
-			const response = await comboService.detectCombos(items);
+			// Use the new pricing endpoint for optimal calculations
+			const response = await fetch('/api/combos/pricing', {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+				},
+				body: JSON.stringify({ items }),
+			});
 
-			if (response.success && response.data.bestCombo && response.data.bestCombo.isBetterDeal) {
+			if (!response.ok) {
+				throw new Error('Failed to calculate pricing');
+			}
+
+			const result = await response.json();
+
+			if (result.success && result.data.summary.totalSavings > 0) {
 				setComboDetection({
 					hasCombo: true,
-					combo: response.data.bestCombo,
-					savings: response.data.bestCombo.savings,
-					message: `Có combo "${response.data.bestCombo.name}" tiết kiệm ${formatCurrency(response.data.bestCombo.savings)}. Vui lòng kiểm tra đơn hàng khi thanh toán.`,
-					isChecking: false
+					combo: result.data.combos.length > 0 ? result.data.combos[0] : null,
+					savings: result.data.summary.totalSavings,
+					message: `Tiết kiệm ${formatCurrency(result.data.summary.totalSavings)} với combo tối ưu`,
+					isChecking: false,
+					optimalPricing: result.data
 				});
 
 				// Show toast notification for combo suggestion
 				toast.info(
-					`💡 Đã phát hiện combo "${response.data.bestCombo.name}" tiết kiệm ${formatCurrency(response.data.bestCombo.savings)}!`,
+					`💡 Đã tối ưu giá với combo! Tiết kiệm ${formatCurrency(result.data.summary.totalSavings)}`,
 					{
 						position: "bottom-right",
 						autoClose: 5000,
@@ -164,7 +180,8 @@ export const CartProvider = ({ children }) => {
 					combo: null,
 					savings: 0,
 					message: null,
-					isChecking: false
+					isChecking: false,
+					optimalPricing: result.success ? result.data : null
 				});
 			}
 		} catch (error) {
@@ -174,10 +191,11 @@ export const CartProvider = ({ children }) => {
 				combo: null,
 				savings: 0,
 				message: null,
-				isChecking: false
+				isChecking: false,
+				optimalPricing: null
 			});
 		}
-	};
+	}, [cart]);
 
 	// Cart Actions
 	const addToCart = (product) => {
@@ -246,15 +264,13 @@ export const CartProvider = ({ children }) => {
 
 	// Cart Calculations
 	const getCartTotal = () => {
-		// Get base total from individual items
-		const baseTotal = cart.items.reduce((total, item) => total + (item.price * item.quantity), 0);
-
-		// Apply combo discount if available
-		if (comboDetection.hasCombo && comboDetection.combo) {
-			return comboDetection.combo.price;
+		// Use optimal pricing if available
+		if (comboDetection.optimalPricing) {
+			return comboDetection.optimalPricing.summary.finalTotal;
 		}
 
-		return baseTotal;
+		// Fallback to base total from individual items
+		return cart.items.reduce((total, item) => total + (item.price * item.quantity), 0);
 	};
 
 	const getCartItemCount = () => {
@@ -278,6 +294,43 @@ export const CartProvider = ({ children }) => {
 		}).format(amount);
 	};
 
+	// Get pricing breakdown for display
+	const getPricingBreakdown = () => {
+		if (comboDetection.optimalPricing) {
+			return comboDetection.optimalPricing;
+		}
+
+		// Return basic breakdown if no optimal pricing
+		const total = cart.items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+		return {
+			summary: {
+				originalTotal: total,
+				finalTotal: total,
+				totalSavings: 0,
+				savingsPercentage: '0'
+			},
+			combos: [],
+			individualItems: cart.items.map(item => ({
+				productId: item.productId,
+				productName: item.productName,
+				price: item.price,
+				quantity: item.quantity,
+				subtotal: item.price * item.quantity
+			})),
+			breakdown: [{
+				type: 'individual',
+				items: cart.items.map(item => ({
+					productId: item.productId,
+					productName: item.productName,
+					price: item.price,
+					quantity: item.quantity,
+					subtotal: item.price * item.quantity
+				})),
+				totalPrice: total
+			}]
+		};
+	};
+
 	const value = {
 		cart,
 		addToCart,
@@ -292,7 +345,8 @@ export const CartProvider = ({ children }) => {
 		isInCart,
 		formatCurrency,
 		comboDetection,
-		checkForCombos
+		checkForCombos,
+		getPricingBreakdown
 	};
 
 	return (

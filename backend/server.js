@@ -3,6 +3,7 @@ const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const compression = require('compression');
+const path = require('path');
 const { auth } = require('./lib/auth');
 const { connectDB } = require('./lib/database');
 const { toNodeHandler } = require('better-auth/node');
@@ -116,7 +117,7 @@ app.use((req, res, next) => {
 app.all('/api/auth/*', toNodeHandler(auth));
 
 // Serve static files for uploaded images
-app.use('/uploads', express.static('uploads'));
+app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 // Routes
 app.use('/api/upload', require('./routes/upload'));
