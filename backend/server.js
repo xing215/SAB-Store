@@ -3,7 +3,6 @@ const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const compression = require('compression');
-const rateLimit = require('express-rate-limit');
 const { auth } = require('./lib/auth');
 const { connectDB } = require('./lib/database');
 const { toNodeHandler } = require('better-auth/node');
@@ -25,42 +24,6 @@ app.set('trust proxy', process.env.NODE_ENV === 'production' ? 1 : false);
 app.use(helmet());
 app.use(compression());
 
-// Rate limiting with secure configuration
-const limiter = rateLimit({
-	windowMs: 5 * 60 * 1000, // 15 minutes
-	max: process.env.NODE_ENV === 'development' ? 1000 : 100, // More restrictive in production
-	standardHeaders: true, // Return rate limit info in headers
-	legacyHeaders: false, // Disable legacy headers
-	// Skip successful requests to static files
-	skip: (req) => {
-		return req.url.includes('/health') || req.url.includes('/favicon');
-	},
-	// Custom handler to ensure CORS headers are added to rate limit responses
-	handler: (req, res) => {
-		// Add CORS headers to rate limit response
-		const allowedOrigins = [
-			...(process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(',').map(o => o.trim()) : []),
-			'https://store.sab.edu.vn',
-			'https://api.store.sab.edu.vn',
-			'http://localhost:3000',
-			'http://127.0.0.1:3000'
-		];
-
-		const origin = req.headers.origin;
-		if (!origin || allowedOrigins.includes(origin)) {
-			res.header('Access-Control-Allow-Origin', origin || '*');
-			res.header('Access-Control-Allow-Credentials', 'true');
-			res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-			res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, Cookie, X-Requested-With');
-		}
-
-		console.log(`[RATE LIMIT] Request from ${origin} exceeded rate limit`);
-		res.status(429).json({
-			error: 'Too many requests, please try again later.',
-			retryAfter: Math.round(15 * 60) // 15 minutes in seconds
-		});
-	}
-});
 // CORS configuration - Must be before Better Auth handler
 const corsOptions = {
 	origin: function (origin, callback) {
@@ -102,11 +65,9 @@ app.options('*', (req, res) => {
 	res.sendStatus(200);
 });
 
-app.use('/api', limiter);
-
 // Body parsing middleware - Must be BEFORE Better Auth handler
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+app.use(express.json({ limit: '100mb' }));
+app.use(express.urlencoded({ extended: true, limit: '100mb' }));
 
 // Global CORS headers middleware for all responses
 app.use((req, res, next) => {
