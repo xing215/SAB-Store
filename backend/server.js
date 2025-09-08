@@ -27,7 +27,7 @@ app.use(compression());
 
 // Rate limiting with secure configuration
 const limiter = rateLimit({
-	windowMs: 15 * 60 * 1000, // 15 minutes
+	windowMs: 5 * 60 * 1000, // 15 minutes
 	max: process.env.NODE_ENV === 'development' ? 1000 : 100, // More restrictive in production
 	standardHeaders: true, // Return rate limit info in headers
 	legacyHeaders: false, // Disable legacy headers
