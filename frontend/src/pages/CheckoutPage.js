@@ -276,7 +276,7 @@ const CheckoutPage = () => {
                     </p>
                   )}
                   <p className="text-gray-500 text-sm mt-1">
-                    Số điện thoại sẽ được sử dụng để liên hệ khi có vấn đề về đơn hàng
+                    Ưu tiên số điện thoại có sử dụng Zalo.
                   </p>
                 </div>
 
