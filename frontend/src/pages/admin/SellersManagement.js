@@ -103,28 +103,20 @@ const SellersManagement = () => {
 
 		if (result.isConfirmed && result.value) {
 			try {
-				const response = await fetch('/api/admin/reset-seller-password', {
-					method: 'POST',
-					headers: {
-						'Content-Type': 'application/json',
-					},
-					credentials: 'include',
-					body: JSON.stringify({
-						sellerId: sellerId,
-						newPassword: result.value
-					})
+				// Use Better-Auth admin setUserPassword instead of deprecated API
+				const { error } = await authClient.admin.setUserPassword({
+					userId: sellerId,
+					newPassword: result.value
 				});
 
-				const responseData = await response.json();
-
-				if (responseData.success) {
-					toast.success('Reset mật khẩu seller thành công');
-				} else {
-					throw new Error(responseData.message);
+				if (error) {
+					throw new Error(error.message);
 				}
+
+				toast.success('Reset mật khẩu seller thành công');
 			} catch (error) {
 				console.error('Error resetting seller password:', error);
-				toast.error('Lỗi khi reset mật khẩu seller');
+				toast.error(error.message || 'Lỗi khi reset mật khẩu seller');
 			}
 		}
 	};
