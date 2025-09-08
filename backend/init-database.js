@@ -58,6 +58,7 @@ async function initDatabase() {
 					description: "Áo thun chất lượng cao với logo SAB",
 					status: "active",
 					category: "Đồ mặc",
+					stockQuantity: 50,
 					available: true
 				},
 				{
@@ -67,6 +68,7 @@ async function initDatabase() {
 					description: "Mũ snapback phong cách với logo SAB",
 					status: "active",
 					category: "Phụ kiện",
+					stockQuantity: 30,
 					available: true
 				}
 			];
