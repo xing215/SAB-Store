@@ -47,6 +47,88 @@ const SellersManagement = () => {
 		}
 	};
 
+	const generateRandomPassword = async () => {
+		try {
+			const response = await fetch('/api/admin/generate-password', {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+				},
+				credentials: 'include'
+			});
+
+			const result = await response.json();
+
+			if (result.success) {
+				setFormData(prev => ({
+					...prev,
+					password: result.password
+				}));
+				toast.success('Đã tạo mật khẩu ngẫu nhiên');
+			} else {
+				throw new Error(result.message);
+			}
+		} catch (error) {
+			console.error('Error generating password:', error);
+			toast.error('Lỗi khi tạo mật khẩu ngẫu nhiên');
+		}
+	};
+
+	const handleResetPassword = async (sellerId, sellerName) => {
+		const result = await Swal.fire({
+			title: 'Reset mật khẩu seller',
+			text: `Bạn muốn reset mật khẩu cho seller "${sellerName}"?`,
+			input: 'password',
+			inputLabel: 'Mật khẩu mới',
+			inputPlaceholder: 'Nhập mật khẩu mới...',
+			inputAttributes: {
+				minlength: 6,
+				maxlength: 50
+			},
+			showCancelButton: true,
+			confirmButtonColor: '#3b82f6',
+			cancelButtonColor: '#6b7280',
+			confirmButtonText: 'Reset mật khẩu',
+			cancelButtonText: 'Hủy',
+			inputValidator: (value) => {
+				if (!value) {
+					return 'Vui lòng nhập mật khẩu mới!';
+				}
+				if (value.length < 6) {
+					return 'Mật khẩu phải có ít nhất 6 ký tự!';
+				}
+				return null;
+			}
+		});
+
+		if (result.isConfirmed && result.value) {
+			try {
+				const response = await fetch('/api/admin/reset-seller-password', {
+					method: 'POST',
+					headers: {
+						'Content-Type': 'application/json',
+					},
+					credentials: 'include',
+					body: JSON.stringify({
+						sellerId: sellerId,
+						newPassword: result.value
+					})
+				});
+
+				const responseData = await response.json();
+
+				if (responseData.success) {
+					toast.success('Reset mật khẩu seller thành công');
+				} else {
+					throw new Error(responseData.message);
+				}
+			} catch (error) {
+				console.error('Error resetting seller password:', error);
+				toast.error('Lỗi khi reset mật khẩu seller');
+			}
+		}
+	};
+
 	const handleInputChange = (e) => {
 		const { name, value } = e.target;
 		setFormData(prev => ({
@@ -253,6 +335,13 @@ const SellersManagement = () => {
 											Sửa
 										</button>
 										<button
+											onClick={() => handleResetPassword(seller.id, seller.name || seller.username)}
+											className="text-yellow-600 hover:text-yellow-900 mr-3"
+										>
+											<i className="fas fa-key mr-1"></i>
+											Reset MK
+										</button>
+										<button
 											onClick={() => handleDelete(seller.id)}
 											className="text-danger-600 hover:text-danger-900"
 										>
@@ -313,15 +402,27 @@ const SellersManagement = () => {
 									<label className="block text-sm font-medium text-gray-700 mb-1">
 										{editingSeller ? 'Mật khẩu mới (để trống nếu không đổi)' : 'Mật khẩu *'}
 									</label>
-									<input
-										type="password"
-										name="password"
-										value={formData.password}
-										onChange={handleInputChange}
-										className="form-input"
-										required={!editingSeller}
-										minLength="6"
-									/>
+									<div className="flex space-x-2">
+										<input
+											type="password"
+											name="password"
+											value={formData.password}
+											onChange={handleInputChange}
+											className="form-input flex-1"
+											required={!editingSeller}
+											minLength="6"
+										/>
+										{!editingSeller && (
+											<button
+												type="button"
+												onClick={generateRandomPassword}
+												className="px-3 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 whitespace-nowrap"
+												title="Tạo mật khẩu ngẫu nhiên"
+											>
+												<i className="fas fa-random"></i>
+											</button>
+										)}
+									</div>
 								</div>
 
 								<div>

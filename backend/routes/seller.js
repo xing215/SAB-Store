@@ -11,6 +11,59 @@ const router = express.Router();
 // Apply seller authentication to all routes
 router.use(authenticateSeller);
 
+/**
+ * @route   POST /api/seller/change-password
+ * @desc    Change seller password
+ * @access  Private (Seller only)
+ */
+router.post('/change-password', async (req, res) => {
+	try {
+		const { currentPassword, newPassword } = req.body;
+
+		if (!currentPassword || !newPassword) {
+			return res.status(400).json({
+				success: false,
+				message: 'Vui lòng cung cấp mật khẩu hiện tại và mật khẩu mới'
+			});
+		}
+
+		if (newPassword.length < 6) {
+			return res.status(400).json({
+				success: false,
+				message: 'Mật khẩu mới phải có ít nhất 6 ký tự'
+			});
+		}
+
+		// Use Better Auth changePassword endpoint
+		const result = await auth.api.changePassword({
+			body: {
+				currentPassword,
+				newPassword,
+				revokeOtherSessions: true
+			},
+			headers: req.headers
+		});
+
+		if (result.error) {
+			return res.status(400).json({
+				success: false,
+				message: result.error.message || 'Không thể đổi mật khẩu'
+			});
+		}
+
+		res.json({
+			success: true,
+			message: 'Đổi mật khẩu thành công'
+		});
+
+	} catch (error) {
+		console.error('Error changing seller password:', error);
+		res.status(500).json({
+			success: false,
+			message: 'Lỗi server khi đổi mật khẩu'
+		});
+	}
+});
 
 /**
  * @route   GET /api/seller/dashboard/stats

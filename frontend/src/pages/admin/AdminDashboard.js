@@ -4,6 +4,7 @@ import Swal from 'sweetalert2';
 import { adminService, formatCurrency, formatDate, getStatusText, getStatusColor } from '../../services/api';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import Modal from '../../components/Modal';
+import ChangePassword from '../../components/ChangePassword';
 
 const AdminDashboard = () => {
 	const [stats, setStats] = useState(null);
@@ -408,9 +409,14 @@ const AdminDashboard = () => {
 	return (
 		<div className="space-y-8">
 			{/* Dashboard Header */}
-			<div>
-				<h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
-				<p className="text-gray-600">Quản lý đơn hàng và thống kê</p>
+			<div className="flex justify-between items-center">
+				<div>
+					<h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
+					<p className="text-gray-600">Quản lý đơn hàng và thống kê</p>
+				</div>
+				<div>
+					<ChangePassword userType="admin" title="Đổi mật khẩu Admin" />
+				</div>
 			</div>
 
 			{/* Statistics Cards */}
@@ -785,8 +791,8 @@ const AdminDashboard = () => {
 									selectedOrderStatus.statusHistory.map((history, index) => (
 										<div key={index} className="flex items-start text-sm">
 											<div className={`w-2 h-2 rounded-full mr-3 mt-1 ${history.status === 'paid' ? 'bg-green-400' :
-													history.status === 'delivered' ? 'bg-green-600' :
-														history.status === 'cancelled' ? 'bg-red-400' : 'bg-gray-400'
+												history.status === 'delivered' ? 'bg-green-600' :
+													history.status === 'cancelled' ? 'bg-red-400' : 'bg-gray-400'
 												}`}></div>
 											<div className="flex-1">
 												<div>
@@ -817,8 +823,8 @@ const AdminDashboard = () => {
 								) : selectedOrderStatus.status !== 'confirmed' && (
 									<div className="flex items-center text-sm">
 										<div className={`w-2 h-2 rounded-full mr-3 ${selectedOrderStatus.status === 'paid' ? 'bg-green-400' :
-												selectedOrderStatus.status === 'delivered' ? 'bg-green-600' :
-													selectedOrderStatus.status === 'cancelled' ? 'bg-red-400' : 'bg-gray-400'
+											selectedOrderStatus.status === 'delivered' ? 'bg-green-600' :
+												selectedOrderStatus.status === 'cancelled' ? 'bg-red-400' : 'bg-gray-400'
 											}`}></div>
 										<div className="flex-1">
 											<span className="text-gray-900">
