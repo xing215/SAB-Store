@@ -28,12 +28,15 @@ const ComboManagement = () => {
 
 	const fetchCombos = async () => {
 		try {
+			console.log('[COMBO] Fetching combos...');
 			setLoading(true);
 			const response = await adminService.getCombos();
+			console.log('[COMBO] Combos response:', response);
 			if (response.success) {
 				setCombos(response.data.combos);
 			}
 		} catch (error) {
+			console.error('[COMBO] Error fetching combos:', error);
 			toast.error('Lỗi khi tải danh sách combo');
 		} finally {
 			setLoading(false);
@@ -42,12 +45,14 @@ const ComboManagement = () => {
 
 	const fetchCategories = async () => {
 		try {
+			console.log('[COMBO] Fetching categories...');
 			const response = await adminService.getProductCategories();
+			console.log('[COMBO] Categories response:', response);
 			if (response.success) {
 				setCategories(response.data.categories);
 			}
 		} catch (error) {
-			console.error('Error fetching categories:', error);
+			console.error('[COMBO] Error fetching categories:', error);
 		}
 	};
 
@@ -60,6 +65,8 @@ const ComboManagement = () => {
 
 	const handleSubmit = async (e) => {
 		e.preventDefault();
+
+		console.log('[COMBO] Form submitted with data:', formData);
 
 		// Validate form
 		if (!formData.name || !formData.price || formData.categoryRequirements.length === 0) {
@@ -88,12 +95,16 @@ const ComboManagement = () => {
 				}))
 			};
 
+			console.log('[COMBO] Sending combo data:', comboData);
+
 			let response;
 			if (editingCombo) {
 				response = await adminService.updateCombo(editingCombo._id, comboData);
 			} else {
 				response = await adminService.createCombo(comboData);
 			}
+
+			console.log('[COMBO] Response:', response);
 
 			if (response.success) {
 				toast.success(editingCombo ? 'Cập nhật combo thành công' : 'Tạo combo thành công');
@@ -102,6 +113,7 @@ const ComboManagement = () => {
 				fetchCombos();
 			}
 		} catch (error) {
+			console.error('[COMBO] Error:', error);
 			toast.error(error.message || 'Có lỗi xảy ra');
 		}
 	};
@@ -322,8 +334,8 @@ const ComboManagement = () => {
 													<button
 														onClick={() => handleToggleActive(combo)}
 														className={`px-3 py-1 rounded-full text-xs font-medium ${combo.isActive
-																? 'bg-green-100 text-green-800 hover:bg-green-200'
-																: 'bg-red-100 text-red-800 hover:bg-red-200'
+															? 'bg-green-100 text-green-800 hover:bg-green-200'
+															: 'bg-red-100 text-red-800 hover:bg-red-200'
 															}`}
 													>
 														{combo.isActive ? 'Hoạt động' : 'Tắt'}

@@ -28,10 +28,9 @@ class WebSocketService {
 				return false;
 			}
 
-			const wsUrl = process.env.REACT_APP_WS_URL ||
-				(process.env.NODE_ENV === 'production'
-					? 'https://api.store.sab.edu.vn'
-					: 'http://localhost:5000');
+			const wsUrl = process.env.NODE_ENV === 'production'
+				? 'wss://api.lanyard.sab.edu.vn'
+				: 'http://localhost:5000';
 
 			console.log(`[WS] Attempting to connect to: ${wsUrl}`);
 
