@@ -1,7 +1,6 @@
 const express = require('express');
 const Order = require('../../models/Order');
 const Product = require('../../models/Product');
-const { authenticateAdmin } = require('../../middleware/better-auth');
 const { validateOrderUpdate } = require('../../middleware/validation');
 const { getPaginationInfo } = require('../../utils/helpers');
 const { sendOrderToAppScript } = require('../../utils/appscript');
@@ -12,7 +11,7 @@ const router = express.Router();
  * @desc    Get all orders with pagination and search
  * @access  Private (Admin)
  */
-router.get('/', authenticateAdmin, async (req, res) => {
+router.get('/', async (req, res) => {
 	try {
 		const {
 			page = 1,
@@ -83,7 +82,7 @@ router.get('/', authenticateAdmin, async (req, res) => {
  * @desc    Get single order by ID
  * @access  Private (Admin)
  */
-router.get('/:id', authenticateAdmin, async (req, res) => {
+router.get('/:id', async (req, res) => {
 	try {
 		const order = await Order.findById(req.params.id);
 
@@ -121,7 +120,7 @@ router.get('/:id', authenticateAdmin, async (req, res) => {
  * @desc    Update order status
  * @access  Private (Admin)
  */
-router.put('/:id', authenticateAdmin, validateOrderUpdate, async (req, res) => {
+router.put('/:id', validateOrderUpdate, async (req, res) => {
 	try {
 		const { status, transactionCode, cancelReason, note } = req.body;
 
@@ -231,7 +230,7 @@ router.put('/:id', authenticateAdmin, validateOrderUpdate, async (req, res) => {
  * @desc    Delete all orders (DANGEROUS - Admin only)
  * @access  Private (Admin)
  */
-router.delete('/', authenticateAdmin, async (req, res) => {
+router.delete('/', async (req, res) => {
 	try {
 		console.log('🚨 DELETE ALL ORDERS Request:', {
 			admin: req.admin.username,
@@ -306,7 +305,7 @@ router.delete('/', authenticateAdmin, async (req, res) => {
  * @desc    Create direct sale order (admin)
  * @access  Private (Admin)
  */
-router.post('/direct', authenticateAdmin, async (req, res) => {
+router.post('/direct', async (req, res) => {
 	try {
 		console.log('🔵 Admin Direct Order Request:', {
 			admin: req.admin.username,

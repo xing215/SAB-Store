@@ -1,14 +1,13 @@
 const express = require('express');
 const Product = require('../../models/Product');
-const { authenticateAdmin } = require('../../middleware/better-auth');
 const router = express.Router();
 
 /**
  * @route   GET /api/admin/products
  * @desc    Get all products for admin management
- * @access  Private (Admin)
+ * @access  Private (Admin authentication handled by parent router)
  */
-router.get('/', authenticateAdmin, async (req, res) => {
+router.get('/', async (req, res) => {
 	try {
 		const { page = 1, limit = 10, search = '', category = '', status = '' } = req.query;
 
@@ -61,7 +60,7 @@ router.get('/', authenticateAdmin, async (req, res) => {
  * @desc    Create new product
  * @access  Private (Admin)
  */
-router.post('/', authenticateAdmin, async (req, res) => {
+router.post('/', async (req, res) => {
 	try {
 		const {
 			name,
@@ -145,7 +144,7 @@ router.post('/', authenticateAdmin, async (req, res) => {
  * @desc    Update product
  * @access  Private (Admin)
  */
-router.put('/:id', authenticateAdmin, async (req, res) => {
+router.put('/:id', async (req, res) => {
 	try {
 		const { id } = req.params;
 		const updateData = { ...req.body };
@@ -215,7 +214,7 @@ router.put('/:id', authenticateAdmin, async (req, res) => {
  * @desc    Delete product
  * @access  Private (Admin)
  */
-router.delete('/:id', authenticateAdmin, async (req, res) => {
+router.delete('/:id', async (req, res) => {
 	try {
 		const { id } = req.params;
 

@@ -1,18 +1,24 @@
 const express = require('express');
+const { authenticateAdmin } = require('../middleware/better-auth');
 
 // Import route modules
 const dashboardRoutes = require('./admin/dashboard');
 const ordersRoutes = require('./admin/orders');
 const productsRoutes = require('./admin/products');
 const exportsRoutes = require('./admin/exports');
+const databaseRoutes = require('./admin/database');
 
 const router = express.Router();
+
+// Apply admin authentication to all routes
+router.use(authenticateAdmin);
 
 // Mount route modules
 router.use('/dashboard', dashboardRoutes);
 router.use('/orders', ordersRoutes);
 router.use('/products', productsRoutes);
-router.use('/export', exportsRoutes);
+router.use('/orders/export', exportsRoutes);
+router.use('/database', databaseRoutes);
 
 /**
  * SELLER MANAGEMENT - DEPRECATED

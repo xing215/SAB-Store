@@ -18,11 +18,11 @@ function getStatusText(status) {
 }
 
 /**
- * @route   GET /api/admin/export/orders/excel
+ * @route   GET /api/admin/orders/export/excel
  * @desc    Export orders to Excel
- * @access  Private (Admin)
+ * @access  Private (Admin authentication handled by parent router)
  */
-router.get('/orders/excel', async (req, res) => {
+router.get('/excel', async (req, res) => {
 	try {
 		const { status, search, startDate, endDate } = req.query;
 

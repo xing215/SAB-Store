@@ -8,13 +8,16 @@ const { sendOrderToAppScript } = require('../utils/appscript');
 const { auth } = require('../lib/auth');
 const router = express.Router();
 
+// Apply seller authentication to all routes
+router.use(authenticateSeller);
+
 
 /**
  * @route   GET /api/seller/dashboard/stats
  * @desc    Get seller dashboard statistics
  * @access  Private (Seller)
  */
-router.get('/dashboard/stats', authenticateSeller, async (req, res) => {
+router.get('/dashboard/stats', async (req, res) => {
 	try {
 		const now = new Date();
 		const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -129,7 +132,7 @@ router.get('/dashboard/stats', authenticateSeller, async (req, res) => {
  * @desc    Get orders for seller management
  * @access  Private (Seller)
  */
-router.get('/orders', authenticateSeller, async (req, res) => {
+router.get('/orders', async (req, res) => {
 	try {
 		const {
 			page = 1,
@@ -222,7 +225,7 @@ router.get('/orders', authenticateSeller, async (req, res) => {
  * @desc    Update order status
  * @access  Private (Seller)
  */
-router.put('/orders/:id/status', authenticateSeller, async (req, res) => {
+router.put('/orders/:id/status', async (req, res) => {
 	try {
 		const { id } = req.params;
 		const { status, transactionCode, cancelReason, note } = req.body;
@@ -333,7 +336,7 @@ router.put('/orders/:id/status', authenticateSeller, async (req, res) => {
  * @desc    Get order details
  * @access  Private (Seller)
  */
-router.get('/orders/:id', authenticateSeller, async (req, res) => {
+router.get('/orders/:id', async (req, res) => {
 	try {
 		const { id } = req.params;
 
@@ -374,7 +377,7 @@ router.get('/orders/:id', authenticateSeller, async (req, res) => {
  * @desc    Create direct sale order
  * @access  Private (Seller)
  */
-router.post('/orders/direct', authenticateSeller, async (req, res) => {
+router.post('/orders/direct', async (req, res) => {
 	try {
 		const { items } = req.body;
 

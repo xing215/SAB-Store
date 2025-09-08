@@ -17,6 +17,7 @@ import LoginPage from './pages/LoginPage';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import ProductsManagement from './pages/admin/ProductsManagement';
 import SellersManagement from './pages/admin/SellersManagement';
+import DatabaseManagement from './pages/admin/DatabaseManagement';
 
 // Seller Pages
 import SellerDashboard from './pages/seller/SellerDashboard';
@@ -66,6 +67,13 @@ function App() {
 							<ProtectedRoute>
 								<AdminLayout>
 									<SellersManagement />
+								</AdminLayout>
+							</ProtectedRoute>
+						} />
+						<Route path="/admin/database" element={
+							<ProtectedRoute>
+								<AdminLayout>
+									<DatabaseManagement />
 								</AdminLayout>
 							</ProtectedRoute>
 						} />

@@ -1,15 +1,14 @@
 const express = require('express');
 const Order = require('../../models/Order');
 const Product = require('../../models/Product');
-const { authenticateAdmin } = require('../../middleware/better-auth');
 const router = express.Router();
 
 /**
  * @route   GET /api/admin/dashboard/stats
  * @desc    Get dashboard statistics
- * @access  Private (Admin)
+ * @access  Private (Admin authentication handled by parent router)
  */
-router.get('/stats', authenticateAdmin, async (req, res) => {
+router.get('/stats', async (req, res) => {
 	try {
 		const now = new Date();
 		const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());

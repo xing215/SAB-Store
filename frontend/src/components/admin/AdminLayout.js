@@ -61,8 +61,8 @@ const AdminLayout = ({ children }) => {
 							<Link
 								to="/admin/dashboard"
 								className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${isActiveRoute('/admin/dashboard')
-										? 'bg-primary-100 text-primary-700'
-										: 'text-gray-700 hover:text-primary-600'
+									? 'bg-primary-100 text-primary-700'
+									: 'text-gray-700 hover:text-primary-600'
 									}`}
 							>
 								<i className="fas fa-chart-line mr-2"></i>
@@ -71,8 +71,8 @@ const AdminLayout = ({ children }) => {
 							<Link
 								to="/admin/products"
 								className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${isActiveRoute('/admin/products')
-										? 'bg-primary-100 text-primary-700'
-										: 'text-gray-700 hover:text-primary-600'
+									? 'bg-primary-100 text-primary-700'
+									: 'text-gray-700 hover:text-primary-600'
 									}`}
 							>
 								<i className="fas fa-box mr-2"></i>
@@ -81,18 +81,28 @@ const AdminLayout = ({ children }) => {
 							<Link
 								to="/admin/sellers"
 								className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${isActiveRoute('/admin/sellers')
-										? 'bg-primary-100 text-primary-700'
-										: 'text-gray-700 hover:text-primary-600'
+									? 'bg-primary-100 text-primary-700'
+									: 'text-gray-700 hover:text-primary-600'
 									}`}
 							>
 								<i className="fas fa-users mr-2"></i>
 								Sellers
 							</Link>
 							<Link
+								to="/admin/database"
+								className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${isActiveRoute('/admin/database')
+									? 'bg-primary-100 text-primary-700'
+									: 'text-gray-700 hover:text-primary-600'
+									}`}
+							>
+								<i className="fas fa-database mr-2"></i>
+								Database
+							</Link>
+							<Link
 								to="/admin/direct-sales"
 								className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${isActiveRoute('/admin/direct-sales')
-										? 'bg-primary-100 text-primary-700'
-										: 'text-gray-700 hover:text-primary-600'
+									? 'bg-primary-100 text-primary-700'
+									: 'text-gray-700 hover:text-primary-600'
 									}`}
 							>
 								<i className="fas fa-cash-register mr-2"></i>
@@ -132,8 +142,8 @@ const AdminLayout = ({ children }) => {
 						<Link
 							to="/admin/dashboard"
 							className={`block px-3 py-2 rounded-md text-base font-medium transition-colors ${isActiveRoute('/admin/dashboard')
-									? 'bg-primary-100 text-primary-700'
-									: 'text-gray-700 hover:text-primary-600'
+								? 'bg-primary-100 text-primary-700'
+								: 'text-gray-700 hover:text-primary-600'
 								}`}
 						>
 							<i className="fas fa-chart-line mr-2"></i>
@@ -142,8 +152,8 @@ const AdminLayout = ({ children }) => {
 						<Link
 							to="/admin/products"
 							className={`block px-3 py-2 rounded-md text-base font-medium transition-colors ${isActiveRoute('/admin/products')
-									? 'bg-primary-100 text-primary-700'
-									: 'text-gray-700 hover:text-primary-600'
+								? 'bg-primary-100 text-primary-700'
+								: 'text-gray-700 hover:text-primary-600'
 								}`}
 						>
 							<i className="fas fa-box mr-2"></i>
@@ -152,18 +162,28 @@ const AdminLayout = ({ children }) => {
 						<Link
 							to="/admin/sellers"
 							className={`block px-3 py-2 rounded-md text-base font-medium transition-colors ${isActiveRoute('/admin/sellers')
-									? 'bg-primary-100 text-primary-700'
-									: 'text-gray-700 hover:text-primary-600'
+								? 'bg-primary-100 text-primary-700'
+								: 'text-gray-700 hover:text-primary-600'
 								}`}
 						>
 							<i className="fas fa-users mr-2"></i>
 							Sellers
 						</Link>
 						<Link
+							to="/admin/database"
+							className={`block px-3 py-2 rounded-md text-base font-medium transition-colors ${isActiveRoute('/admin/database')
+								? 'bg-primary-100 text-primary-700'
+								: 'text-gray-700 hover:text-primary-600'
+								}`}
+						>
+							<i className="fas fa-database mr-2"></i>
+							Database
+						</Link>
+						<Link
 							to="/admin/direct-sales"
 							className={`block px-3 py-2 rounded-md text-base font-medium transition-colors ${isActiveRoute('/admin/direct-sales')
-									? 'bg-primary-100 text-primary-700'
-									: 'text-gray-700 hover:text-primary-600'
+								? 'bg-primary-100 text-primary-700'
+								: 'text-gray-700 hover:text-primary-600'
 								}`}
 						>
 							<i className="fas fa-cash-register mr-2"></i>
