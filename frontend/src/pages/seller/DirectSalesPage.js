@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import { useSession } from '../../lib/auth-client';
 import { toast } from 'react-toastify';
 import { productService, sellerService } from '../../services/api';
 import { generatePaymentQR } from '../../utils/payment';
@@ -13,6 +14,7 @@ const DirectSalesPage = () => {
 	const [paymentQR, setPaymentQR] = useState('');
 	const [pricingInfo, setPricingInfo] = useState(null);
 	const [loadingPricing, setLoadingPricing] = useState(false);
+	const { data: session, isPending, error } = useSession();
 
 	// Refs for input focus management
 	const inputRefs = useRef({});
@@ -209,7 +211,7 @@ const DirectSalesPage = () => {
 			let status = 'delivered';
 
 			if (action === 'transfer') {
-				transactionCode = 'TransferAtCounter';
+				transactionCode = session.user.username || 'Direct';
 			} else if (action === 'cash') {
 				transactionCode = 'CashAtCounter';
 			} else if (action === 'cancel') {
