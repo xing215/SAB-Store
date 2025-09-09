@@ -129,7 +129,7 @@ export const CartProvider = ({ children }) => {
 				isChecking: false,
 				optimalPricing: null
 			});
-			
+
 			// Reset previous combo state when cart is empty
 			setPreviousComboState({
 				hasCombo: false,
@@ -146,19 +146,19 @@ export const CartProvider = ({ children }) => {
 		if (!newComboData.hasCombo && !previousState.hasCombo) {
 			return false;
 		}
-		
+
 		// If combo status changed (had combo -> no combo, or no combo -> has combo)
 		if (newComboData.hasCombo !== previousState.hasCombo) {
 			return true;
 		}
-		
+
 		// If both have combos, check if savings amount changed significantly
 		if (newComboData.hasCombo && previousState.hasCombo) {
 			const savingsDiff = Math.abs(newComboData.savings - previousState.totalSavings);
 			// Only consider it changed if savings difference is more than 1000 VND
 			return savingsDiff > 1000;
 		}
-		
+
 		return false;
 	};
 
@@ -255,7 +255,7 @@ export const CartProvider = ({ children }) => {
 				isChecking: false,
 				optimalPricing: null
 			});
-			
+
 			// Reset previous combo state on error
 			setPreviousComboState({
 				hasCombo: false,
