@@ -211,7 +211,7 @@ const DirectSalesPage = () => {
 			let status = 'delivered';
 
 			if (action === 'transfer') {
-				transactionCode = session.user.username || 'Direct';
+				transactionCode = 'TransferAtCounter';
 			} else if (action === 'cash') {
 				transactionCode = 'CashAtCounter';
 			} else if (action === 'cancel') {

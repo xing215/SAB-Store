@@ -370,6 +370,7 @@ router.post('/direct', async (req, res) => {
 
 		// Create direct sale order
 		const order = new Order({
+			fullName: `NG: ${req.admin.username}`,
 			orderCode,
 			studentId: `DIRECT_${Date.now()}`,
 			fullName: 'Bán trực tiếp',
