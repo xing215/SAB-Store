@@ -88,7 +88,7 @@ const OrderTrackingPage = () => {
 
 	const getStatusSteps = (currentStatus) => {
 		let steps = [
-			{ key: 'confirmed', label: 'Đã xác nhận', icon: 'fas fa-check-circle' },
+			{ key: 'confirmed', label: 'Đã xác nhận đơn hàng', icon: 'fas fa-check-circle' },
 			{ key: 'paid', label: 'Đã thanh toán', icon: 'fas fa-credit-card' },
 			{ key: 'delivered', label: 'Đã giao hàng', icon: 'fas fa-truck' }
 		];
