@@ -420,7 +420,7 @@ router.get('/orders/:id', async (req, res) => {
  */
 router.post('/orders/direct', async (req, res) => {
 	try {
-		const { items } = req.body;
+		const { items, optimalPricing, useOptimalPricing = false } = req.body;
 
 		if (!items || !Array.isArray(items) || items.length === 0) {
 			return res.status(400).json({
@@ -429,71 +429,134 @@ router.post('/orders/direct', async (req, res) => {
 			});
 		}
 
-		// Apply combo detection silently for direct sales
-		const comboResult = await ComboService.detectAndApplyBestCombo(items, true);
-		let finalItems = items;
+		let totalAmount;
 		let comboInfo = null;
+		let orderItems = [];
 
-		if (comboResult.success && comboResult.hasCombo) {
-			finalItems = comboResult.finalItems;
-			comboInfo = {
-				comboId: comboResult.combo._id,
-				comboName: comboResult.combo.name,
-				savings: comboResult.savings
-			};
-		}
-
-		// Convert combo items back to individual products for order storage
-		const expandedItems = ComboService.expandComboItems(finalItems);
-
-		// Calculate total amount and validate products
-		let totalAmount = 0;
-		const orderItems = [];
-
-		for (const item of expandedItems) {
-			if (!item.productId) continue; // Skip combo items without productId
-
-			const product = await Product.findById(item.productId);
-
-			if (!product || !product.isActive) {
-				return res.status(400).json({
-					success: false,
-					message: `Sản phẩm ${item.productName || 'không xác định'} không khả dụng`
-				});
-			}
-
-			if (product.stockQuantity < item.quantity) {
-				return res.status(400).json({
-					success: false,
-					message: `Sản phẩm ${product.name} không đủ số lượng trong kho`
-				});
-			}
-
-			const itemTotal = product.price * item.quantity;
-
-			orderItems.push({
-				productId: product._id,
-				productName: product.name,
-				quantity: item.quantity,
-				price: product.price,
-				total: itemTotal,
-				fromCombo: item.fromCombo || false,
-				comboId: item.comboId || null,
-				comboName: item.comboName || null
+		if (useOptimalPricing && optimalPricing) {
+			console.log('💎 Direct sales using optimal pricing from frontend');
+			
+			// Validate products exist
+			const productIds = items.map(item => item.productId);
+			const products = await Product.find({
+				_id: { $in: productIds },
+				isActive: true
 			});
 
-			// Update stock quantity
-			product.stockQuantity -= item.quantity;
-			await product.save();
-		}
+			if (products.length !== productIds.length) {
+				return res.status(400).json({
+					success: false,
+					message: 'Một hoặc nhiều sản phẩm không khả dụng'
+				});
+			}
 
-		// Calculate total with combo pricing if applicable
-		if (comboInfo && finalItems.some(item => item.isCombo)) {
-			totalAmount = finalItems.reduce((total, item) => {
-				return total + (item.price * item.quantity);
-			}, 0);
+			// Check stock quantities
+			for (const item of items) {
+				const product = products.find(p => p._id.toString() === item.productId);
+				if (product.stockQuantity < item.quantity) {
+					return res.status(400).json({
+						success: false,
+						message: `Sản phẩm ${product.name} không đủ số lượng trong kho`
+					});
+				}
+			}
+
+			// Use the calculated optimal pricing
+			totalAmount = optimalPricing.summary.finalTotal;
+			
+			// Create order items and update stock
+			for (const item of items) {
+				const product = products.find(p => p._id.toString() === item.productId);
+				
+				orderItems.push({
+					productId: product._id,
+					productName: product.name,
+					quantity: item.quantity,
+					price: product.price, // Keep original price for reference
+					total: product.price * item.quantity,
+					fromCombo: false
+				});
+
+				// Update stock quantity
+				product.stockQuantity -= item.quantity;
+				await product.save();
+			}
+
+			// Add combo information if savings exist
+			if (optimalPricing.summary.totalSavings > 0) {
+				comboInfo = {
+					savings: optimalPricing.summary.totalSavings,
+					originalTotal: optimalPricing.summary.originalTotal,
+					finalTotal: optimalPricing.summary.finalTotal,
+					combos: optimalPricing.combos || [],
+					breakdown: optimalPricing.breakdown || []
+				};
+			}
+
 		} else {
-			totalAmount = orderItems.reduce((total, item) => total + item.total, 0);
+			console.log('🔄 Direct sales using traditional combo detection');
+			// Apply combo detection silently for direct sales
+			const comboResult = await ComboService.detectAndApplyBestCombo(items, true);
+			let finalItems = items;
+
+			if (comboResult.success && comboResult.hasCombo) {
+				finalItems = comboResult.finalItems;
+				comboInfo = {
+					comboId: comboResult.combo._id,
+					comboName: comboResult.combo.name,
+					savings: comboResult.savings
+				};
+			}
+
+			// Convert combo items back to individual products for order storage
+			const expandedItems = ComboService.expandComboItems(finalItems);
+
+			// Calculate total amount and validate products
+			for (const item of expandedItems) {
+				if (!item.productId) continue; // Skip combo items without productId
+
+				const product = await Product.findById(item.productId);
+
+				if (!product || !product.isActive) {
+					return res.status(400).json({
+						success: false,
+						message: `Sản phẩm ${item.productName || 'không xác định'} không khả dụng`
+					});
+				}
+
+				if (product.stockQuantity < item.quantity) {
+					return res.status(400).json({
+						success: false,
+						message: `Sản phẩm ${product.name} không đủ số lượng trong kho`
+					});
+				}
+
+				const itemTotal = product.price * item.quantity;
+
+				orderItems.push({
+					productId: product._id,
+					productName: product.name,
+					quantity: item.quantity,
+					price: product.price,
+					total: itemTotal,
+					fromCombo: item.fromCombo || false,
+					comboId: item.comboId || null,
+					comboName: item.comboName || null
+				});
+
+				// Update stock quantity
+				product.stockQuantity -= item.quantity;
+				await product.save();
+			}
+
+			// Calculate total with combo pricing if applicable
+			if (comboInfo && finalItems.some(item => item.isCombo)) {
+				totalAmount = finalItems.reduce((total, item) => {
+					return total + (item.price * item.quantity);
+				}, 0);
+			} else {
+				totalAmount = orderItems.reduce((total, item) => total + item.total, 0);
+			}
 		}
 
 		// Generate order number for direct sales
@@ -533,6 +596,7 @@ router.post('/orders/direct', async (req, res) => {
 			isDirectSale: true,
 			createdBy: req.seller?.id || null,
 			lastUpdatedBy: req.seller?.username || req?.admin?.username || 'unknown',
+			comboInfo: comboInfo, // Store combo information
 			statusHistory: [
 				{
 					status: 'confirmed',

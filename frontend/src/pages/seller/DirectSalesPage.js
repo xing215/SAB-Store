@@ -169,10 +169,16 @@ const DirectSalesPage = () => {
 
 		setProcessing(true);
 		try {
+			// Get optimal pricing for this selection
+			const pricingData = pricingInfo || null;
+			
 			// Create order through seller service
 			const orderData = {
 				items: selectedItems,
-				isDirectSale: true
+				isDirectSale: true,
+				// Include optimal pricing information if available
+				optimalPricing: pricingData,
+				useOptimalPricing: pricingData && pricingData.summary && pricingData.summary.totalSavings > 0
 			};
 
 			const response = await sellerService.createDirectOrder(orderData);

@@ -150,6 +150,11 @@ const orderSchema = new mongoose.Schema({
 	createdBy: {
 		type: mongoose.Schema.Types.ObjectId,
 		ref: 'User'
+	},
+	// Combo pricing information
+	comboInfo: {
+		type: mongoose.Schema.Types.Mixed,
+		default: null
 	}
 }, {
 	timestamps: true

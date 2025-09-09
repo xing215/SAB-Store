@@ -7,7 +7,7 @@ import LoadingSpinner from '../components/LoadingSpinner';
 
 const CheckoutPage = () => {
   const navigate = useNavigate();
-  const { cart, getCartTotal, formatCurrency, clearCart } = useCart();
+  const { cart, getCartTotal, formatCurrency, clearCart, getPricingBreakdown } = useCart();
   
   const [formData, setFormData] = useState({
     studentId: '',
@@ -103,6 +103,9 @@ const CheckoutPage = () => {
     setIsSubmitting(true);
 
     try {
+      // Get optimal pricing breakdown to send to backend
+      const pricingBreakdown = getPricingBreakdown();
+      
       const orderData = {
         studentId: formData.studentId.trim(),
         fullName: formData.fullName.trim(),
@@ -112,7 +115,10 @@ const CheckoutPage = () => {
         items: cart.items.map(item => ({
           productId: item.productId,
           quantity: item.quantity
-        }))
+        })),
+        // Include optimal pricing information
+        optimalPricing: pricingBreakdown,
+        useOptimalPricing: pricingBreakdown.summary.totalSavings > 0
       };
 
       const response = await orderService.createOrder(orderData);
@@ -152,6 +158,7 @@ const CheckoutPage = () => {
   };
 
   const total = getCartTotal();
+  const pricingBreakdown = getPricingBreakdown();
 
   if (cart.items.length === 0 && !orderCompleted) {
     return null; // Will redirect in useEffect
@@ -341,6 +348,37 @@ const CheckoutPage = () => {
                     </div>
                   ))}
                 </div>
+
+                {/* Combo Savings Display */}
+                {pricingBreakdown.summary.totalSavings > 0 && (
+                  <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-green-800 font-medium text-sm">
+                        <i className="fas fa-gift mr-2"></i>
+                        Combo tối ưu được áp dụng
+                      </span>
+                      <span className="text-green-700 font-bold">
+                        -{formatCurrency(pricingBreakdown.summary.totalSavings)}
+                      </span>
+                    </div>
+
+                    {pricingBreakdown.combos && pricingBreakdown.combos.length > 0 && (
+                      <div className="text-sm text-green-700 space-y-1">
+                        {pricingBreakdown.combos.map((combo, index) => (
+                          <div key={index} className="flex justify-between">
+                            <span>{combo.name} x{combo.applications}</span>
+                            <span>{formatCurrency(combo.totalPrice)}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    <div className="text-xs text-green-600 mt-2">
+                      Giá gốc: {formatCurrency(pricingBreakdown.summary.originalTotal)} →
+                      Giá sau combo: {formatCurrency(pricingBreakdown.summary.finalTotal)}
+                    </div>
+                  </div>
+                )}
 
                 {/* Total */}
                 <div className="border-t pt-4">

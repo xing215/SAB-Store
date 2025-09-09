@@ -19,7 +19,7 @@ router.post('/', validateOrder, async (req, res) => {
 			body: { ...req.body, items: req.body.items?.length ? `${req.body.items.length} items` : 'no items' }
 		});
 
-		const { studentId, fullName, email, phoneNumber, additionalNote, items, applyCombo = true } = req.body;
+		const { studentId, fullName, email, phoneNumber, additionalNote, items, optimalPricing, useOptimalPricing = false } = req.body;
 
 		if (!items || !Array.isArray(items) || items.length === 0) {
 			console.error('❌ Invalid items in request');
@@ -31,11 +31,65 @@ router.post('/', validateOrder, async (req, res) => {
 
 		console.log('🔍 Processing items:', items.map(item => ({ productId: item.productId, quantity: item.quantity })));
 
-		// Apply combo detection if enabled
-		let finalItems = items;
+		let totalAmount;
 		let comboInfo = null;
+		let orderItems = [];
 
-		if (applyCombo) {
+		if (useOptimalPricing && optimalPricing) {
+			console.log('💎 Using optimal pricing from frontend');
+			
+			// Validate products exist
+			const productIds = items.map(item => item.productId);
+			const products = await Product.find({
+				_id: { $in: productIds },
+				available: true
+			});
+
+			if (products.length !== productIds.length) {
+				console.error('❌ Product validation failed');
+				return res.status(400).json({
+					success: false,
+					message: 'Một hoặc nhiều sản phẩm không tồn tại hoặc không khả dụng'
+				});
+			}
+
+			// Use the calculated optimal pricing
+			totalAmount = optimalPricing.summary.finalTotal;
+			
+			// Create order items with optimal pricing information
+			orderItems = items.map(item => {
+				const product = products.find(p => p._id.toString() === item.productId);
+				return {
+					productId: product._id,
+					productName: product.name,
+					price: product.price, // Keep original price for reference
+					quantity: item.quantity,
+					fromCombo: false // Individual items in cart
+				};
+			});
+
+			// Add combo information if savings exist
+			if (optimalPricing.summary.totalSavings > 0) {
+				comboInfo = {
+					savings: optimalPricing.summary.totalSavings,
+					originalTotal: optimalPricing.summary.originalTotal,
+					finalTotal: optimalPricing.summary.finalTotal,
+					combos: optimalPricing.combos || [],
+					breakdown: optimalPricing.breakdown || []
+				};
+			}
+
+			console.log('✅ Using optimal pricing:', {
+				originalTotal: optimalPricing.summary.originalTotal,
+				finalTotal: totalAmount,
+				savings: optimalPricing.summary.totalSavings
+			});
+
+		} else {
+			console.log('🔄 Using traditional combo detection');
+			// Original combo detection logic as fallback
+			let finalItems = items;
+
 			console.log('🎯 Applying combo detection...');
 			const comboResult = await ComboService.detectAndApplyBestCombo(items, false);
 			if (comboResult.success && comboResult.hasCombo) {
@@ -47,68 +101,49 @@ router.post('/', validateOrder, async (req, res) => {
 					message: comboResult.message
 				};
 			}
-		}
 
-		console.log('🔄 Converting combo items to individual products...');
-		// Convert combo items back to individual products for order storage
-		const expandedItems = ComboService.expandComboItems(finalItems);
+			console.log('🔄 Converting combo items to individual products...');
+			const expandedItems = ComboService.expandComboItems(finalItems);
 
-		console.log('🔍 Validating products in database...');
-		// Validate products exist and get current prices
-		const productIds = expandedItems.map(item => item.productId).filter(id => id);
-		console.log('📋 Product IDs to validate:', productIds);
-
-		const products = await Product.find({
-			_id: { $in: productIds },
-			available: true
-		});
-
-		console.log('✅ Found products:', products.length, 'of', productIds.length, 'requested');
-
-		if (products.length !== productIds.length) {
-			console.error('❌ Product validation failed:', {
-				requested: productIds.length,
-				found: products.length,
-				missing: productIds.filter(id => !products.find(p => p._id.toString() === id))
+			console.log('🔍 Validating products in database...');
+			const productIds = expandedItems.map(item => item.productId).filter(id => id);
+			const products = await Product.find({
+				_id: { $in: productIds },
+				available: true
 			});
-			return res.status(400).json({
-				success: false,
-				message: 'Một hoặc nhiều sản phẩm không tồn tại hoặc không khả dụng'
-			});
-		}
 
-		console.log('💰 Building order items with pricing...');
-		// Build order items with current product information
-		const orderItems = expandedItems.map(item => {
-			const product = products.find(p => p._id.toString() === item.productId);
-			if (!product) {
-				console.error('❌ Product not found for item:', item.productId);
-				throw new Error(`Product not found: ${item.productId}`);
+			if (products.length !== productIds.length) {
+				console.error('❌ Product validation failed');
+				return res.status(400).json({
+					success: false,
+					message: 'Một hoặc nhiều sản phẩm không tồn tại hoặc không khả dụng'
+				});
 			}
-			return {
-				productId: product._id,
-				productName: product.name,
-				price: product.price, // Use current price from database
-				quantity: item.quantity,
-				fromCombo: item.fromCombo || false,
-				comboId: item.comboId || null,
-				comboName: item.comboName || null
-			};
-		});
 
-		console.log('📊 Calculating total amount...');
-		// Calculate total amount based on combo pricing if applicable
-		let totalAmount;
-		if (comboInfo && finalItems.some(item => item.isCombo)) {
-			// Calculate total with combo pricing
-			totalAmount = finalItems.reduce((total, item) => {
-				return total + (item.price * item.quantity);
-			}, 0);
-			console.log('💝 Total with combo pricing:', totalAmount);
-		} else {
-			// Calculate total with individual product pricing
-			totalAmount = calculateTotal(orderItems);
-			console.log('💰 Total with individual pricing:', totalAmount);
+			console.log('💰 Building order items with pricing...');
+			orderItems = expandedItems.map(item => {
+				const product = products.find(p => p._id.toString() === item.productId);
+				return {
+					productId: product._id,
+					productName: product.name,
+					price: product.price,
+					quantity: item.quantity,
+					fromCombo: item.fromCombo || false,
+					comboId: item.comboId || null,
+					comboName: item.comboName || null
+				};
+			});
+
+			console.log('📊 Calculating total amount...');
+			if (comboInfo && finalItems.some(item => item.isCombo)) {
+				totalAmount = finalItems.reduce((total, item) => {
+					return total + (item.price * item.quantity);
+				}, 0);
+				console.log('💝 Total with combo pricing:', totalAmount);
+			} else {
+				totalAmount = calculateTotal(orderItems);
+				console.log('💰 Total with individual pricing:', totalAmount);
+			}
 		}
 
 		console.log('🏷️ Generating unique order code...');
@@ -149,6 +184,7 @@ router.post('/', validateOrder, async (req, res) => {
 			totalAmount,
 			status: 'confirmed',
 			lastUpdatedBy: 'system',
+			comboInfo: comboInfo, // Store combo information
 			statusHistory: [
 				{
 					status: 'confirmed',
