@@ -97,7 +97,7 @@ const OrderTrackingPage = () => {
 		const currentIndex = statusOrder.indexOf(currentStatus);
 		const isCancelled = currentStatus === 'cancelled';
 
-		steps = steps.forEach((step, index) => {
+		steps.forEach((step, index) => {
 			if (index < currentIndex) {
 				step.label = step.label.replace('Đã', 'Chờ xác nhận\n');
 			}
