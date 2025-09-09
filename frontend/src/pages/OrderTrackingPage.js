@@ -87,7 +87,7 @@ const OrderTrackingPage = () => {
 	};
 
 	const getStatusSteps = (currentStatus) => {
-		const steps = [
+		let steps = [
 			{ key: 'confirmed', label: 'Đã xác nhận', icon: 'fas fa-check-circle' },
 			{ key: 'paid', label: 'Đã thanh toán', icon: 'fas fa-credit-card' },
 			{ key: 'delivered', label: 'Đã giao hàng', icon: 'fas fa-truck' }
@@ -97,7 +97,7 @@ const OrderTrackingPage = () => {
 		const currentIndex = statusOrder.indexOf(currentStatus);
 		const isCancelled = currentStatus === 'cancelled';
 
-		steps.forEach((step, index) => {
+		steps = steps.forEach((step, index) => {
 			if (index < currentIndex) {
 				step.label = step.label.replace('Đã', 'Chờ xác nhận\n');
 			}
