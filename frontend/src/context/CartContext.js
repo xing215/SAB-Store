@@ -263,7 +263,7 @@ export const CartProvider = ({ children }) => {
 				totalSavings: 0
 			});
 		}
-	}, [cart]);
+	}, [cart, previousComboState]);
 
 	// Cart Actions
 	const addToCart = (product) => {
