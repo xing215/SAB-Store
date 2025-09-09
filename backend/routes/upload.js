@@ -4,8 +4,8 @@ const path = require('path');
 const fs = require('fs');
 const router = express.Router();
 
-// Create uploads directory if it doesn't exist
-const uploadDir = path.join(__dirname, '../uploads/products');
+// Ensure upload directory exists
+const uploadDir = path.join(__dirname, '..', 'uploads', 'products');
 if (!fs.existsSync(uploadDir)) {
 	fs.mkdirSync(uploadDir, { recursive: true });
 }
@@ -16,10 +16,10 @@ const storage = multer.diskStorage({
 		cb(null, uploadDir);
 	},
 	filename: (req, file, cb) => {
-		// Generate unique filename
+		// Generate unique filename with timestamp
 		const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-		const fileExtension = path.extname(file.originalname);
-		cb(null, 'product-' + uniqueSuffix + fileExtension);
+		const ext = path.extname(file.originalname);
+		cb(null, file.fieldname + '-' + uniqueSuffix + ext);
 	}
 });
 
@@ -32,7 +32,7 @@ const fileFilter = (req, file, cb) => {
 	if (mimetype && extname) {
 		return cb(null, true);
 	} else {
-		cb(new Error('Chỉ cho phép upload file hình ảnh (JPG, JPEG, PNG, GIF, WEBP)'));
+		cb(new Error('Chỉ chấp nhận file ảnh (JPEG, JPG, PNG, GIF, WebP)'));
 	}
 };
 
@@ -44,76 +44,88 @@ const upload = multer({
 	fileFilter: fileFilter
 });
 
-/**
- * @route   POST /api/upload/image
- * @desc    Upload product image
- * @access  Private (Admin)
- */
-router.post('/image', upload.single('image'), (req, res) => {
+// Upload single product image
+router.post('/product-image', upload.single('image'), (req, res) => {
 	try {
 		if (!req.file) {
 			return res.status(400).json({
 				success: false,
-				message: 'Không có file được upload'
+				message: 'Không có file nào được tải lên'
 			});
 		}
 
-		// Get base URL from environment or construct from request
-		const baseUrl = process.env.BASE_URL || `${req.protocol}://${req.get('host')}`;
-		// Return the full URL to the uploaded image
-		const imageUrl = `${baseUrl}/uploads/products/${req.file.filename}`;
+		const imageUrl = `/uploads/products/${req.file.filename}`;
 
 		res.json({
 			success: true,
-			message: 'Upload hình ảnh thành công',
-			data: {
-				imageUrl: imageUrl,
-				filename: req.file.filename,
-				originalName: req.file.originalname,
-				size: req.file.size
-			}
+			message: 'Tải ảnh thành công',
+			imageUrl: imageUrl,
+			filename: req.file.filename
 		});
-
 	} catch (error) {
-		console.error('Upload image error:', error);
+		console.error('Upload error:', error);
 		res.status(500).json({
 			success: false,
-			message: 'Lỗi server khi upload hình ảnh'
+			message: 'Lỗi server khi tải ảnh',
+			error: error.message
 		});
 	}
 });
 
-/**
- * @route   DELETE /api/upload/image/:filename
- * @desc    Delete uploaded image
- * @access  Private (Admin)
- */
-router.delete('/image/:filename', (req, res) => {
+// Upload multiple product images
+router.post('/product-images', upload.array('images', 5), (req, res) => {
 	try {
-		const { filename } = req.params;
-		const filePath = path.join(uploadDir, filename);
-
-		// Check if file exists
-		if (!fs.existsSync(filePath)) {
-			return res.status(404).json({
+		if (!req.files || req.files.length === 0) {
+			return res.status(400).json({
 				success: false,
-				message: 'File không tồn tại'
+				message: 'Không có file nào được tải lên'
 			});
 		}
 
-		// Delete file
-		fs.unlinkSync(filePath);
+		const imageUrls = req.files.map(file => ({
+			url: `/uploads/products/${file.filename}`,
+			filename: file.filename
+		}));
 
 		res.json({
 			success: true,
-			message: 'Xóa hình ảnh thành công'
+			message: `Tải ${req.files.length} ảnh thành công`,
+			images: imageUrls
 		});
-
 	} catch (error) {
-		console.error('Delete image error:', error);
+		console.error('Upload error:', error);
 		res.status(500).json({
 			success: false,
-			message: 'Lỗi server khi xóa hình ảnh'
+			message: 'Lỗi server khi tải ảnh',
+			error: error.message
+		});
+	}
+});
+
+// Delete uploaded image
+router.delete('/product-image/:filename', (req, res) => {
+	try {
+		const filename = req.params.filename;
+		const filePath = path.join(uploadDir, filename);
+
+		if (fs.existsSync(filePath)) {
+			fs.unlinkSync(filePath);
+			res.json({
+				success: true,
+				message: 'Xóa ảnh thành công'
+			});
+		} else {
+			res.status(404).json({
+				success: false,
+				message: 'Không tìm thấy file'
+			});
+		}
+	} catch (error) {
+		console.error('Delete error:', error);
+		res.status(500).json({
+			success: false,
+			message: 'Lỗi server khi xóa ảnh',
+			error: error.message
 		});
 	}
 });

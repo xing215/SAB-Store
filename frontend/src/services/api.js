@@ -275,7 +275,7 @@ export const adminService = {
 			const formData = new FormData();
 			formData.append('image', imageFile);
 
-			const response = await api.post('/upload/image', formData, {
+			const response = await api.post('/upload/product-image', formData, {
 				headers: {
 					'Content-Type': 'multipart/form-data',
 				},
