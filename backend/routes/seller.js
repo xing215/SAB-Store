@@ -526,7 +526,7 @@ router.post('/orders/direct', async (req, res) => {
 			orderNumber,
 			orderCode,  // Use generated unique code, not orderNumber
 			// For direct sales, don't include customer data fields
-			fullName: `NG: ${req.seller.username}`,
+			fullName: `NB: ${req.seller.username}`,
 			items: orderItems,
 			totalAmount,
 			status: 'confirmed',
