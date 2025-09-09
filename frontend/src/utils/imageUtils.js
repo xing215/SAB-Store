@@ -1,10 +1,10 @@
 /**
  * Image utility functions for product image processing
- * Standard ratio based on fallback-product.png: 1.5:1 (width:height)
+ * Standard ratio based on fallback-product.png: 1.5009:1 (width:height)
  */
 
-// Standard ratio for product images (width / height)
-export const PRODUCT_IMAGE_RATIO = 1.5;
+// Standard ratio for product images (width / height) - matches fallback-product.png (800x533)
+export const PRODUCT_IMAGE_RATIO = 1.50093808630394;
 
 /**
  * Get image dimensions from file or URL
@@ -172,7 +172,7 @@ export const validateImageFile = (file) => {
  * @returns {string}
  */
 export const getRatioDisplayText = () => {
-	return `Tỉ lệ chuẩn: ${PRODUCT_IMAGE_RATIO}:1 (rộng:cao)`;
+	return `Tỉ lệ chuẩn: 1.5:1 (rộng:cao) - 800x533px`;
 };
 
 /**

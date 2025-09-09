@@ -58,6 +58,32 @@ const ProductsManagement = () => {
 			...prev,
 			[name]: type === 'checkbox' ? checked : value
 		}));
+
+		// Update preview when imageUrl changes in URL mode
+		if (name === 'imageUrl' && (uploadMethod === 'url' || uploadMethod === 'path')) {
+			setImagePreview(value || null);
+		}
+	};
+
+	const handleUploadMethodChange = (newMethod) => {
+		setUploadMethod(newMethod);
+
+		// Clear file-related states when switching away from upload
+		if (newMethod !== 'upload') {
+			setImageFile(null);
+			setImageInfo(null);
+			setProcessingImage(false);
+			setUploading(false);
+		}
+
+		// Clear preview when switching methods
+		if (newMethod === 'upload') {
+			setImagePreview(null);
+		} else if (newMethod === 'url' && formData.imageUrl) {
+			setImagePreview(formData.imageUrl);
+		} else if (newMethod === 'path' && formData.imageUrl) {
+			setImagePreview(formData.imageUrl);
+		}
 	};
 
 	const handleImageFileChange = async (e) => {
@@ -136,13 +162,6 @@ const ProductsManagement = () => {
 		}
 	};
 
-	const resetImageInputs = () => {
-		setImageFile(null);
-		setImagePreview(null);
-		setImageInfo(null);
-		setFormData(prev => ({ ...prev, imageUrl: '' }));
-	};
-
 	const handleSubmit = async (e) => {
 		e.preventDefault();
 		try {
@@ -185,7 +204,9 @@ const ProductsManagement = () => {
 					available: true,
 					stockQuantity: ''
 				});
-				resetImageInputs();
+				setImageFile(null);
+				setImagePreview(null);
+				setImageInfo(null);
 				setUploadMethod('url');
 				fetchProducts();
 			}
@@ -206,13 +227,17 @@ const ProductsManagement = () => {
 			available: product.available,
 			stockQuantity: product.stockQuantity?.toString() || '0'
 		});
-		resetImageInputs();
 
-		// Set preview for existing image
+		// Reset file-related states but preserve URL for preview
+		setImageFile(null);
+		setImageInfo(null);
+
+		// Set preview for existing image and upload method
 		if (product.imageUrl) {
 			setImagePreview(product.imageUrl);
 			setUploadMethod('url');
 		} else {
+			setImagePreview(null);
 			setUploadMethod('url');
 		}
 
@@ -273,7 +298,9 @@ const ProductsManagement = () => {
 							available: true,
 							stockQuantity: ''
 						});
-						resetImageInputs();
+						setImageFile(null);
+						setImagePreview(null);
+						setImageInfo(null);
 						setUploadMethod('url');
 						setShowModal(true);
 					}}
@@ -490,7 +517,7 @@ const ProductsManagement = () => {
 													name="uploadMethod"
 													value="url"
 													checked={uploadMethod === 'url'}
-													onChange={(e) => setUploadMethod(e.target.value)}
+													onChange={(e) => handleUploadMethodChange(e.target.value)}
 												/>
 												<span className="ml-2">URL</span>
 											</label>
@@ -501,7 +528,7 @@ const ProductsManagement = () => {
 													name="uploadMethod"
 													value="upload"
 													checked={uploadMethod === 'upload'}
-													onChange={(e) => setUploadMethod(e.target.value)}
+													onChange={(e) => handleUploadMethodChange(e.target.value)}
 												/>
 												<span className="ml-2">Upload file</span>
 											</label>
@@ -512,7 +539,7 @@ const ProductsManagement = () => {
 													name="uploadMethod"
 													value="path"
 													checked={uploadMethod === 'path'}
-													onChange={(e) => setUploadMethod(e.target.value)}
+													onChange={(e) => handleUploadMethodChange(e.target.value)}
 												/>
 												<span className="ml-2">File path</span>
 											</label>
