@@ -7,6 +7,7 @@ const User = require('../../models/User');
 const Product = require('../../models/Product');
 const Order = require('../../models/Order');
 const Account = require('../../models/Account');
+const Combo = require('../../models/Combo');
 
 const router = express.Router();
 
@@ -35,11 +36,12 @@ router.get('/export', async (req, res) => {
 		console.log(`[${new Date().toISOString()}] Database export requested by admin: ${req.user.email}`);
 
 		// Export all collections
-		const [users, products, orders, accounts] = await Promise.all([
+		const [users, products, orders, accounts, combos] = await Promise.all([
 			User.find({}).lean(),
 			Product.find({}).lean(),
 			Order.find({}).lean(),
-			Account.find({}).lean()
+			Account.find({}).lean(),
+			Combo.find({}).lean()
 		]);
 
 		const exportData = {
@@ -51,14 +53,16 @@ router.get('/export', async (req, res) => {
 					users: users.length,
 					products: products.length,
 					orders: orders.length,
-					accounts: accounts.length
+					accounts: accounts.length,
+					combos: combos.length
 				}
 			},
 			data: {
 				users,
 				products,
 				orders,
-				accounts
+				accounts,
+				combos
 			}
 		};
 
@@ -115,7 +119,8 @@ router.post('/import', upload.single('dataFile'), async (req, res) => {
 			users: { imported: 0, skipped: 0, errors: 0 },
 			products: { imported: 0, skipped: 0, errors: 0 },
 			orders: { imported: 0, skipped: 0, errors: 0 },
-			accounts: { imported: 0, skipped: 0, errors: 0 }
+			accounts: { imported: 0, skipped: 0, errors: 0 },
+			combos: { imported: 0, skipped: 0, errors: 0 }
 		};
 
 		// Import Users (skip existing by email)
@@ -195,6 +200,24 @@ router.post('/import', upload.single('dataFile'), async (req, res) => {
 			}
 		}
 
+		// Import Combos (skip existing by name)
+		if (data.combos && Array.isArray(data.combos)) {
+			for (const comboData of data.combos) {
+				try {
+					const existing = await Combo.findOne({ name: comboData.name }).session(session);
+					if (!existing) {
+						await Combo.create([comboData], { session });
+						importResults.combos.imported++;
+					} else {
+						importResults.combos.skipped++;
+					}
+				} catch (error) {
+					console.error('Combo import error:', error.message);
+					importResults.combos.errors++;
+				}
+			}
+		}
+
 		await session.commitTransaction();
 
 		console.log(`[${new Date().toISOString()}] Database import completed:`, importResults);
@@ -239,11 +262,12 @@ router.post('/import', upload.single('dataFile'), async (req, res) => {
  */
 router.get('/stats', async (req, res) => {
 	try {
-		const [userCount, productCount, orderCount, accountCount] = await Promise.all([
+		const [userCount, productCount, orderCount, accountCount, comboCount] = await Promise.all([
 			User.countDocuments({}),
 			Product.countDocuments({}),
 			Order.countDocuments({}),
-			Account.countDocuments({})
+			Account.countDocuments({}),
+			Combo.countDocuments({})
 		]);
 
 		const stats = {
@@ -252,7 +276,8 @@ router.get('/stats', async (req, res) => {
 				products: productCount,
 				orders: orderCount,
 				accounts: accountCount,
-				total: userCount + productCount + orderCount + accountCount
+				combos: comboCount,
+				total: userCount + productCount + orderCount + accountCount + comboCount
 			},
 			lastUpdated: new Date().toISOString()
 		};

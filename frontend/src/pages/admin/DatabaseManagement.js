@@ -39,6 +39,7 @@ const DatabaseManagement = () => {
 							<li>Người dùng (${stats?.collections?.users || 0} records)</li>
 							<li>Sản phẩm (${stats?.collections?.products || 0} records)</li>
 							<li>Đơn hàng (${stats?.collections?.orders || 0} records)</li>
+							<li>Combo (${stats?.collections?.combos || 0} records)</li>
 							<li>Tài khoản (${stats?.collections?.accounts || 0} records)</li>
 						</ul>
 						<p class="mt-3 text-sm text-yellow-600">
@@ -199,7 +200,7 @@ const DatabaseManagement = () => {
 				</h2>
 
 				{stats && (
-					<div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+					<div className="grid grid-cols-2 md:grid-cols-5 gap-4">
 						<div className="bg-blue-50 p-4 rounded-lg">
 							<div className="flex items-center">
 								<i className="fas fa-users text-blue-500 text-xl mr-3"></i>
@@ -232,6 +233,18 @@ const DatabaseManagement = () => {
 										{stats.collections.orders.toLocaleString()}
 									</p>
 									<p className="text-sm text-gray-600">Đơn hàng</p>
+								</div>
+							</div>
+						</div>
+
+						<div className="bg-indigo-50 p-4 rounded-lg">
+							<div className="flex items-center">
+								<i className="fas fa-layer-group text-indigo-500 text-xl mr-3"></i>
+								<div>
+									<p className="text-2xl font-bold text-indigo-600">
+										{stats.collections.combos.toLocaleString()}
+									</p>
+									<p className="text-sm text-gray-600">Combo</p>
 								</div>
 							</div>
 						</div>
