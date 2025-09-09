@@ -92,6 +92,13 @@ export const CartProvider = ({ children }) => {
 		optimalPricing: null
 	});
 
+	// Store previous combo state for comparison
+	const [previousComboState, setPreviousComboState] = useState({
+		hasCombo: false,
+		comboIds: [],
+		totalSavings: 0
+	});
+
 	// Load cart from localStorage on component mount
 	useEffect(() => {
 		const savedCart = localStorage.getItem('minipreorder_cart');
@@ -122,9 +129,38 @@ export const CartProvider = ({ children }) => {
 				isChecking: false,
 				optimalPricing: null
 			});
+			
+			// Reset previous combo state when cart is empty
+			setPreviousComboState({
+				hasCombo: false,
+				comboIds: [],
+				totalSavings: 0
+			});
 		}
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [cart]);
+
+	// Helper function to compare combo states
+	const hasComboChanged = (newComboData, previousState) => {
+		// If no combo now and no combo before = no change
+		if (!newComboData.hasCombo && !previousState.hasCombo) {
+			return false;
+		}
+		
+		// If combo status changed (had combo -> no combo, or no combo -> has combo)
+		if (newComboData.hasCombo !== previousState.hasCombo) {
+			return true;
+		}
+		
+		// If both have combos, check if savings amount changed significantly
+		if (newComboData.hasCombo && previousState.hasCombo) {
+			const savingsDiff = Math.abs(newComboData.savings - previousState.totalSavings);
+			// Only consider it changed if savings difference is more than 1000 VND
+			return savingsDiff > 1000;
+		}
+		
+		return false;
+	};
 
 	// Check for applicable combos and calculate optimal pricing
 	const checkForCombos = useCallback(async () => {
@@ -153,27 +189,45 @@ export const CartProvider = ({ children }) => {
 
 			const result = await response.json();
 
-			if (result.success && result.data.summary.totalSavings > 0) {
+			const newComboData = {
+				hasCombo: result.success && result.data.summary.totalSavings > 0,
+				savings: result.success ? result.data.summary.totalSavings : 0,
+				combos: result.success ? result.data.combos : []
+			};
+
+			// Check if combo state has actually changed
+			const comboHasChanged = hasComboChanged(newComboData, previousComboState);
+
+			if (newComboData.hasCombo) {
 				setComboDetection({
 					hasCombo: true,
-					combo: result.data.combos.length > 0 ? result.data.combos[0] : null,
-					savings: result.data.summary.totalSavings,
-					message: `Tiết kiệm ${formatCurrency(result.data.summary.totalSavings)} với combo tối ưu`,
+					combo: newComboData.combos.length > 0 ? newComboData.combos[0] : null,
+					savings: newComboData.savings,
+					message: `Tiết kiệm ${formatCurrency(newComboData.savings)} với combo tối ưu`,
 					isChecking: false,
 					optimalPricing: result.data
 				});
 
-				// Show toast notification for combo suggestion
-				toast.info(
-					`💡 Đã tối ưu giá với combo! Tiết kiệm ${formatCurrency(result.data.summary.totalSavings)}`,
-					{
-						position: "bottom-right",
-						autoClose: 5000,
-						hideProgressBar: false,
-						closeOnClick: true,
-						pauseOnHover: true,
-					}
-				);
+				// Only show toast notification if combo state has changed
+				if (comboHasChanged) {
+					toast.info(
+						`💡 Đã tối ưu giá với combo! Tiết kiệm ${formatCurrency(newComboData.savings)}`,
+						{
+							position: "bottom-right",
+							autoClose: 5000,
+							hideProgressBar: false,
+							closeOnClick: true,
+							pauseOnHover: true,
+						}
+					);
+				}
+
+				// Update previous combo state
+				setPreviousComboState({
+					hasCombo: true,
+					comboIds: newComboData.combos.map(combo => combo._id || combo.id),
+					totalSavings: newComboData.savings
+				});
 			} else {
 				setComboDetection({
 					hasCombo: false,
@@ -182,6 +236,13 @@ export const CartProvider = ({ children }) => {
 					message: null,
 					isChecking: false,
 					optimalPricing: result.success ? result.data : null
+				});
+
+				// Update previous combo state
+				setPreviousComboState({
+					hasCombo: false,
+					comboIds: [],
+					totalSavings: 0
 				});
 			}
 		} catch (error) {
@@ -193,6 +254,13 @@ export const CartProvider = ({ children }) => {
 				message: null,
 				isChecking: false,
 				optimalPricing: null
+			});
+			
+			// Reset previous combo state on error
+			setPreviousComboState({
+				hasCombo: false,
+				comboIds: [],
+				totalSavings: 0
 			});
 		}
 	}, [cart]);
