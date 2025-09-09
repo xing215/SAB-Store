@@ -170,7 +170,7 @@ const DirectSalesPage = () => {
 		try {
 			// Get optimal pricing for this selection
 			const pricingData = pricingInfo || null;
-			
+
 			// Create order through seller service
 			const orderData = {
 				items: selectedItems,

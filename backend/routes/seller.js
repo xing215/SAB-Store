@@ -435,7 +435,7 @@ router.post('/orders/direct', async (req, res) => {
 
 		if (useOptimalPricing && optimalPricing) {
 			console.log('💎 Direct sales using optimal pricing from frontend');
-			
+
 			// Validate products exist
 			const productIds = items.map(item => item.productId);
 			const products = await Product.find({
@@ -463,11 +463,11 @@ router.post('/orders/direct', async (req, res) => {
 
 			// Use the calculated optimal pricing
 			totalAmount = optimalPricing.summary.finalTotal;
-			
+
 			// Create order items and update stock
 			for (const item of items) {
 				const product = products.find(p => p._id.toString() === item.productId);
-				
+
 				orderItems.push({
 					productId: product._id,
 					productName: product.name,

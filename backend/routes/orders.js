@@ -37,7 +37,7 @@ router.post('/', validateOrder, async (req, res) => {
 
 		if (useOptimalPricing && optimalPricing) {
 			console.log('💎 Using optimal pricing from frontend');
-			
+
 			// Validate products exist
 			const productIds = items.map(item => item.productId);
 			const products = await Product.find({
@@ -55,7 +55,7 @@ router.post('/', validateOrder, async (req, res) => {
 
 			// Use the calculated optimal pricing
 			totalAmount = optimalPricing.summary.finalTotal;
-			
+
 			// Create order items with optimal pricing information
 			orderItems = items.map(item => {
 				const product = products.find(p => p._id.toString() === item.productId);
