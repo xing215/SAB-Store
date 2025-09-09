@@ -99,7 +99,7 @@ const OrderTrackingPage = () => {
 
 		steps.forEach((step, index) => {
 			if (index < currentIndex) {
-				step.label = step.label.replace('Đã', 'Chờ');
+				step.label = step.label.replace('Đã', 'Chờ xác nhận\n');
 			}
 		});
 
