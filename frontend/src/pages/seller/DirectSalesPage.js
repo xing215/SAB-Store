@@ -14,7 +14,6 @@ const DirectSalesPage = () => {
 	const [paymentQR, setPaymentQR] = useState('');
 	const [pricingInfo, setPricingInfo] = useState(null);
 	const [loadingPricing, setLoadingPricing] = useState(false);
-	const { data: session, isPending, error } = useSession();
 
 	// Refs for input focus management
 	const inputRefs = useRef({});
