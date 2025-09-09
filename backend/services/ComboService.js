@@ -266,6 +266,32 @@ class ComboService {
 	}
 
 	/**
+	 * Expand combo items back to individual products for order storage
+	 * @param {Array} items - Items that may contain combo information
+	 * @returns {Array} Individual product items
+	 */
+	static expandComboItems(items) {
+		if (!items || items.length === 0) {
+			return [];
+		}
+
+		const expandedItems = [];
+
+		for (const item of items) {
+			// If item has combo information, it's already expanded
+			// Just pass through individual items
+			if (item.productId) {
+				expandedItems.push({
+					productId: item.productId,
+					quantity: item.quantity
+				});
+			}
+		}
+
+		return expandedItems;
+	}
+
+	/**
 	 * Format currency helper
 	 * @param {number} amount 
 	 * @returns {string}
