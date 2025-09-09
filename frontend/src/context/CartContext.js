@@ -205,7 +205,7 @@ export const CartProvider = ({ children }) => {
 				productId: product._id,
 				productName: product.name,
 				price: product.price,
-				image: product.image
+				image: product.imageUrl
 			}
 		});
 		toast.success(`Đã thêm "${product.name}" vào giỏ hàng`, {

@@ -87,7 +87,7 @@ router.post('/', async (req, res) => {
 			description,
 			price,
 			category,
-			imageUrl: imageUrl || '/fallback-product.png',
+			imageUrl: imageUrl || undefined, // Let the schema default handle it
 			available: available !== undefined ? available : true,
 			isActive: isActive !== undefined ? isActive : true,
 			stockQuantity: stockQuantity || 0,
@@ -138,9 +138,9 @@ router.put('/:id', async (req, res) => {
 		const { id } = req.params;
 		const updateData = { ...req.body };
 
-		// Handle imageUrl field - if empty, set to fallback
-		if (!updateData.imageUrl) {
-			updateData.imageUrl = '/fallback-product.png';
+		// Handle imageUrl field - only update if provided and not empty
+		if (updateData.imageUrl === '') {
+			delete updateData.imageUrl; // Let existing value remain
 		}
 
 		const product = await Product.findByIdAndUpdate(

@@ -1,5 +1,6 @@
 import React from 'react';
 import { useCart } from '../context/CartContext';
+import { getImageUrl } from '../utils/helpers';
 
 const Cart = () => {
 	const {
@@ -58,11 +59,11 @@ const Cart = () => {
 						<div key={item.productId} className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
 							{/* Product Image */}
 							<img
-								src={item.image}
+								src={getImageUrl(item.image)}
 								alt={item.productName}
 								className="w-14 h-14 object-cover rounded-lg flex-shrink-0"
 								onError={(e) => {
-									e.target.src = 'https://via.placeholder.com/56x56?text=SP';
+									e.target.src = '/fallback-product.png';
 								}}
 							/>
 

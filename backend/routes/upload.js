@@ -5,7 +5,7 @@ const fs = require('fs');
 const router = express.Router();
 
 // Create uploads directory if it doesn't exist
-const uploadDir = path.join(__dirname, '../../uploads/products');
+const uploadDir = path.join(__dirname, '../uploads/products');
 if (!fs.existsSync(uploadDir)) {
 	fs.mkdirSync(uploadDir, { recursive: true });
 }
@@ -58,8 +58,10 @@ router.post('/image', upload.single('image'), (req, res) => {
 			});
 		}
 
-		// Return the file path relative to public directory
-		const imageUrl = `/uploads/products/${req.file.filename}`;
+		// Get base URL from environment or construct from request
+		const baseUrl = process.env.BASE_URL || `${req.protocol}://${req.get('host')}`;
+		// Return the full URL to the uploaded image
+		const imageUrl = `${baseUrl}/uploads/products/${req.file.filename}`;
 
 		res.json({
 			success: true,

@@ -1,5 +1,6 @@
 import React from 'react';
 import { useCart } from '../context/CartContext';
+import { getImageUrl } from '../utils/helpers';
 
 const ProductCard = ({ product }) => {
   const { 
@@ -31,7 +32,7 @@ const ProductCard = ({ product }) => {
       {/* Product Image */}
       <div className="relative overflow-hidden h-48">
         <img
-          src={product.image || '/fallback-product.png'}
+          src={getImageUrl(product.imageUrl)}
           alt={product.name}
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
           onError={(e) => {

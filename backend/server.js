@@ -117,7 +117,7 @@ app.use((req, res, next) => {
 app.all('/api/auth/*', toNodeHandler(auth));
 
 // Serve static files for uploaded images
-app.use('/uploads', express.static(path.join(__dirname, '..', 'uploads')));
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Routes
 app.use('/api/upload', require('./routes/upload'));

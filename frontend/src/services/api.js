@@ -269,6 +269,25 @@ export const adminService = {
 		}
 	},
 
+	// Upload image
+	uploadImage: async (imageFile) => {
+		try {
+			const formData = new FormData();
+			formData.append('image', imageFile);
+
+			const response = await api.post('/upload/image', formData, {
+				headers: {
+					'Content-Type': 'multipart/form-data',
+				},
+				timeout: 30000, // 30 seconds for image upload
+			});
+
+			return response.data;
+		} catch (error) {
+			throw new Error(error.response?.data?.message || 'Lỗi khi upload hình ảnh');
+		}
+	},
+
 	// Combo management
 	getCombos: async () => {
 		try {
