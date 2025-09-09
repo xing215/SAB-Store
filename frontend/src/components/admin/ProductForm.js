@@ -10,11 +10,11 @@ import {
 } from '../../utils/imageUtils';
 import { getImageUrl } from '../../utils/helpers';
 
-const ProductForm = ({ 
-	product, 
-	onSubmit, 
-	onCancel, 
-	onUploadImage 
+const ProductForm = ({
+	product,
+	onSubmit,
+	onCancel,
+	onUploadImage
 }) => {
 	const [formData, setFormData] = useState({
 		name: product?.name || '',
@@ -25,7 +25,7 @@ const ProductForm = ({
 		available: product?.available ?? true,
 		stockQuantity: product?.stockQuantity?.toString() || ''
 	});
-	
+
 	const [imageFile, setImageFile] = useState(null);
 	const [imagePreview, setImagePreview] = useState(
 		product?.imageUrl ? getImageUrl(product.imageUrl) : null
@@ -124,7 +124,7 @@ const ProductForm = ({
 		try {
 			setUploading(true);
 			const result = await onUploadImage(imageFile);
-			
+
 			if (result.success) {
 				return result.data.imageUrl;
 			} else {

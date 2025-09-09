@@ -4,10 +4,10 @@
  * @returns {string} Formatted currency string
  */
 export const formatCurrency = (amount) => {
-  return new Intl.NumberFormat('vi-VN', {
-    style: 'currency',
-    currency: 'VND'
-  }).format(amount);
+	return new Intl.NumberFormat('vi-VN', {
+		style: 'currency',
+		currency: 'VND'
+	}).format(amount);
 };
 
 /**
@@ -16,14 +16,14 @@ export const formatCurrency = (amount) => {
  * @returns {string} Formatted date string
  */
 export const formatDate = (date) => {
-  return new Intl.DateTimeFormat('vi-VN', {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit'
-  }).format(new Date(date));
+	return new Intl.DateTimeFormat('vi-VN', {
+		year: 'numeric',
+		month: '2-digit',
+		day: '2-digit',
+		hour: '2-digit',
+		minute: '2-digit',
+		second: '2-digit'
+	}).format(new Date(date));
 };
 
 /**
@@ -32,8 +32,8 @@ export const formatDate = (date) => {
  * @returns {boolean}
  */
 export const isValidEmail = (email) => {
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  return emailRegex.test(email);
+	const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+	return emailRegex.test(email);
 };
 
 /**
@@ -42,8 +42,8 @@ export const isValidEmail = (email) => {
  * @returns {string}
  */
 export const sanitizeString = (str) => {
-  if (typeof str !== 'string') return '';
-  return str.replace(/[<>]/g, '');
+	if (typeof str !== 'string') return '';
+	return str.replace(/[<>]/g, '');
 };
 
 /**
@@ -52,9 +52,9 @@ export const sanitizeString = (str) => {
  * @returns {number}
  */
 export const calculateTotal = (items) => {
-  return items.reduce((total, item) => {
-    return total + (item.price * item.quantity);
-  }, 0);
+	return items.reduce((total, item) => {
+		return total + (item.price * item.quantity);
+	}, 0);
 };
 
 /**
@@ -63,21 +63,21 @@ export const calculateTotal = (items) => {
  * @returns {string} - The correct URL for displaying the image
  */
 export const getImageUrl = (imageUrl) => {
-  if (!imageUrl) {
-    return '/fallback-product.png';
-  }
-  
-  // If it's already a full URL (starts with http), return as is
-  if (imageUrl.startsWith('http')) {
-    return imageUrl;
-  }
-  
-  // If it's a relative path starting with /uploads/, construct full URL
-  if (imageUrl.startsWith('/uploads/')) {
-    const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000';
-    return `${apiUrl}${imageUrl}`;
-  }
-  
-  // For other cases (like relative paths without /uploads/), return as is
-  return imageUrl;
+	if (!imageUrl) {
+		return '/fallback-product.png';
+	}
+
+	// If it's already a full URL (starts with http), return as is
+	if (imageUrl.startsWith('http')) {
+		return imageUrl;
+	}
+
+	// If it's a relative path starting with /uploads/, construct full URL
+	if (imageUrl.startsWith('/uploads/')) {
+		const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+		return `${apiUrl}${imageUrl}`;
+	}
+
+	// For other cases (like relative paths without /uploads/), return as is
+	return imageUrl;
 };

@@ -14,13 +14,29 @@ const router = express.Router();
  */
 router.post('/', validateOrder, async (req, res) => {
 	try {
+		console.log('📝 Order creation started:', {
+			timestamp: new Date().toISOString(),
+			body: { ...req.body, items: req.body.items?.length ? `${req.body.items.length} items` : 'no items' }
+		});
+
 		const { studentId, fullName, email, phoneNumber, additionalNote, items, applyCombo = true } = req.body;
+
+		if (!items || !Array.isArray(items) || items.length === 0) {
+			console.error('❌ Invalid items in request');
+			return res.status(400).json({
+				success: false,
+				message: 'Danh sách sản phẩm không hợp lệ'
+			});
+		}
+
+		console.log('🔍 Processing items:', items.map(item => ({ productId: item.productId, quantity: item.quantity })));
 
 		// Apply combo detection if enabled
 		let finalItems = items;
 		let comboInfo = null;
 
 		if (applyCombo) {
+			console.log('🎯 Applying combo detection...');
 			const comboResult = await ComboService.detectAndApplyBestCombo(items, false);
 			if (comboResult.success && comboResult.hasCombo) {
 				finalItems = comboResult.finalItems;
@@ -33,26 +49,42 @@ router.post('/', validateOrder, async (req, res) => {
 			}
 		}
 
+		console.log('🔄 Converting combo items to individual products...');
 		// Convert combo items back to individual products for order storage
 		const expandedItems = ComboService.expandComboItems(finalItems);
 
+		console.log('🔍 Validating products in database...');
 		// Validate products exist and get current prices
 		const productIds = expandedItems.map(item => item.productId).filter(id => id);
+		console.log('📋 Product IDs to validate:', productIds);
+
 		const products = await Product.find({
 			_id: { $in: productIds },
 			available: true
 		});
 
+		console.log('✅ Found products:', products.length, 'of', productIds.length, 'requested');
+
 		if (products.length !== productIds.length) {
+			console.error('❌ Product validation failed:', {
+				requested: productIds.length,
+				found: products.length,
+				missing: productIds.filter(id => !products.find(p => p._id.toString() === id))
+			});
 			return res.status(400).json({
 				success: false,
 				message: 'Một hoặc nhiều sản phẩm không tồn tại hoặc không khả dụng'
 			});
 		}
 
+		console.log('💰 Building order items with pricing...');
 		// Build order items with current product information
 		const orderItems = expandedItems.map(item => {
 			const product = products.find(p => p._id.toString() === item.productId);
+			if (!product) {
+				console.error('❌ Product not found for item:', item.productId);
+				throw new Error(`Product not found: ${item.productId}`);
+			}
 			return {
 				productId: product._id,
 				productName: product.name,
@@ -64,6 +96,7 @@ router.post('/', validateOrder, async (req, res) => {
 			};
 		});
 
+		console.log('📊 Calculating total amount...');
 		// Calculate total amount based on combo pricing if applicable
 		let totalAmount;
 		if (comboInfo && finalItems.some(item => item.isCombo)) {
@@ -71,11 +104,14 @@ router.post('/', validateOrder, async (req, res) => {
 			totalAmount = finalItems.reduce((total, item) => {
 				return total + (item.price * item.quantity);
 			}, 0);
+			console.log('💝 Total with combo pricing:', totalAmount);
 		} else {
 			// Calculate total with individual product pricing
 			totalAmount = calculateTotal(orderItems);
+			console.log('💰 Total with individual pricing:', totalAmount);
 		}
 
+		console.log('🏷️ Generating unique order code...');
 		// Generate unique order code
 		let orderCode;
 		let isUnique = false;
@@ -91,12 +127,16 @@ router.post('/', validateOrder, async (req, res) => {
 		}
 
 		if (!isUnique) {
+			console.error('❌ Failed to generate unique order code after 10 attempts');
 			return res.status(500).json({
 				success: false,
 				message: 'Không thể tạo mã đơn hàng duy nhất'
 			});
 		}
 
+		console.log('✅ Generated order code:', orderCode);
+
+		console.log('💾 Creating order in database...');
 		// Create order
 		const order = new Order({
 			orderCode,
@@ -120,6 +160,7 @@ router.post('/', validateOrder, async (req, res) => {
 		});
 
 		await order.save();
+		console.log('✅ Order saved successfully:', order._id);
 
 		// Log dữ liệu gửi App Script
 		const appscriptData = {
@@ -153,9 +194,15 @@ router.post('/', validateOrder, async (req, res) => {
 		});
 
 	} catch (error) {
-		console.error('Error creating order:', error);
+		console.error('💥 Error creating order:', {
+			error: error.message,
+			stack: error.stack,
+			timestamp: new Date().toISOString()
+		});
 
+		// More specific error handling
 		if (error.name === 'ValidationError') {
+			console.error('❌ Validation error details:', error.errors);
 			return res.status(400).json({
 				success: false,
 				message: 'Dữ liệu đơn hàng không hợp lệ',
@@ -163,9 +210,18 @@ router.post('/', validateOrder, async (req, res) => {
 			});
 		}
 
+		if (error.name === 'MongoError' || error.name === 'MongoServerError') {
+			console.error('❌ Database error:', error.message);
+			return res.status(500).json({
+				success: false,
+				message: 'Lỗi cơ sở dữ liệu'
+			});
+		}
+
 		res.status(500).json({
 			success: false,
-			message: 'Lỗi server khi tạo đơn hàng'
+			message: 'Lỗi server khi tạo đơn hàng',
+			...(process.env.NODE_ENV === 'development' && { debug: error.message })
 		});
 	}
 });

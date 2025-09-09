@@ -1,12 +1,12 @@
 import React from 'react';
 import ProductForm from './ProductForm';
 
-const ProductModal = ({ 
-	isOpen, 
-	onClose, 
-	product, 
-	onSubmit, 
-	onUploadImage 
+const ProductModal = ({
+	isOpen,
+	onClose,
+	product,
+	onSubmit,
+	onUploadImage
 }) => {
 	if (!isOpen) return null;
 

@@ -48,6 +48,13 @@ const validateOrder = [
 		.isLength({ max: 100 })
 		.withMessage('Email không được vượt quá 100 ký tự'),
 
+	body('phoneNumber')
+		.notEmpty()
+		.withMessage('Số điện thoại là bắt buộc')
+		.matches(/^0[0-9]{9}$/)
+		.withMessage('Số điện thoại phải có 10 số và bắt đầu bằng 0')
+		.trim(),
+
 	body('additionalNote')
 		.optional()
 		.isLength({ max: 500 })
