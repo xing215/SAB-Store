@@ -611,7 +611,7 @@ const AdminDashboard = () => {
 											<div className="text-sm text-gray-500">{order.studentId}</div>
 											<div className="text-sm text-gray-500">{order.email}</div>
 											<div className="text-sm text-gray-500">{order.phoneNumber}</div>
-											<div className="text-sm text-gray-500">{order.note}</div>
+											<div className="text-sm text-gray-500">{order.additionalNote}</div>
 										</td>
 										<td className="px-6 py-4">
 											<div className="text-sm text-gray-900">
