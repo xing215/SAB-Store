@@ -85,7 +85,7 @@ const HomePage = () => {
 						<div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-6 mb-8">
 							<div className="flex items-center mb-4">
 								<i className="fas fa-gift text-2xl text-blue-600 mr-3"></i>
-								<h2 className="text-xl font-bold text-blue-800">Combo Ưu Đãi</h2>
+								<h2 className="text-xl font-bold text-blue-800">Combo Ưu Đãi (Tự động áp dụng)</h2>
 							</div>
 							<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 								{combos.map(combo => (
