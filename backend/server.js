@@ -54,6 +54,7 @@ const corsOptions = {
 		// Support multiple origins from environment variable (comma-separated)
 		const allowedOrigins = [
 			...(process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(',').map(o => o.trim()) : []),
+			'http://store.sab.edu.vn',
 			'https://store.sab.edu.vn',
 			'https://api.store.sab.edu.vn',
 			'https://lanyard.sab.edu.vn',
@@ -67,7 +68,7 @@ const corsOptions = {
 		}
 
 		console.warn(`[CORS] Blocked origin: ${origin}`);
-		callback(new Error('Not allowed by CORS'));
+		callback(new Error('Not allowed by CORS ${origin}}'));
 	},
 	credentials: true,
 	methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
