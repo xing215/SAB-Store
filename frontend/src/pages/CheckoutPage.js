@@ -400,7 +400,7 @@ const CheckoutPage = () => {
 										<li>Vui lòng kiểm tra kỹ thông tin trước khi xác nhận</li>
 										<li>Sau khi xác nhận, bạn vui lòng quét mã chuyển khoản trong vòng 1 giờ</li>
 										<li>SAB sẽ gửi thông tin xác nhận thanh toán <b>trong vòng 7 ngày</b></li>
-										<li>Thời gian nhận hàng dự kiến từ ngày 06/10/2025 đến ngày 19/10/2025 tại <b>Cơ sở 1 - 227 Nguyễn Văn Cừ, Phường Chợ Quán</b></li>
+										<li>Thời gian nhận hàng dự kiến từ ngày T4 08/10/2025 đến ngày 19/10/2025 tại <b>Cơ sở 1 - 227 Nguyễn Văn Cừ, Phường Chợ Quán</b></li>
 									</ul>
 								</div>
 
