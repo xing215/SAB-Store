@@ -96,6 +96,12 @@ const validateOrderUpdate = [
 		.withMessage('Lý do hủy không được vượt quá 500 ký tự')
 		.trim(),
 
+	body('note')
+		.optional()
+		.isLength({ max: 500 })
+		.withMessage('Ghi chú không được vượt quá 500 ký tự')
+		.trim(),
+
 	handleValidationErrors
 ];
 
