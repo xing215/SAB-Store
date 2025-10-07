@@ -283,6 +283,37 @@ router.post('/', authenticateAdmin, async (req, res) => {
 });
 
 /**
+ * @route   POST /api/combos/pricing
+ * @desc    Calculate optimal pricing for cart items
+ * @access  Public
+ */
+router.post('/pricing', async (req, res) => {
+	try {
+		const { items } = req.body;
+
+		if (!items || !Array.isArray(items)) {
+			return res.status(400).json({
+				success: false,
+				message: 'Danh sách sản phẩm là bắt buộc'
+			});
+		}
+
+		const pricingBreakdown = await ComboService.getPricingBreakdown(items);
+
+		res.json({
+			success: true,
+			data: pricingBreakdown
+		});
+	} catch (error) {
+		console.error('Calculate pricing error:', error);
+		res.status(500).json({
+			success: false,
+			message: 'Lỗi server khi tính toán giá'
+		});
+	}
+});
+
+/**
  * @route   PUT /api/combos/:id
  * @desc    Update combo
  * @access  Private/Admin
@@ -413,37 +444,6 @@ router.get('/:id', authenticateAdmin, async (req, res) => {
 		res.status(500).json({
 			success: false,
 			message: 'Lỗi server khi lấy thông tin combo'
-		});
-	}
-});
-
-/**
- * @route   POST /api/combos/pricing
- * @desc    Calculate optimal pricing for cart items
- * @access  Public
- */
-router.post('/pricing', async (req, res) => {
-	try {
-		const { items } = req.body;
-
-		if (!items || !Array.isArray(items)) {
-			return res.status(400).json({
-				success: false,
-				message: 'Danh sách sản phẩm là bắt buộc'
-			});
-		}
-
-		const pricingBreakdown = await ComboService.getPricingBreakdown(items);
-
-		res.json({
-			success: true,
-			data: pricingBreakdown
-		});
-	} catch (error) {
-		console.error('Calculate pricing error:', error);
-		res.status(500).json({
-			success: false,
-			message: 'Lỗi server khi tính toán giá'
 		});
 	}
 });
