@@ -100,36 +100,30 @@ const AdminDashboard = () => {
 
 	// Handle order status update
 	const handleStatusUpdate = async (orderId, currentStatus) => {
-		// Admin có thể chuyển sang bất kỳ trạng thái nào
+		// Admin có thể chuyển sang bất kỳ trạng thái nào (kể cả trạng thái hiện tại) để sửa dữ liệu sai
 		const allStatuses = ['confirmed', 'paid', 'delivered', 'cancelled'];
 
-		// Loại bỏ trạng thái hiện tại khỏi danh sách
-		const availableStatuses = allStatuses.filter(status => status !== currentStatus);
-
-		if (availableStatuses.length === 0) {
-			toast.warning('Không có trạng thái nào khác để thay đổi');
-			return;
-		}
-
 		const statusLabels = {
+			'confirmed': 'Đã xác nhận',
 			'paid': 'Đã thanh toán',
 			'delivered': 'Đã giao hàng',
 			'cancelled': 'Hủy đơn hàng'
 		};
 
-		const options = availableStatuses.map(status => ({
-			value: status,
-			label: statusLabels[status]
-		}));
+		const inputOptions = allStatuses.reduce((acc, status) => {
+			acc[status] = statusLabels[status] + (status === currentStatus ? ' (Hiện tại)' : '');
+			return acc;
+		}, {});
 
 		const { value: selectedStatus } = await Swal.fire({
 			title: 'Cập nhật trạng thái',
-			text: 'Chọn trạng thái mới cho đơn hàng:',
+			html: `
+				<p class="mb-2">Chọn trạng thái cho đơn hàng:</p>
+				<p class="text-sm text-gray-600 mb-4">Admin có thể chuyển sang bất kỳ trạng thái nào để sửa dữ liệu sai</p>
+			`,
 			input: 'select',
-			inputOptions: options.reduce((acc, option) => {
-				acc[option.value] = option.label;
-				return acc;
-			}, {}),
+			inputOptions: inputOptions,
+			inputValue: currentStatus,
 			showCancelButton: true,
 			confirmButtonText: 'Cập nhật',
 			cancelButtonText: 'Hủy',
@@ -143,6 +137,26 @@ const AdminDashboard = () => {
 		if (!selectedStatus) return;
 
 		let updateData = { status: selectedStatus };
+
+		// Ask for optional note to document the change
+		const { value: note } = await Swal.fire({
+			title: 'Ghi chú (Tùy chọn)',
+			text: 'Thêm ghi chú về việc thay đổi trạng thái này (khuyến nghị cho việc sửa dữ liệu):',
+			input: 'textarea',
+			inputPlaceholder: 'Ví dụ: Sửa lại trạng thái do nhập sai...',
+			showCancelButton: true,
+			confirmButtonText: 'Tiếp tục',
+			cancelButtonText: 'Bỏ qua',
+			inputValidator: (value) => {
+				if (value && value.trim().length > 500) {
+					return 'Ghi chú không được vượt quá 500 ký tự!';
+				}
+			}
+		});
+
+		if (note && note.trim()) {
+			updateData.note = note.trim();
+		}
 
 		// Handle specific status requirements
 		if (selectedStatus === 'paid') {
@@ -663,15 +677,14 @@ const AdminDashboard = () => {
 											{formatDate(order.createdAt)}
 										</td>
 										<td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-											{(order.status !== 'delivered' && order.status !== 'cancelled') && (
-												<button
-													onClick={() => handleStatusUpdate(order._id, order.status)}
-													className="text-blue-700 hover:text-blue-900 mr-3"
-												>
-													<i className="fas fa-edit mr-1"></i>
-													Cập nhật
-												</button>
-											)}
+											<button
+												onClick={() => handleStatusUpdate(order._id, order.status)}
+												className="text-blue-700 hover:text-blue-900 mr-3"
+												title="Admin có thể cập nhật bất kỳ trạng thái nào"
+											>
+												<i className="fas fa-edit mr-1"></i>
+												Cập nhật
+											</button>
 										</td>
 									</tr>
 								))}
