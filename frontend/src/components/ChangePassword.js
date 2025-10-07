@@ -4,6 +4,7 @@ import Swal from 'sweetalert2';
 import { validatePassword } from '../utils/passwordValidator';
 import PasswordStrengthIndicator from './PasswordStrengthIndicator';
 import RandomPasswordButton from './RandomPasswordButton';
+import { adminService, sellerService } from '../services/api';
 
 const ChangePassword = ({ userType = 'admin', title = 'Đổi mật khẩu' }) => {
 	const [formData, setFormData] = useState({
@@ -56,21 +57,11 @@ const ChangePassword = ({ userType = 'admin', title = 'Đổi mật khẩu' }) =
 		try {
 			setLoading(true);
 
-			const endpoint = userType === 'admin' ? '/api/admin/change-password' : '/api/seller/change-password';
-
-			const response = await fetch(endpoint, {
-				method: 'POST',
-				headers: {
-					'Content-Type': 'application/json',
-				},
-				credentials: 'include',
-				body: JSON.stringify({
-					currentPassword: formData.currentPassword,
-					newPassword: formData.newPassword
-				})
-			});
-
-			const result = await response.json();
+			const service = userType === 'admin' ? adminService : sellerService;
+			const result = await service.changePassword(
+				formData.currentPassword,
+				formData.newPassword
+			);
 
 			if (result.success) {
 				toast.success('Đổi mật khẩu thành công');

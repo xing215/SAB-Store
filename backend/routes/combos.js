@@ -314,6 +314,18 @@ router.post('/pricing', async (req, res) => {
 });
 
 /**
+ * @route   GET /api/combos/pricing
+ * @desc    Return error for GET requests to pricing endpoint
+ * @access  Public
+ */
+router.get('/pricing', async (req, res) => {
+	return res.status(405).json({
+		success: false,
+		message: 'Phương thức GET không được hỗ trợ. Vui lòng sử dụng POST.'
+	});
+});
+
+/**
  * @route   PUT /api/combos/:id
  * @desc    Update combo
  * @access  Private/Admin
@@ -322,6 +334,14 @@ router.put('/:id', authenticateAdmin, async (req, res) => {
 	try {
 		const { id } = req.params;
 		const { name, description, price, categoryRequirements, priority, isActive } = req.body;
+
+		// Validate ObjectId format
+		if (!id.match(/^[0-9a-fA-F]{24}$/)) {
+			return res.status(400).json({
+				success: false,
+				message: 'ID combo không hợp lệ'
+			});
+		}
 
 		const combo = await Combo.findById(id);
 		if (!combo) {
@@ -395,6 +415,14 @@ router.delete('/:id', authenticateAdmin, async (req, res) => {
 	try {
 		const { id } = req.params;
 
+		// Validate ObjectId format
+		if (!id.match(/^[0-9a-fA-F]{24}$/)) {
+			return res.status(400).json({
+				success: false,
+				message: 'ID combo không hợp lệ'
+			});
+		}
+
 		const combo = await Combo.findById(id);
 		if (!combo) {
 			return res.status(404).json({
@@ -426,6 +454,14 @@ router.delete('/:id', authenticateAdmin, async (req, res) => {
 router.get('/:id', authenticateAdmin, async (req, res) => {
 	try {
 		const { id } = req.params;
+
+		// Validate ObjectId format
+		if (!id.match(/^[0-9a-fA-F]{24}$/)) {
+			return res.status(400).json({
+				success: false,
+				message: 'ID combo không hợp lệ'
+			});
+		}
 
 		const combo = await Combo.findById(id);
 		if (!combo) {

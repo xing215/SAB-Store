@@ -184,10 +184,16 @@ export const CartProvider = ({ children }) => {
 			});
 
 			if (!response.ok) {
-				throw new Error('Failed to calculate pricing');
+				const errorData = await response.json().catch(() => ({}));
+				console.error('Pricing API error:', response.status, errorData);
+				throw new Error(errorData.message || `Server error: ${response.status}`);
 			}
 
 			const result = await response.json();
+
+			if (!result.success) {
+				throw new Error(result.message || 'Failed to calculate pricing');
+			}
 
 			const newComboData = {
 				hasCombo: result.success && result.data.summary.totalSavings > 0,
@@ -211,7 +217,7 @@ export const CartProvider = ({ children }) => {
 				// Only show toast notification if combo state has changed
 				if (comboHasChanged) {
 					toast.info(
-						`💡 Đã tối ưu giá với combo! Tiết kiệm ${formatCurrency(newComboData.savings)}`,
+						`Đã tối ưu giá với combo! Tiết kiệm ${formatCurrency(newComboData.savings)}`,
 						{
 							position: "bottom-right",
 							autoClose: 5000,
@@ -246,7 +252,7 @@ export const CartProvider = ({ children }) => {
 				});
 			}
 		} catch (error) {
-			console.error('Combo detection error:', error);
+			console.error('Combo detection error:', error.message || error);
 			setComboDetection({
 				hasCombo: false,
 				combo: null,

@@ -136,6 +136,19 @@ export const adminService = {
 		}
 	},
 
+	// Change password
+	changePassword: async (currentPassword, newPassword) => {
+		try {
+			const response = await api.post('/admin/change-password', {
+				currentPassword,
+				newPassword
+			});
+			return response.data;
+		} catch (error) {
+			throw new Error(error.response?.data?.message || 'Lỗi khi đổi mật khẩu');
+		}
+	},
+
 	// Get dashboard statistics
 	getDashboardStats: async () => {
 		try {
@@ -369,6 +382,19 @@ export const sellerService = {
 		} catch (error) {
 			console.error('Logout error:', error);
 			throw error;
+		}
+	},
+
+	// Change password
+	changePassword: async (currentPassword, newPassword) => {
+		try {
+			const response = await api.post('/seller/change-password', {
+				currentPassword,
+				newPassword
+			});
+			return response.data;
+		} catch (error) {
+			throw new Error(error.response?.data?.message || 'Lỗi khi đổi mật khẩu');
 		}
 	},
 

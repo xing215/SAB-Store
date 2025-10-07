@@ -93,14 +93,23 @@ const DirectSalesPage = () => {
 				body: JSON.stringify({ items }),
 			});
 
-			if (response.ok) {
-				const result = await response.json();
-				if (result.success) {
-					setPricingInfo(result.data);
-				}
+			if (!response.ok) {
+				const errorData = await response.json().catch(() => ({}));
+				console.error('Pricing API error:', response.status, errorData);
+				throw new Error(errorData.message || `Server error: ${response.status}`);
+			}
+
+			const result = await response.json();
+
+			if (result.success) {
+				setPricingInfo(result.data);
+			} else {
+				console.error('Pricing calculation failed:', result.message);
+				setPricingInfo(null);
 			}
 		} catch (error) {
-			console.error('Pricing calculation error:', error);
+			console.error('Pricing calculation error:', error.message || error);
+			setPricingInfo(null);
 		} finally {
 			setLoadingPricing(false);
 		}
