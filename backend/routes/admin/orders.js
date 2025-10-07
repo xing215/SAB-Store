@@ -137,63 +137,6 @@ router.put('/:id', validateOrderUpdate, async (req, res) => {
 		// Record who made the change
 		order.lastUpdatedBy = req.admin.username; // Get username from authenticated admin
 
-		// Store previous status to check if we need to restore stock
-		const previousStatus = order.status;
-
-		// Handle stock restoration when order is cancelled
-		if (status === 'cancelled' && previousStatus !== 'cancelled') {
-			console.log('📦 Restoring stock for cancelled order:', order.orderCode);
-			
-			// Restore stock for all items in the order
-			for (const item of order.items) {
-				try {
-					const product = await Product.findById(item.productId);
-					if (product) {
-						product.stockQuantity += item.quantity;
-						await product.save();
-						console.log(`✅ Restored ${item.quantity} units of ${product.name} to stock`);
-					} else {
-						console.warn(`⚠️ Product ${item.productId} not found, skipping stock restoration`);
-					}
-				} catch (stockError) {
-					console.error(`❌ Error restoring stock for product ${item.productId}:`, stockError);
-					// Continue with other items even if one fails
-				}
-			}
-		}
-
-		// Handle stock deduction when order is un-cancelled (restored from cancelled to another status)
-		if (previousStatus === 'cancelled' && status !== 'cancelled') {
-			console.log('📦 Deducting stock for restored order:', order.orderCode);
-			
-			// Deduct stock for all items in the order
-			for (const item of order.items) {
-				try {
-					const product = await Product.findById(item.productId);
-					if (product) {
-						// Check if we have enough stock
-						if (product.stockQuantity < item.quantity) {
-							return res.status(400).json({
-								success: false,
-								message: `Không đủ hàng trong kho cho sản phẩm ${product.name}. Còn lại: ${product.stockQuantity}, cần: ${item.quantity}`
-							});
-						}
-						product.stockQuantity -= item.quantity;
-						await product.save();
-						console.log(`✅ Deducted ${item.quantity} units of ${product.name} from stock`);
-					} else {
-						console.warn(`⚠️ Product ${item.productId} not found, skipping stock deduction`);
-					}
-				} catch (stockError) {
-					console.error(`❌ Error deducting stock for product ${item.productId}:`, stockError);
-					return res.status(500).json({
-						success: false,
-						message: 'Lỗi khi cập nhật kho hàng'
-					});
-				}
-			}
-		}
-
 		// Update order
 		order.status = status;
 		order.statusUpdatedAt = new Date();
