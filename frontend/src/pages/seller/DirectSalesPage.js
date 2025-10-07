@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useSession } from '../../lib/auth-client';
 import { toast } from 'react-toastify';
-import { productService, sellerService } from '../../services/api';
+import { productService, sellerService, comboService } from '../../services/api';
 import { generatePaymentQR } from '../../utils/payment';
 import LoadingSpinner from '../../components/LoadingSpinner';
 
@@ -85,21 +85,7 @@ const DirectSalesPage = () => {
 
 		setLoadingPricing(true);
 		try {
-			const response = await fetch('/api/combos/pricing', {
-				method: 'POST',
-				headers: {
-					'Content-Type': 'application/json',
-				},
-				body: JSON.stringify({ items }),
-			});
-
-			if (!response.ok) {
-				const errorData = await response.json().catch(() => ({}));
-				console.error('Pricing API error:', response.status, errorData);
-				throw new Error(errorData.message || `Server error: ${response.status}`);
-			}
-
-			const result = await response.json();
+			const result = await comboService.calculatePricing(items);
 
 			if (result.success) {
 				setPricingInfo(result.data);

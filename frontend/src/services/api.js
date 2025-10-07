@@ -579,6 +579,16 @@ export const comboService = {
 		} catch (error) {
 			throw new Error(error.response?.data?.message || 'Lỗi khi lấy danh sách combo');
 		}
+	},
+
+	// Calculate optimal pricing for items
+	calculatePricing: async (items) => {
+		try {
+			const response = await api.post('/combos/pricing', { items });
+			return response.data;
+		} catch (error) {
+			throw new Error(error.response?.data?.message || 'Lỗi khi tính toán giá tối ưu');
+		}
 	}
 };
 

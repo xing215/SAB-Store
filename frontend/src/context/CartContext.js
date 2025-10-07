@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useReducer, useEffect, useState, useCallback } from 'react';
 import { toast } from 'react-toastify';
+import { comboService } from '../services/api';
 
 // Cart Context
 const CartContext = createContext();
@@ -174,22 +175,7 @@ export const CartProvider = ({ children }) => {
 				quantity: item.quantity
 			}));
 
-			// Use the new pricing endpoint for optimal calculations
-			const response = await fetch('/api/combos/pricing', {
-				method: 'POST',
-				headers: {
-					'Content-Type': 'application/json',
-				},
-				body: JSON.stringify({ items }),
-			});
-
-			if (!response.ok) {
-				const errorData = await response.json().catch(() => ({}));
-				console.error('Pricing API error:', response.status, errorData);
-				throw new Error(errorData.message || `Server error: ${response.status}`);
-			}
-
-			const result = await response.json();
+			const result = await comboService.calculatePricing(items);
 
 			if (!result.success) {
 				throw new Error(result.message || 'Failed to calculate pricing');
