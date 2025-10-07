@@ -560,8 +560,41 @@ router.post('/orders/direct', async (req, res) => {
 		}
 
 		// Generate order number for direct sales
-		const orderCount = await Order.countDocuments();
-		const orderNumber = `SAB${String(orderCount + 1).padStart(6, '0')}`;
+		// Find the highest existing orderNumber to avoid duplicates
+		let orderNumber;
+		let orderNumberUnique = false;
+		let orderNumberAttempts = 0;
+		const MAX_ORDER_NUMBER_ATTEMPTS = 100;
+
+		while (!orderNumberUnique && orderNumberAttempts < MAX_ORDER_NUMBER_ATTEMPTS) {
+			const lastOrder = await Order.findOne(
+				{ orderNumber: { $regex: /^SAB\d{6}$/ } },
+				{ orderNumber: 1 }
+			).sort({ orderNumber: -1 }).lean();
+
+			let nextNumber = 1;
+			if (lastOrder && lastOrder.orderNumber) {
+				const currentNumber = parseInt(lastOrder.orderNumber.replace('SAB', ''));
+				nextNumber = currentNumber + 1;
+			}
+
+			orderNumber = `SAB${String(nextNumber).padStart(6, '0')}`;
+
+			// Check if orderNumber already exists
+			const existingOrderNumber = await Order.findOne({ orderNumber });
+			if (!existingOrderNumber) {
+				orderNumberUnique = true;
+			} else {
+				orderNumberAttempts++;
+			}
+		}
+
+		if (!orderNumberUnique) {
+			return res.status(500).json({
+				success: false,
+				message: 'Không thể tạo số đơn hàng duy nhất sau nhiều lần thử'
+			});
+		}
 
 		// Generate unique order code (different from orderNumber to avoid conflicts)
 		let orderCode;
