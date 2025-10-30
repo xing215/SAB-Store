@@ -9,8 +9,8 @@ services:
       MONGO_INITDB_ROOT_PASSWORD: ${MONGO_INITDB_ROOT_PASSWORD:-password123}
       MONGO_INITDB_DATABASE: ${MONGO_INITDB_DATABASE:-minipreorder}
       TZ: ${TZ:-Asia/Ho_Chi_Minh}
-    ports:
-      - "${MONGODB_PORT:-27017}:27017"
+    expose:
+      - "27017"
     volumes:
       - mongodb_data:/data/db
     networks:
@@ -42,8 +42,8 @@ services:
       APPSCRIPT_URL: ${APPSCRIPT_URL:-your-appscript-url-here}
       CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:3000}
       TZ: ${TZ:-Asia/Ho_Chi_Minh}
-    ports:
-      - "${BACKEND_PORT:-5000}:5000"
+    expose:
+      - "5000"
     depends_on:
       mongodb:
         condition: service_healthy
@@ -66,8 +66,8 @@ services:
     pull_policy: always
     container_name: sablanyard_frontend
     restart: unless-stopped
-    ports:
-      - "${FRONTEND_PORT:-3000}:80"
+    expose:
+      - 80
     volumes:
       - ./frontend:/app
       - /app/node_modules
