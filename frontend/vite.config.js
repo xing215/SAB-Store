@@ -8,6 +8,7 @@ export default defineConfig({
 		loader: 'jsx',
 		include: /src\/.*\.jsx?$/,
 		exclude: [],
+		target: 'es2015',
 	},
 
 	optimizeDeps: {
@@ -37,6 +38,7 @@ export default defineConfig({
 		outDir: 'build',
 		sourcemap: false,
 		minify: 'esbuild',
+		target: 'es2015',
 		chunkSizeWarningLimit: 1000,
 		rollupOptions: {
 			output: {
