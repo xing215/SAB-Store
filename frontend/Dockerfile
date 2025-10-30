@@ -51,8 +51,15 @@ RUN echo 'server { \
 	try_files $uri =404; \
 	} \
 	\
+	# Health check endpoint - MUST be before other location blocks \
+	location /health { \
+	access_log off; \
+	return 200 "healthy\\n"; \
+	add_header Content-Type text/plain; \
+	} \
+	\
 	# Vite assets folder - long-term cache with hash names \
-	# CRITICAL: Return 404 for missing assets to prevent serving HTML \
+	# CRITICAL: Must match BEFORE default location \
 	location /assets/ { \
 	expires 1y; \
 	add_header Cache-Control "public, immutable"; \
@@ -61,6 +68,7 @@ RUN echo 'server { \
 	} \
 	\
 	# Static files - return 404 if not found \
+	# CRITICAL: Match file extensions BEFORE default location \
 	location ~* \\.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$ { \
 	expires 1y; \
 	add_header Cache-Control "public, immutable"; \
@@ -68,21 +76,14 @@ RUN echo 'server { \
 	} \
 	\
 	# Cache manifest and logos \
-	location ~* ^/(manifest\\.json|favicon\\.ico|robots\\.txt)$ { \
+	location ~* ^/(manifest\\.json|favicon\\.ico|favicon\\.png|robots\\.txt)$ { \
 	expires 7d; \
 	add_header Cache-Control "public"; \
 	try_files $uri =404; \
 	} \
 	\
-	# Health check endpoint \
-	location /health { \
-	access_log off; \
-	return 200 "healthy\\n"; \
-	add_header Content-Type text/plain; \
-	} \
-	\
 	# Default - serve and fallback to index.html for SPA \
-	# Only HTML routes should fallback to index.html \
+	# This catches HTML routes only (after static assets are matched above) \
 	location / { \
 	index index.html; \
 	try_files $uri $uri/ /index.html; \
