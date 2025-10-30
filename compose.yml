@@ -90,6 +90,8 @@ services:
       dockerfile: Dockerfile
       args:
         - REACT_APP_API_URL=${REACT_APP_API_URL:-http://localhost}
+    environment:
+      - REACT_APP_API_URL=${REACT_APP_API_URL:-http://localhost}
     pull_policy: always
     container_name: sabstore_frontend
     restart: unless-stopped

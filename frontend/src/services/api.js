@@ -3,7 +3,7 @@ import { authClient } from '../lib/auth-client';
 
 // API Base URL
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
-
+console.log('API Base URL:', API_BASE_URL);
 // Create axios instance
 const api = axios.create({
 	baseURL: `${API_BASE_URL}/api`,
@@ -574,6 +574,8 @@ export const comboService = {
 	// Get active combos
 	getActiveCombos: async () => {
 		try {
+			console.log('Fetching active combos from API...');
+			console.log('API Base URL in comboService:', API_BASE_URL);
 			const response = await api.get('/combos/active');
 			return response.data;
 		} catch (error) {

@@ -46,7 +46,10 @@
 
 ### Frontend Configuration
 - `FRONTEND_PORT`: Frontend internal port (default: `80`, not exposed externally)
-- `REACT_APP_API_URL`: Backend API URL (default: `http://localhost/api` - routes through Nginx)
+- `REACT_APP_API_URL`: Backend base URL (default: `http://localhost` - code automatically appends `/api`)
+  - **IMPORTANT**: Do NOT include `/api` suffix, the code adds it automatically
+  - With nginx: `http://localhost` → becomes `http://localhost/api`
+  - Direct mode: `http://localhost:5000` → becomes `http://localhost:5000/api`
 
 ### System Configuration
 - `TZ`: Timezone (default: `Asia/Ho_Chi_Minh`)
