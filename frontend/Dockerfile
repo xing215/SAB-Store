@@ -39,41 +39,46 @@ COPY --from=builder /app/build /usr/share/nginx/html
 RUN echo 'server { \
 	listen 80; \
 	server_name localhost; \
+	root /usr/share/nginx/html; \
+	\
+	# Ensure correct MIME types are loaded \
+	include /etc/nginx/mime.types; \
+	default_type application/octet-stream; \
 	\
 	# No cache for index.html - always serve fresh \
 	location = /index.html { \
-	root /usr/share/nginx/html; \
 	add_header Cache-Control "no-cache, no-store, must-revalidate"; \
 	add_header Pragma "no-cache"; \
 	add_header Expires "0"; \
+	try_files $uri =404; \
 	} \
 	\
-	# Cache static assets with hash filenames (main.abc123.js) \
-	location ~* \\.(?:css|js)$ { \
-	root /usr/share/nginx/html; \
+	# Static folder - serve with cache \
+	location /static/ { \
 	expires 1y; \
 	add_header Cache-Control "public, immutable"; \
+	try_files $uri =404; \
 	} \
 	\
-	# Cache images \
-	location ~* \\.(?:jpg|jpeg|gif|png|ico|svg|webp)$ { \
-	root /usr/share/nginx/html; \
-	expires 1y; \
-	add_header Cache-Control "public, immutable"; \
+	# Cache manifest and logos \
+	location ~* ^/(manifest\\.json|logo.*\\.png|favicon\\.ico|robots\\.txt)$ { \
+	expires 7d; \
+	add_header Cache-Control "public"; \
+	try_files $uri =404; \
 	} \
 	\
-	# Default - serve and fallback to index.html for SPA \
-	location / { \
-	root /usr/share/nginx/html; \
-	index index.html; \
-	try_files $uri $uri/ /index.html; \
-	add_header Cache-Control "no-cache"; \
-	} \
-	\
+	# Health check endpoint \
 	location /health { \
 	access_log off; \
 	return 200 "healthy\\n"; \
 	add_header Content-Type text/plain; \
+	} \
+	\
+	# Default - serve and fallback to index.html for SPA \
+	location / { \
+	index index.html; \
+	try_files $uri $uri/ /index.html; \
+	add_header Cache-Control "no-cache"; \
 	} \
 	}' > /etc/nginx/conf.d/default.conf
 
