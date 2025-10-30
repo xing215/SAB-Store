@@ -1,29 +1,11 @@
 const express = require('express');
 const multer = require('multer');
 const path = require('path');
-const fs = require('fs');
+const { uploadFile, deleteFile } = require('../lib/minio');
 const router = express.Router();
 
-// Ensure upload directory exists
-const uploadDir = path.join(__dirname, '..', 'uploads', 'products');
-if (!fs.existsSync(uploadDir)) {
-	fs.mkdirSync(uploadDir, { recursive: true });
-}
+const storage = multer.memoryStorage();
 
-// Configure multer for file uploads
-const storage = multer.diskStorage({
-	destination: (req, file, cb) => {
-		cb(null, uploadDir);
-	},
-	filename: (req, file, cb) => {
-		// Generate unique filename with timestamp
-		const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-		const ext = path.extname(file.originalname);
-		cb(null, file.fieldname + '-' + uniqueSuffix + ext);
-	}
-});
-
-// File filter for images only
 const fileFilter = (req, file, cb) => {
 	const allowedTypes = /jpeg|jpg|png|gif|webp/;
 	const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
@@ -39,13 +21,12 @@ const fileFilter = (req, file, cb) => {
 const upload = multer({
 	storage: storage,
 	limits: {
-		fileSize: 200 * 1024 * 1024 // 200MB limit
+		fileSize: 200 * 1024 * 1024
 	},
 	fileFilter: fileFilter
 });
 
-// Upload single product image
-router.post('/product-image', upload.single('image'), (req, res) => {
+router.post('/product-image', upload.single('image'), async (req, res) => {
 	try {
 		if (!req.file) {
 			return res.status(400).json({
@@ -54,13 +35,20 @@ router.post('/product-image', upload.single('image'), (req, res) => {
 			});
 		}
 
-		const imageUrl = `/uploads/products/${req.file.filename}`;
+		const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+		const ext = path.extname(req.file.originalname);
+		const filename = `image-${uniqueSuffix}${ext}`;
+		const objectName = `products/${filename}`;
+
+		await uploadFile(objectName, req.file.buffer, req.file.mimetype);
+
+		const imageUrl = `/uploads/${objectName}`;
 
 		res.json({
 			success: true,
 			message: 'Tải ảnh thành công',
 			imageUrl: imageUrl,
-			filename: req.file.filename
+			filename: filename
 		});
 	} catch (error) {
 		console.error('Upload error:', error);
@@ -72,8 +60,7 @@ router.post('/product-image', upload.single('image'), (req, res) => {
 	}
 });
 
-// Upload multiple product images
-router.post('/product-images', upload.array('images', 5), (req, res) => {
+router.post('/product-images', upload.array('images', 5), async (req, res) => {
 	try {
 		if (!req.files || req.files.length === 0) {
 			return res.status(400).json({
@@ -82,10 +69,21 @@ router.post('/product-images', upload.array('images', 5), (req, res) => {
 			});
 		}
 
-		const imageUrls = req.files.map(file => ({
-			url: `/uploads/products/${file.filename}`,
-			filename: file.filename
-		}));
+		const imageUrls = [];
+
+		for (const file of req.files) {
+			const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+			const ext = path.extname(file.originalname);
+			const filename = `image-${uniqueSuffix}${ext}`;
+			const objectName = `products/${filename}`;
+
+			await uploadFile(objectName, file.buffer, file.mimetype);
+
+			imageUrls.push({
+				url: `/uploads/${objectName}`,
+				filename: filename
+			});
+		}
 
 		res.json({
 			success: true,
@@ -102,26 +100,27 @@ router.post('/product-images', upload.array('images', 5), (req, res) => {
 	}
 });
 
-// Delete uploaded image
-router.delete('/product-image/:filename', (req, res) => {
+router.delete('/product-image/:filename', async (req, res) => {
 	try {
 		const filename = req.params.filename;
-		const filePath = path.join(uploadDir, filename);
+		const objectName = `products/${filename}`;
 
-		if (fs.existsSync(filePath)) {
-			fs.unlinkSync(filePath);
-			res.json({
-				success: true,
-				message: 'Xóa ảnh thành công'
-			});
-		} else {
-			res.status(404).json({
+		await deleteFile(objectName);
+
+		res.json({
+			success: true,
+			message: 'Xóa ảnh thành công'
+		});
+	} catch (error) {
+		console.error('Delete error:', error);
+
+		if (error.code === 'NotFound') {
+			return res.status(404).json({
 				success: false,
 				message: 'Không tìm thấy file'
 			});
 		}
-	} catch (error) {
-		console.error('Delete error:', error);
+
 		res.status(500).json({
 			success: false,
 			message: 'Lỗi server khi xóa ảnh',

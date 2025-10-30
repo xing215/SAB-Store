@@ -22,6 +22,29 @@ services:
       retries: 5
       start_period: 30s
 
+  # SAB Lanyard MinIO Object Storage
+  minio:
+    image: minio/minio:latest
+    container_name: sablanyard_minio
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin123}
+      TZ: ${TZ:-Asia/Ho_Chi_Minh}
+    expose:
+      - "9000"
+    volumes:
+      - minio_data:/data
+    networks:
+      - sablanyard_network
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:9000/minio/health/live" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
   # SAB Lanyard Backend API
   backend:
     build:
@@ -41,11 +64,19 @@ services:
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:-admin123}
       APPSCRIPT_URL: ${APPSCRIPT_URL:-your-appscript-url-here}
       CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:3000}
+      MINIO_ENDPOINT: ${MINIO_ENDPOINT:-minio}
+      MINIO_PORT: ${MINIO_PORT:-9000}
+      MINIO_ACCESS_KEY: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_SECRET_KEY: ${MINIO_ROOT_PASSWORD:-minioadmin123}
+      MINIO_BUCKET_NAME: ${MINIO_BUCKET_NAME:-sablanyard}
+      MINIO_USE_SSL: ${MINIO_USE_SSL:-false}
       TZ: ${TZ:-Asia/Ho_Chi_Minh}
     expose:
       - "5000"
     depends_on:
       mongodb:
+        condition: service_healthy
+      minio:
         condition: service_healthy
     volumes:
       - ./backend:/app
@@ -76,6 +107,7 @@ services:
 
 volumes:
   mongodb_data:
+  minio_data:
 
 
 networks:

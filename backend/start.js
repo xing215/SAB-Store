@@ -2,6 +2,7 @@
 
 const { spawn } = require('child_process');
 const { connectDB } = require('./lib/database');
+const { initializeBucket } = require('./lib/minio');
 
 async function waitForMongoDB() {
 	console.log('Waiting for MongoDB to be ready...');
@@ -47,6 +48,26 @@ async function initializeDatabase() {
 			reject(error);
 		});
 	});
+}
+
+async function waitForMinIO() {
+	console.log('Waiting for MinIO to be ready...');
+	const maxRetries = 30;
+	let retries = 0;
+
+	while (retries < maxRetries) {
+		try {
+			await initializeBucket();
+			console.log('[OK] MinIO is ready and bucket initialized');
+			return true;
+		} catch (error) {
+			retries++;
+			console.log(`MinIO not ready, retrying... (${retries}/${maxRetries})`);
+			await new Promise(resolve => setTimeout(resolve, 2000));
+		}
+	}
+
+	throw new Error('MinIO failed to become ready within timeout');
 }
 
 async function startServer() {
@@ -97,6 +118,7 @@ async function startServer() {
 async function main() {
 	try {
 		await waitForMongoDB();
+		await waitForMinIO();
 		await initializeDatabase();
 		await startServer();
 	} catch (error) {
