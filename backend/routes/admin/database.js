@@ -219,7 +219,10 @@ router.post('/import', upload.single('dataFile'), async (req, res) => {
 			for (let i = 0; i < data.accounts.length; i++) {
 				const accountData = data.accounts[i];
 				try {
-					const existing = await Account.findOne({ userId: accountData.userId });
+					const existing = await Account.findOne({
+						userId: accountData.userId,
+						providerId: accountData.providerId
+					});
 					if (!existing) {
 						await Account.create(accountData);
 						importResults.accounts.imported++;
@@ -227,14 +230,18 @@ router.post('/import', upload.single('dataFile'), async (req, res) => {
 						importResults.accounts.skipped++;
 					}
 				} catch (error) {
-					console.error('Account import error:', error.message);
-					importResults.accounts.errors++;
-					errorDetails.accounts.push({
-						index: i,
-						data: accountData,
-						error: error.message,
-						stack: error.stack
-					});
+					if (error.code === 11000) {
+						importResults.accounts.skipped++;
+					} else {
+						console.error('Account import error:', error.message);
+						importResults.accounts.errors++;
+						errorDetails.accounts.push({
+							index: i,
+							data: accountData,
+							error: error.message,
+							stack: error.stack
+						});
+					}
 				}
 			}
 		}
