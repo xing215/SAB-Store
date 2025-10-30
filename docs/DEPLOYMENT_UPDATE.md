@@ -18,7 +18,7 @@
 ```nginx
 location /uploads/ {
     # Remove /uploads prefix and proxy to MinIO bucket
-    rewrite ^/uploads/(.*)$ /sablanyard/$1 break;
+    rewrite ^/uploads/(.*)$ /sabstore/$1 break;
     
     proxy_pass http://minio:9000;
     # ... MinIO specific configurations
@@ -59,7 +59,7 @@ docker compose -f prod.compose.yml --env-file .env.prod up -d --build
 # Check MinIO logs
 docker logs sabstore_minio
 
-# Should see: "[MinIO] Public read policy applied to bucket 'sablanyard'"
+# Should see: "[MinIO] Public read policy applied to bucket 'sabstore'"
 docker logs sabstore_backend
 ```
 
@@ -76,7 +76,7 @@ docker logs sabstore_backend
 # Access MinIO console
 # Navigate to http://your-server:9001
 # Login with credentials from .env.prod
-# Check bucket 'sablanyard' has public read policy
+# Check bucket 'sabstore' has public read policy
 ```
 
 ### Nginx cannot connect to MinIO
@@ -96,7 +96,7 @@ Ensure these are set in `.env.prod`:
 ```env
 MINIO_ROOT_USER=minioadmin
 MINIO_ROOT_PASSWORD=minioadmin123
-MINIO_BUCKET_NAME=sablanyard
+MINIO_BUCKET_NAME=sabstore
 MINIO_ENDPOINT=minio
 MINIO_PORT=9000
 MINIO_USE_SSL=false

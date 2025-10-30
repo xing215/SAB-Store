@@ -69,7 +69,7 @@ services:
       MINIO_PORT: ${MINIO_PORT:-9000}
       MINIO_ACCESS_KEY: ${MINIO_ROOT_USER:-minioadmin}
       MINIO_SECRET_KEY: ${MINIO_ROOT_PASSWORD:-minioadmin123}
-      MINIO_BUCKET_NAME: ${MINIO_BUCKET_NAME:-sablanyard}
+      MINIO_BUCKET_NAME: ${MINIO_BUCKET_NAME:-sabstore}
       MINIO_USE_SSL: ${MINIO_USE_SSL:-false}
       TZ: ${TZ:-Asia/Ho_Chi_Minh}
     expose:
