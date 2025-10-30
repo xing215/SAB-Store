@@ -79,9 +79,7 @@ services:
       minio:
         condition: service_healthy
     volumes:
-      - ./backend:/app
-      - /app/node_modules
-      - ./uploads:/app/uploads # Map uploads folder for file persistence
+      - backend_uploads:/app/uploads
     networks:
       - sablanyard_network
 
@@ -106,6 +104,7 @@ services:
 volumes:
   mongodb_data:
   minio_data:
+  backend_uploads:
 
 
 networks:
