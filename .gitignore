@@ -119,3 +119,4 @@ temp/
 # Excel export files
 *.xlsx
 *.xls
+.env.prod

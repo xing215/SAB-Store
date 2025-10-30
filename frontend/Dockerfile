@@ -16,15 +16,15 @@ RUN yarn install --frozen-lockfile --production=false
 # Copy source code
 COPY . .
 
-# Set production environment variables
-ENV NODE_ENV=production
-ENV GENERATE_SOURCEMAP=false
-ENV INLINE_RUNTIME_CHUNK=false
-
 # Set React environment variables from build arguments
 ENV REACT_APP_API_URL=$REACT_APP_API_URL
 ENV REACT_APP_BANK_NAME_ID=$REACT_APP_BANK_NAME_ID
 ENV REACT_APP_ACCOUNT_NO=$REACT_APP_ACCOUNT_NO
+
+# Set production build environment variables
+ENV NODE_ENV=production
+ENV GENERATE_SOURCEMAP=false
+ENV INLINE_RUNTIME_CHUNK=false
 
 # Build the application
 RUN yarn build
