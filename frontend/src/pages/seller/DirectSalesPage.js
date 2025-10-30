@@ -1,5 +1,4 @@
 import { useState, useEffect, useRef } from 'react';
-import { useSession } from '../../lib/auth-client';
 import { toast } from 'react-toastify';
 import { productService, sellerService, comboService } from '../../services/api';
 import LoadingSpinner from '../../components/LoadingSpinner';
