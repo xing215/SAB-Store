@@ -162,26 +162,27 @@ REACT_APP_API_URL=http://localhost:5000
 Hệ thống sử dụng `compose.yml` (Docker Compose v2) với các services:
 
 - **mongodb**: Database chính
-- **backend**: ExpressJS API server
-- **frontend**: React development server hoặc production build
+- **minio**: Object storage cho hình ảnh sản phẩm
+- **backend**: ExpressJS API server (internal port 5000)
+- **frontend**: React build served by nginx (internal port 80)
+- **nginx**: Reverse proxy chính (external port 80)
 
 ```yaml
-# Ví dụ compose.yml structure
-services:
-  mongodb:
-    image: mongo:7
-    ports: ["27017:27017"]
-    
-  backend:
-    build: ./backend
-    ports: ["5000:5000"]
-    depends_on: [mongodb]
-    
-  frontend:
-    build: ./frontend  
-    ports: ["3000:3000"]
-    depends_on: [backend]
+# Kiến trúc Nginx Reverse Proxy
+Client Request (port 80)
+        ↓
+    [Nginx]
+        ├─→ /api/*        → backend:5000 (API requests)
+        ├─→ /uploads/*    → backend:5000 (Static images, cached)
+        └─→ /*            → frontend:80 (React app, cached)
 ```
+
+### Ưu điểm kiến trúc Nginx
+- **Giảm tải NodeJS**: Nginx phục vụ static files, cache responses
+- **Tối ưu performance**: Gzip compression, keepalive connections
+- **Security**: Rate limiting, security headers
+- **Caching**: Static assets cached 7 days, API không cache
+- **Load balancing**: Sẵn sàng mở rộng với nhiều backend instances
 
 ## 🧪 Testing & Validation
 

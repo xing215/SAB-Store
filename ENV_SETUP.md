@@ -21,17 +21,20 @@
 - `MONGO_INITDB_DATABASE`: Initial database name (default: `minipreorder`)
 - `MONGODB_PORT`: MongoDB port mapping (default: `27017`)
 
+### Nginx Configuration
+- `NGINX_PORT`: Nginx reverse proxy external port (default: `80`)
+
 ### Backend Configuration
 - `NODE_ENV`: Node environment (default: `production`)
-- `BACKEND_PORT`: Backend API port (default: `5000`)
-- `BASE_URL`: Backend base URL (default: `http://localhost:5000`)
+- `BACKEND_PORT`: Backend API internal port (default: `5000`, not exposed externally)
+- `BASE_URL`: Backend base URL (default: `http://localhost` - Nginx handles routing)
 - `MONGODB_URI`: Full MongoDB connection string
 - `JWT_SECRET`: Secret key for JWT tokens [CHANGE THIS]
 - `ADMIN_EMAIL`: Admin user email
 - `ADMIN_USERNAME`: Admin username
 - `ADMIN_PASSWORD`: Admin password [CHANGE THIS]
 - `APPSCRIPT_URL`: Google Apps Script webhook URL
-- `CORS_ORIGIN`: Allowed CORS origin (default: `http://localhost:3000`)
+- `CORS_ORIGIN`: Allowed CORS origin (default: `http://localhost` - matches Nginx URL)
 
 ### MinIO Object Storage Configuration
 - `MINIO_ROOT_USER`: MinIO root username (default: `minioadmin`)
@@ -42,8 +45,8 @@
 - `MINIO_USE_SSL`: Enable SSL for MinIO connection (default: `false`)
 
 ### Frontend Configuration
-- `FRONTEND_PORT`: Frontend port mapping (default: `3000`)
-- `REACT_APP_API_URL`: Backend API URL (default: `http://localhost:5000`)
+- `FRONTEND_PORT`: Frontend internal port (default: `80`, not exposed externally)
+- `REACT_APP_API_URL`: Backend API URL (default: `http://localhost/api` - routes through Nginx)
 
 ### System Configuration
 - `TZ`: Timezone (default: `Asia/Ho_Chi_Minh`)
