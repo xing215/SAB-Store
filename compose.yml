@@ -8,6 +8,7 @@ services:
       MONGO_INITDB_ROOT_USERNAME: admin
       MONGO_INITDB_ROOT_PASSWORD: password123
       MONGO_INITDB_DATABASE: minipreorder
+      TZ: ${TZ:-Asia/Ho_Chi_Minh}
     ports:
       - "27017:27017"
     volumes:
@@ -51,6 +52,7 @@ services:
       ADMIN_PASSWORD: admin123
       APPSCRIPT_URL: your-appscript-url-here
       CORS_ORIGIN: http://localhost:3000
+      TZ: ${TZ:-Asia/Ho_Chi_Minh}
     ports:
       - "5000:5000"
     depends_on:
