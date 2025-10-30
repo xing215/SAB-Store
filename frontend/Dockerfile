@@ -53,6 +53,13 @@ RUN echo 'server { \
 	try_files $uri =404; \
 	} \
 	\
+	# Assets folder - MUST be before root location to prevent fallback to index.html \
+	location /assets/ { \
+	expires 1y; \
+	add_header Cache-Control "public, immutable"; \
+	try_files $uri =404; \
+	} \
+	\
 	# Static folder - serve with cache \
 	location /static/ { \
 	expires 1y; \
