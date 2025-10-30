@@ -4,6 +4,7 @@ const Product = require('../models/Product');
 const { validateOrder } = require('../middleware/validation');
 const { generateOrderCode, calculateTotal } = require('../utils/helpers');
 const { sendOrderToAppScript } = require('../utils/appscript');
+const { generateOrderPaymentQR } = require('../utils/paymentHelper');
 const ComboService = require('../services/ComboService');
 const router = express.Router();
 
@@ -198,6 +199,15 @@ router.post('/', validateOrder, async (req, res) => {
 		await order.save();
 		console.log('✅ Order saved successfully:', order._id);
 
+		// Generate payment QR URL
+		let qrUrl = null;
+		try {
+			qrUrl = await generateOrderPaymentQR(totalAmount, orderCode, studentId, fullName);
+			console.log('✅ QR URL generated:', qrUrl);
+		} catch (qrError) {
+			console.error('❌ Failed to generate QR URL:', qrError.message);
+		}
+
 		// Log dữ liệu gửi App Script
 		const appscriptData = {
 			orderCode,
@@ -225,7 +235,8 @@ router.post('/', validateOrder, async (req, res) => {
 				totalAmount,
 				status: 'confirmed',
 				createdAt: order.createdAt,
-				comboInfo: comboInfo // Include combo information in response
+				comboInfo: comboInfo,
+				qrUrl: qrUrl
 			}
 		});
 

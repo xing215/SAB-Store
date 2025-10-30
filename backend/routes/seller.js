@@ -6,6 +6,7 @@ const { authenticateSeller } = require('../middleware/better-auth');
 const { validatePasswordChange } = require('../middleware/validation');
 const { getPaginationInfo, formatDate, formatCurrency } = require('../utils/helpers');
 const { sendOrderToAppScript } = require('../utils/appscript');
+const { generateDirectSalePaymentQR } = require('../utils/paymentHelper');
 const ComboService = require('../services/ComboService');
 const { auth } = require('../lib/auth');
 const router = express.Router();
@@ -641,6 +642,16 @@ router.post('/orders/direct', async (req, res) => {
 
 		await order.save();
 
+		// Generate payment QR URL for direct sales
+		let qrUrl = null;
+		try {
+			const username = req.seller?.username || 'seller';
+			qrUrl = await generateDirectSalePaymentQR(totalAmount, orderCode, username);
+			console.log('✅ Direct sale QR URL generated:', qrUrl);
+		} catch (qrError) {
+			console.error('❌ Failed to generate direct sale QR URL:', qrError.message);
+		}
+
 		// Populate order for response
 		const populatedOrder = await Order.findById(order._id)
 			.populate('items.productId', 'name imageUrl')
@@ -651,7 +662,8 @@ router.post('/orders/direct', async (req, res) => {
 			message: 'Tạo đơn hàng bán trực tiếp thành công',
 			data: {
 				...populatedOrder,
-				comboInfo: comboInfo, // Include combo information
+				comboInfo: comboInfo,
+				qrUrl: qrUrl,
 				statusText: getStatusInVietnamese(populatedOrder.status),
 				formattedTotal: formatCurrency(populatedOrder.totalAmount)
 			}

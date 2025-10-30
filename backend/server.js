@@ -126,6 +126,7 @@ app.use('/api/products', require('./routes/products'));
 app.use('/api/orders', require('./routes/orders'));
 app.use('/api/combos', require('./routes/combos'));
 app.use('/api/admin', require('./routes/admin'));
+app.use('/api/admin/settings', require('./routes/admin/settings'));
 app.use('/api/seller', require('./routes/seller'));
 
 // Health check

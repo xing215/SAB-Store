@@ -19,6 +19,7 @@ import ProductsManagement from './pages/admin/ProductsManagement';
 import ComboManagement from './pages/admin/ComboManagement';
 import SellersManagement from './pages/admin/SellersManagement';
 import DatabaseManagement from './pages/admin/DatabaseManagement';
+import SettingsManagement from './pages/admin/SettingsManagement';
 
 // Seller Pages
 import SellerDashboard from './pages/seller/SellerDashboard';
@@ -82,6 +83,13 @@ function App() {
 							<ProtectedRoute>
 								<AdminLayout>
 									<DatabaseManagement />
+								</AdminLayout>
+							</ProtectedRoute>
+						} />
+						<Route path="/admin/settings" element={
+							<ProtectedRoute>
+								<AdminLayout>
+									<SettingsManagement />
 								</AdminLayout>
 							</ProtectedRoute>
 						} />

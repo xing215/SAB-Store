@@ -134,7 +134,8 @@ export const generateOrderPaymentQR = (amount, orderId, studentId, fullName) => 
 	}
 
 	const shortName = generateShortName(fullName);
-	const description = `SAB ${orderId} ${studentId} ${shortName}`;
+	const prefixMessage = 'SAB';
+	const description = `${prefixMessage} ${orderId} ${studentId} ${shortName}`;
 
 	const baseUrl = 'https://img.vietqr.io/image';
 	const qrUrl = `${baseUrl}/${bankId}-${accountNo}-qr_only.png?amount=${amount}&addInfo=${encodeURIComponent(description)}`;

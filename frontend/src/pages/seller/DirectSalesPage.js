@@ -2,7 +2,6 @@ import { useState, useEffect, useRef } from 'react';
 import { useSession } from '../../lib/auth-client';
 import { toast } from 'react-toastify';
 import { productService, sellerService, comboService } from '../../services/api';
-import { generatePaymentQR } from '../../utils/payment';
 import LoadingSpinner from '../../components/LoadingSpinner';
 
 const DirectSalesPage = () => {
@@ -180,13 +179,7 @@ const DirectSalesPage = () => {
 			if (response.success) {
 				const order = response.data;
 				setCurrentOrder(order);
-
-				// Generate payment QR
-				const qrUrl = generatePaymentQR(
-					order.totalAmount,
-					order.orderCode
-				);
-				setPaymentQR(qrUrl);
+				setPaymentQR(order.qrUrl || '');
 
 				// Show combo info if applied (silently without warning)
 				if (order.comboInfo && order.comboInfo.savings > 0) {

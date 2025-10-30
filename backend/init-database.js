@@ -3,8 +3,11 @@ const { auth } = require('./lib/auth');
 const Product = require('./models/Product');
 const User = require('./models/User');
 const Account = require('./models/Account');
+const Settings = require('./models/Settings');
 const crypto = require('crypto');
 require('dotenv').config();
+
+const SETTINGS_KEY = 'payment_config';
 
 async function initDatabase() {
 	try {
@@ -44,6 +47,28 @@ async function initDatabase() {
 		// log all accounts and users in the database
 		const allUsers = await User.find();
 		const allAccounts = await Account.find();
+
+		// Initialize payment settings
+		const existingSettings = await Settings.findOne({ key: SETTINGS_KEY });
+
+		if (!existingSettings) {
+			const bankNameId = process.env.BANK_NAME_ID || 'MB';
+			const bankAccountId = process.env.BANK_ACCOUNT_ID || '0123456789';
+			const prefixMessage = process.env.PREFIX_MESSAGE || 'SAB';
+
+			await Settings.create({
+				key: SETTINGS_KEY,
+				bankNameId,
+				bankAccountId,
+				prefixMessage,
+				updatedBy: 'system'
+			});
+
+			console.log('✅ Initialized payment settings');
+		} else {
+			console.log('⚠️  Payment settings already exist');
+		}
+
 		// Create sample products using Mongoose
 		const existingProducts = await Product.countDocuments();
 
