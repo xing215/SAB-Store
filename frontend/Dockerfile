@@ -52,14 +52,23 @@ RUN echo 'server { \
 	} \
 	\
 	# Vite assets folder - long-term cache with hash names \
+	# CRITICAL: Return 404 for missing assets to prevent serving HTML \
 	location /assets/ { \
+	expires 1y; \
+	add_header Cache-Control "public, immutable"; \
+	# Explicitly return 404 for missing files - do NOT fallback to index.html \
+	try_files $uri =404; \
+	} \
+	\
+	# Static files - return 404 if not found \
+	location ~* \\.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$ { \
 	expires 1y; \
 	add_header Cache-Control "public, immutable"; \
 	try_files $uri =404; \
 	} \
 	\
 	# Cache manifest and logos \
-	location ~* ^/(manifest\\.json|.*\\.png|favicon\\.ico|robots\\.txt)$ { \
+	location ~* ^/(manifest\\.json|favicon\\.ico|robots\\.txt)$ { \
 	expires 7d; \
 	add_header Cache-Control "public"; \
 	try_files $uri =404; \
@@ -73,6 +82,7 @@ RUN echo 'server { \
 	} \
 	\
 	# Default - serve and fallback to index.html for SPA \
+	# Only HTML routes should fallback to index.html \
 	location / { \
 	index index.html; \
 	try_files $uri $uri/ /index.html; \
