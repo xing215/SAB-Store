@@ -90,9 +90,6 @@ router.get('/export', async (req, res) => {
  * Admin authentication handled by parent router
  */
 router.post('/import', upload.single('dataFile'), async (req, res) => {
-	const session = await mongoose.startSession();
-	session.startTransaction();
-
 	try {
 		if (!req.file) {
 			return res.status(400).json({
@@ -103,10 +100,18 @@ router.post('/import', upload.single('dataFile'), async (req, res) => {
 
 		console.log(`[${new Date().toISOString()}] Database import started by admin: ${req.user.email}`);
 
-		// Parse JSON data
-		const importData = JSON.parse(req.file.buffer.toString());
+		let importData;
+		try {
+			importData = JSON.parse(req.file.buffer.toString());
+		} catch (parseError) {
+			console.error('JSON parse error:', parseError.message);
+			return res.status(400).json({
+				error: 'Invalid JSON file',
+				code: 'INVALID_JSON',
+				message: parseError.message
+			});
+		}
 
-		// Validate import data structure
 		if (!importData.data || typeof importData.data !== 'object') {
 			return res.status(400).json({
 				error: 'Invalid import data format',
@@ -123,13 +128,12 @@ router.post('/import', upload.single('dataFile'), async (req, res) => {
 			combos: { imported: 0, skipped: 0, errors: 0 }
 		};
 
-		// Import Users (skip existing by email)
 		if (data.users && Array.isArray(data.users)) {
 			for (const userData of data.users) {
 				try {
-					const existing = await User.findOne({ email: userData.email }).session(session);
+					const existing = await User.findOne({ email: userData.email });
 					if (!existing) {
-						await User.create([userData], { session });
+						await User.create(userData);
 						importResults.users.imported++;
 					} else {
 						importResults.users.skipped++;
@@ -141,13 +145,12 @@ router.post('/import', upload.single('dataFile'), async (req, res) => {
 			}
 		}
 
-		// Import Products (skip existing by name)
 		if (data.products && Array.isArray(data.products)) {
 			for (const productData of data.products) {
 				try {
-					const existing = await Product.findOne({ name: productData.name }).session(session);
+					const existing = await Product.findOne({ name: productData.name });
 					if (!existing) {
-						await Product.create([productData], { session });
+						await Product.create(productData);
 						importResults.products.imported++;
 					} else {
 						importResults.products.skipped++;
@@ -159,20 +162,19 @@ router.post('/import', upload.single('dataFile'), async (req, res) => {
 			}
 		}
 
-		// Import Orders (skip existing by _id if provided)
 		if (data.orders && Array.isArray(data.orders)) {
 			for (const orderData of data.orders) {
 				try {
 					if (orderData._id) {
-						const existing = await Order.findById(orderData._id).session(session);
+						const existing = await Order.findById(orderData._id);
 						if (!existing) {
-							await Order.create([orderData], { session });
+							await Order.create(orderData);
 							importResults.orders.imported++;
 						} else {
 							importResults.orders.skipped++;
 						}
 					} else {
-						await Order.create([orderData], { session });
+						await Order.create(orderData);
 						importResults.orders.imported++;
 					}
 				} catch (error) {
@@ -182,13 +184,12 @@ router.post('/import', upload.single('dataFile'), async (req, res) => {
 			}
 		}
 
-		// Import Accounts (skip existing by userId)
 		if (data.accounts && Array.isArray(data.accounts)) {
 			for (const accountData of data.accounts) {
 				try {
-					const existing = await Account.findOne({ userId: accountData.userId }).session(session);
+					const existing = await Account.findOne({ userId: accountData.userId });
 					if (!existing) {
-						await Account.create([accountData], { session });
+						await Account.create(accountData);
 						importResults.accounts.imported++;
 					} else {
 						importResults.accounts.skipped++;
@@ -200,13 +201,12 @@ router.post('/import', upload.single('dataFile'), async (req, res) => {
 			}
 		}
 
-		// Import Combos (skip existing by name)
 		if (data.combos && Array.isArray(data.combos)) {
 			for (const comboData of data.combos) {
 				try {
-					const existing = await Combo.findOne({ name: comboData.name }).session(session);
+					const existing = await Combo.findOne({ name: comboData.name });
 					if (!existing) {
-						await Combo.create([comboData], { session });
+						await Combo.create(comboData);
 						importResults.combos.imported++;
 					} else {
 						importResults.combos.skipped++;
@@ -217,8 +217,6 @@ router.post('/import', upload.single('dataFile'), async (req, res) => {
 				}
 			}
 		}
-
-		await session.commitTransaction();
 
 		console.log(`[${new Date().toISOString()}] Database import completed:`, importResults);
 
@@ -234,24 +232,13 @@ router.post('/import', upload.single('dataFile'), async (req, res) => {
 		});
 
 	} catch (error) {
-		await session.abortTransaction();
 		console.error('Database import error:', error);
-
-		if (error instanceof SyntaxError) {
-			return res.status(400).json({
-				error: 'Invalid JSON file',
-				code: 'INVALID_JSON',
-				message: error.message
-			});
-		}
 
 		res.status(500).json({
 			error: 'Import failed',
 			code: 'IMPORT_ERROR',
 			message: error.message
 		});
-	} finally {
-		session.endSession();
 	}
 });
 
