@@ -74,7 +74,7 @@ export const getImageUrl = (imageUrl) => {
 
 	// If it's a relative path starting with /uploads/, construct full URL
 	if (imageUrl.startsWith('/uploads/')) {
-		const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+		const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 		return `${apiUrl}${imageUrl}`;
 	}
 

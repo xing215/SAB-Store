@@ -5,25 +5,23 @@ WORKDIR /app
 
 # Accept build arguments from compose.yml
 # Note: Code automatically appends '/api' - do NOT include it here
-ARG REACT_APP_API_URL
+ARG VITE_API_URL
 
 # Copy package files and install dependencies
 COPY package*.json yarn.lock ./
 
-RUN yarn install --frozen-lockfile --production=false
+RUN yarn install --frozen-lockfile
 
 # Copy source code
 COPY . .
 
-# Set React environment variables from build arguments
-ENV REACT_APP_API_URL=$REACT_APP_API_URL
+# Set Vite environment variables from build arguments
+ENV VITE_API_URL=$VITE_API_URL
 
 # Set production build environment variables
 ENV NODE_ENV=production
-ENV GENERATE_SOURCEMAP=false
-ENV INLINE_RUNTIME_CHUNK=false
 
-# Build the application
+# Build the application with Vite
 RUN yarn build
 
 # Production stage - serve static files only
@@ -53,22 +51,15 @@ RUN echo 'server { \
 	try_files $uri =404; \
 	} \
 	\
-	# Assets folder - MUST be before root location to prevent fallback to index.html \
+	# Vite assets folder - long-term cache with hash names \
 	location /assets/ { \
 	expires 1y; \
 	add_header Cache-Control "public, immutable"; \
 	try_files $uri =404; \
 	} \
 	\
-	# Static folder - serve with cache \
-	location /static/ { \
-	expires 1y; \
-	add_header Cache-Control "public, immutable"; \
-	try_files $uri =404; \
-	} \
-	\
 	# Cache manifest and logos \
-	location ~* ^/(manifest\\.json|logo.*\\.png|favicon\\.ico|robots\\.txt)$ { \
+	location ~* ^/(manifest\\.json|.*\\.png|favicon\\.ico|robots\\.txt)$ { \
 	expires 7d; \
 	add_header Cache-Control "public"; \
 	try_files $uri =404; \
