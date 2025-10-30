@@ -91,6 +91,8 @@ services:
       args:
         - REACT_APP_API_URL=${REACT_APP_API_URL:-http://localhost}
     pull_policy: always
+    environment:
+      REACT_APP_API_URL: ${REACT_APP_API_URL:-http://localhost}
     container_name: sabstore_frontend
     restart: unless-stopped
     expose:
