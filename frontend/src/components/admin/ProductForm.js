@@ -126,7 +126,7 @@ const ProductForm = ({
 			const result = await onUploadImage(imageFile);
 
 			if (result.success) {
-				return result.data.imageUrl;
+				return result.imageUrl;
 			} else {
 				throw new Error(result.message || 'Upload failed');
 			}
