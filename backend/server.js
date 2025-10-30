@@ -117,30 +117,6 @@ app.use((req, res, next) => {
 // Better-auth API routes - Must be AFTER body parsing middleware
 app.all('/api/auth/*', toNodeHandler(auth));
 
-// Serve files from MinIO via backend proxy
-app.get('/uploads/*', async (req, res) => {
-	try {
-		const { getFile } = require('./lib/minio');
-		const objectName = req.path.replace('/uploads/', '');
-
-		const stream = await getFile(objectName);
-
-		stream.on('error', (error) => {
-			console.error('[MinIO] Stream error:', error);
-			if (!res.headersSent) {
-				res.status(404).json({ error: 'File not found' });
-			}
-		});
-
-		stream.pipe(res);
-	} catch (error) {
-		console.error('[MinIO] Error serving file:', error);
-		if (!res.headersSent) {
-			res.status(404).json({ error: 'File not found' });
-		}
-	}
-});
-
 // Routes
 app.use('/api/upload', require('./routes/upload'));
 app.use('/api/products', require('./routes/products'));
