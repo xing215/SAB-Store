@@ -79,7 +79,8 @@ router.get('/export', async (req, res) => {
 		res.status(500).json({
 			error: 'Export failed',
 			code: 'EXPORT_ERROR',
-			message: error.message
+			message: error.message,
+			errorDetails: error.stack
 		});
 	}
 });
@@ -108,7 +109,8 @@ router.post('/import', upload.single('dataFile'), async (req, res) => {
 			return res.status(400).json({
 				error: 'Invalid JSON file',
 				code: 'INVALID_JSON',
-				message: parseError.message
+				message: parseError.message,
+				errorDetails: parseError.stack
 			});
 		}
 
@@ -128,8 +130,17 @@ router.post('/import', upload.single('dataFile'), async (req, res) => {
 			combos: { imported: 0, skipped: 0, errors: 0 }
 		};
 
+		const errorDetails = {
+			users: [],
+			products: [],
+			orders: [],
+			accounts: [],
+			combos: []
+		};
+
 		if (data.users && Array.isArray(data.users)) {
-			for (const userData of data.users) {
+			for (let i = 0; i < data.users.length; i++) {
+				const userData = data.users[i];
 				try {
 					const existing = await User.findOne({ email: userData.email });
 					if (!existing) {
@@ -141,12 +152,19 @@ router.post('/import', upload.single('dataFile'), async (req, res) => {
 				} catch (error) {
 					console.error('User import error:', error.message);
 					importResults.users.errors++;
+					errorDetails.users.push({
+						index: i,
+						data: userData,
+						error: error.message,
+						stack: error.stack
+					});
 				}
 			}
 		}
 
 		if (data.products && Array.isArray(data.products)) {
-			for (const productData of data.products) {
+			for (let i = 0; i < data.products.length; i++) {
+				const productData = data.products[i];
 				try {
 					const existing = await Product.findOne({ name: productData.name });
 					if (!existing) {
@@ -158,12 +176,19 @@ router.post('/import', upload.single('dataFile'), async (req, res) => {
 				} catch (error) {
 					console.error('Product import error:', error.message);
 					importResults.products.errors++;
+					errorDetails.products.push({
+						index: i,
+						data: productData,
+						error: error.message,
+						stack: error.stack
+					});
 				}
 			}
 		}
 
 		if (data.orders && Array.isArray(data.orders)) {
-			for (const orderData of data.orders) {
+			for (let i = 0; i < data.orders.length; i++) {
+				const orderData = data.orders[i];
 				try {
 					if (orderData._id) {
 						const existing = await Order.findById(orderData._id);
@@ -180,12 +205,19 @@ router.post('/import', upload.single('dataFile'), async (req, res) => {
 				} catch (error) {
 					console.error('Order import error:', error.message);
 					importResults.orders.errors++;
+					errorDetails.orders.push({
+						index: i,
+						data: orderData,
+						error: error.message,
+						stack: error.stack
+					});
 				}
 			}
 		}
 
 		if (data.accounts && Array.isArray(data.accounts)) {
-			for (const accountData of data.accounts) {
+			for (let i = 0; i < data.accounts.length; i++) {
+				const accountData = data.accounts[i];
 				try {
 					const existing = await Account.findOne({ userId: accountData.userId });
 					if (!existing) {
@@ -197,12 +229,19 @@ router.post('/import', upload.single('dataFile'), async (req, res) => {
 				} catch (error) {
 					console.error('Account import error:', error.message);
 					importResults.accounts.errors++;
+					errorDetails.accounts.push({
+						index: i,
+						data: accountData,
+						error: error.message,
+						stack: error.stack
+					});
 				}
 			}
 		}
 
 		if (data.combos && Array.isArray(data.combos)) {
-			for (const comboData of data.combos) {
+			for (let i = 0; i < data.combos.length; i++) {
+				const comboData = data.combos[i];
 				try {
 					const existing = await Combo.findOne({ name: comboData.name });
 					if (!existing) {
@@ -214,16 +253,26 @@ router.post('/import', upload.single('dataFile'), async (req, res) => {
 				} catch (error) {
 					console.error('Combo import error:', error.message);
 					importResults.combos.errors++;
+					errorDetails.combos.push({
+						index: i,
+						data: comboData,
+						error: error.message,
+						stack: error.stack
+					});
 				}
 			}
 		}
 
 		console.log(`[${new Date().toISOString()}] Database import completed:`, importResults);
 
+		const hasErrors = Object.values(importResults).some(r => r.errors > 0);
+
 		res.json({
 			success: true,
 			message: 'Database import completed',
 			results: importResults,
+			hasErrors,
+			errorDetails: hasErrors ? errorDetails : undefined,
 			metadata: {
 				importDate: new Date().toISOString(),
 				importedBy: req.user.email,
@@ -237,7 +286,8 @@ router.post('/import', upload.single('dataFile'), async (req, res) => {
 		res.status(500).json({
 			error: 'Import failed',
 			code: 'IMPORT_ERROR',
-			message: error.message
+			message: error.message,
+			errorDetails: error.stack
 		});
 	}
 });

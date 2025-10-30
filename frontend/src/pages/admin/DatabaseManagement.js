@@ -63,7 +63,55 @@ const DatabaseManagement = () => {
 			}
 		} catch (error) {
 			console.error('Export error:', error);
-			toast.error(error.message || 'Lỗi khi xuất database');
+
+			const errorMessage = error.response?.data?.message || error.message || 'Lỗi khi xuất database';
+			const errorDetails = error.response?.data?.errorDetails;
+
+			if (errorDetails) {
+				await Swal.fire({
+					title: 'Lỗi Export!',
+					html: `
+						<div class="text-left">
+							<p class="mb-4 text-red-600">${errorMessage}</p>
+							<button id="download-export-error-btn" class="swal2-confirm swal2-styled bg-red-600 hover:bg-red-700">
+								<i class="fas fa-download mr-2"></i>
+								Tải chi tiết lỗi
+							</button>
+						</div>
+					`,
+					icon: 'error',
+					confirmButtonText: 'Đóng',
+					didOpen: () => {
+						const downloadBtn = document.getElementById('download-export-error-btn');
+						if (downloadBtn) {
+							downloadBtn.addEventListener('click', () => {
+								const errorText = `EXPORT DATABASE ERROR REPORT
+Generated: ${new Date().toISOString()}
+
+ERROR MESSAGE:
+${errorMessage}
+
+ERROR DETAILS:
+${errorDetails}
+
+STACK TRACE:
+${error.stack || 'Not available'}
+`;
+								const blob = new Blob([errorText], { type: 'text/plain;charset=utf-8' });
+								const url = URL.createObjectURL(blob);
+								const link = document.createElement('a');
+								link.href = url;
+								link.download = `export-error-${new Date().toISOString().split('T')[0]}.txt`;
+								link.click();
+								URL.revokeObjectURL(url);
+								toast.success('Đã tải file lỗi');
+							});
+						}
+					}
+				});
+			} else {
+				toast.error(errorMessage);
+			}
 		} finally {
 			setExporting(false);
 		}
@@ -129,6 +177,9 @@ const DatabaseManagement = () => {
 					const totalSkipped = Object.values(response.results).reduce((sum, result) => sum + result.skipped, 0);
 					const totalErrors = Object.values(response.results).reduce((sum, result) => sum + result.errors, 0);
 
+					const downloadErrorButton = totalErrors > 0 ?
+						'<button id="download-error-btn" class="swal2-confirm swal2-styled mt-4 bg-red-600 hover:bg-red-700">Tải lỗi xuống</button>' : '';
+
 					await Swal.fire({
 						title: 'Import hoàn thành!',
 						html: `
@@ -155,10 +206,32 @@ const DatabaseManagement = () => {
 										</div>`
 						).join('')}
 								</div>
+								${totalErrors > 0 ? `<div class="mt-4 p-3 bg-red-50 border border-red-200 rounded text-sm text-red-800">
+									<i class="fas fa-exclamation-triangle mr-2"></i>
+									Có ${totalErrors} lỗi xảy ra. Nhấn nút bên dưới để tải file lỗi.
+								</div>` : ''}
+								${downloadErrorButton}
 							</div>
 						`,
-						icon: 'success',
-						confirmButtonText: 'OK'
+						icon: totalErrors > 0 ? 'warning' : 'success',
+						confirmButtonText: 'OK',
+						showConfirmButton: true,
+						didOpen: () => {
+							const downloadBtn = document.getElementById('download-error-btn');
+							if (downloadBtn && response.errorDetails) {
+								downloadBtn.addEventListener('click', () => {
+									const errorText = generateErrorReport(response);
+									const blob = new Blob([errorText], { type: 'text/plain;charset=utf-8' });
+									const url = URL.createObjectURL(blob);
+									const link = document.createElement('a');
+									link.href = url;
+									link.download = `import-errors-${new Date().toISOString().split('T')[0]}.txt`;
+									link.click();
+									URL.revokeObjectURL(url);
+									toast.success('Đã tải file lỗi');
+								});
+							}
+						}
 					});
 
 					// Refresh stats
@@ -166,13 +239,98 @@ const DatabaseManagement = () => {
 				}
 			} catch (error) {
 				console.error('Import error:', error);
-				toast.error(error.message || 'Lỗi khi import database');
+
+				const errorMessage = error.response?.data?.message || error.message || 'Lỗi khi import database';
+				const errorDetails = error.response?.data?.errorDetails;
+
+				if (errorDetails) {
+					await Swal.fire({
+						title: 'Lỗi Import!',
+						html: `
+							<div class="text-left">
+								<p class="mb-4 text-red-600">${errorMessage}</p>
+								<button id="download-critical-error-btn" class="swal2-confirm swal2-styled bg-red-600 hover:bg-red-700">
+									<i class="fas fa-download mr-2"></i>
+									Tải chi tiết lỗi
+								</button>
+							</div>
+						`,
+						icon: 'error',
+						confirmButtonText: 'Đóng',
+						didOpen: () => {
+							const downloadBtn = document.getElementById('download-critical-error-btn');
+							if (downloadBtn) {
+								downloadBtn.addEventListener('click', () => {
+									const errorText = `IMPORT DATABASE ERROR REPORT
+Generated: ${new Date().toISOString()}
+
+ERROR MESSAGE:
+${errorMessage}
+
+ERROR DETAILS:
+${errorDetails}
+
+STACK TRACE:
+${error.stack || 'Not available'}
+`;
+									const blob = new Blob([errorText], { type: 'text/plain;charset=utf-8' });
+									const url = URL.createObjectURL(blob);
+									const link = document.createElement('a');
+									link.href = url;
+									link.download = `import-critical-error-${new Date().toISOString().split('T')[0]}.txt`;
+									link.click();
+									URL.revokeObjectURL(url);
+									toast.success('Đã tải file lỗi');
+								});
+							}
+						}
+					});
+				} else {
+					toast.error(errorMessage);
+				}
 			} finally {
 				setImporting(false);
 			}
 		};
 
 		input.click();
+	};
+
+	const generateErrorReport = (response) => {
+		let report = `DATABASE IMPORT ERROR REPORT
+Generated: ${new Date().toISOString()}
+
+SUMMARY:
+========
+Total Imported: ${Object.values(response.results).reduce((sum, r) => sum + r.imported, 0)}
+Total Skipped: ${Object.values(response.results).reduce((sum, r) => sum + r.skipped, 0)}
+Total Errors: ${Object.values(response.results).reduce((sum, r) => sum + r.errors, 0)}
+
+DETAILED ERRORS BY COLLECTION:
+================================
+`;
+
+		if (response.errorDetails) {
+			for (const [collection, errors] of Object.entries(response.errorDetails)) {
+				if (errors && errors.length > 0) {
+					report += `\n${collection.toUpperCase()} (${errors.length} errors):\n`;
+					report += '-'.repeat(50) + '\n';
+
+					errors.forEach((error, index) => {
+						report += `\nError #${index + 1}:\n`;
+						report += `  Index: ${error.index}\n`;
+						report += `  Message: ${error.error}\n`;
+						report += `  Data: ${JSON.stringify(error.data, null, 2)}\n`;
+						if (error.stack) {
+							report += `  Stack: ${error.stack}\n`;
+						}
+						report += '\n';
+					});
+				}
+			}
+		}
+
+		return report;
 	};
 
 	if (loading) {

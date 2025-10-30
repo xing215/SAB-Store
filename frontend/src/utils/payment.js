@@ -48,12 +48,12 @@ export const toAscii = (text) => {
  */
 export const formatPaymentDescription = (orderCode) => {
 	console.warn('[DEPRECATED] formatPaymentDescription should not be used. Backend generates payment QR codes.');
-	
+
 	// Fallback implementation (should never be called in production)
 	const now = new Date();
 	const yymmdd = now.toISOString().slice(2, 10).replace(/-/g, '');
 	const hhmmss = now.toTimeString().slice(0, 8).replace(/:/g, '');
-	
+
 	return `SAB ${orderCode} ${yymmdd} ${hhmmss}`;
 };
 

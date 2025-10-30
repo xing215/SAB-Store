@@ -63,8 +63,8 @@ const SellerLayout = ({ children }) => {
 							<Link
 								to="/seller/dashboard"
 								className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${isActiveRoute('/seller/dashboard')
-										? 'bg-blue-100 text-blue-800'
-										: 'text-gray-700 hover:text-blue-700'
+									? 'bg-blue-100 text-blue-800'
+									: 'text-gray-700 hover:text-blue-700'
 									}`}
 							>
 								<i className="fas fa-chart-line mr-2"></i>
@@ -73,8 +73,8 @@ const SellerLayout = ({ children }) => {
 							<Link
 								to="/seller/direct-sales"
 								className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${isActiveRoute('/seller/direct-sales')
-										? 'bg-blue-100 text-blue-800'
-										: 'text-gray-700 hover:text-blue-700'
+									? 'bg-blue-100 text-blue-800'
+									: 'text-gray-700 hover:text-blue-700'
 									}`}
 							>
 								<i className="fas fa-cash-register mr-2"></i>
@@ -105,8 +105,8 @@ const SellerLayout = ({ children }) => {
 						<Link
 							to="/seller/dashboard"
 							className={`block px-3 py-2 rounded-md text-base font-medium transition-colors ${isActiveRoute('/seller/dashboard')
-									? 'bg-primary-100 text-primary-700'
-									: 'text-gray-700 hover:text-primary-600'
+								? 'bg-primary-100 text-primary-700'
+								: 'text-gray-700 hover:text-primary-600'
 								}`}
 						>
 							<i className="fas fa-chart-line mr-2"></i>
@@ -115,8 +115,8 @@ const SellerLayout = ({ children }) => {
 						<Link
 							to="/seller/direct-sales"
 							className={`block px-3 py-2 rounded-md text-base font-medium transition-colors ${isActiveRoute('/seller/direct-sales')
-									? 'bg-primary-100 text-primary-700'
-									: 'text-gray-700 hover:text-primary-600'
+								? 'bg-primary-100 text-primary-700'
+								: 'text-gray-700 hover:text-primary-600'
 								}`}
 						>
 							<i className="fas fa-cash-register mr-2"></i>

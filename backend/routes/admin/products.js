@@ -205,7 +205,7 @@ router.delete('/:id', async (req, res) => {
 	try {
 		const { id } = req.params;
 
-		const product = await Product.findByIdAndDelete(id);
+		const product = await Product.findById(id);
 
 		if (!product) {
 			return res.status(404).json({
@@ -213,6 +213,19 @@ router.delete('/:id', async (req, res) => {
 				message: 'Không tìm thấy sản phẩm'
 			});
 		}
+
+		if (product.imageUrl && product.imageUrl !== '/fallback-product.png' && product.imageUrl.startsWith('/uploads/')) {
+			try {
+				const objectName = product.imageUrl.replace('/uploads/', '');
+				const { deleteFile } = require('../../lib/minio');
+				await deleteFile(objectName);
+				console.log(`[DELETE PRODUCT] Deleted image: ${objectName}`);
+			} catch (imageError) {
+				console.error('[DELETE PRODUCT] Error deleting image:', imageError);
+			}
+		}
+
+		await Product.findByIdAndDelete(id);
 
 		res.json({
 			success: true,
