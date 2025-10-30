@@ -33,63 +33,8 @@ RUN apk add --no-cache curl
 # Copy built assets from builder stage
 COPY --from=builder /app/build /usr/share/nginx/html
 
-# Simple nginx config - serve static files with proper caching
-RUN echo 'server { \
-	listen 80; \
-	server_name localhost; \
-	root /usr/share/nginx/html; \
-	\
-	# Ensure correct MIME types are loaded \
-	include /etc/nginx/mime.types; \
-	default_type application/octet-stream; \
-	\
-	# No cache for index.html - always serve fresh \
-	location = /index.html { \
-	add_header Cache-Control "no-cache, no-store, must-revalidate"; \
-	add_header Pragma "no-cache"; \
-	add_header Expires "0"; \
-	try_files $uri =404; \
-	} \
-	\
-	# Health check endpoint - MUST be before other location blocks \
-	location /health { \
-	access_log off; \
-	return 200 "healthy\\n"; \
-	add_header Content-Type text/plain; \
-	} \
-	\
-	# Vite assets folder - long-term cache with hash names \
-	# CRITICAL: Must match BEFORE default location \
-	location /assets/ { \
-	expires 1y; \
-	add_header Cache-Control "public, immutable"; \
-	# Explicitly return 404 for missing files - do NOT fallback to index.html \
-	try_files $uri =404; \
-	} \
-	\
-	# Static files - return 404 if not found \
-	# CRITICAL: Match file extensions BEFORE default location \
-	location ~* \\.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$ { \
-	expires 1y; \
-	add_header Cache-Control "public, immutable"; \
-	try_files $uri =404; \
-	} \
-	\
-	# Cache manifest and logos \
-	location ~* ^/(manifest\\.json|favicon\\.ico|favicon\\.png|robots\\.txt)$ { \
-	expires 7d; \
-	add_header Cache-Control "public"; \
-	try_files $uri =404; \
-	} \
-	\
-	# Default - serve and fallback to index.html for SPA \
-	# This catches HTML routes only (after static assets are matched above) \
-	location / { \
-	index index.html; \
-	try_files $uri $uri/ /index.html; \
-	add_header Cache-Control "no-cache"; \
-	} \
-	}' > /etc/nginx/conf.d/default.conf
+# Copy nginx configuration
+COPY nginx.conf /etc/nginx/conf.d/default.conf
 
 EXPOSE 80
 
