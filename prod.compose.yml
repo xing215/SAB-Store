@@ -92,8 +92,6 @@ services:
       dockerfile: Dockerfile
       args:
         - REACT_APP_API_URL=${REACT_APP_API_URL:-http://localhost:5000}
-        - REACT_APP_BANK_NAME_ID=${REACT_APP_BANK_NAME_ID:-your-bank-name-id-here}
-        - REACT_APP_ACCOUNT_NO=${REACT_APP_ACCOUNT_NO:-ACCOUNT_NUMBER}
     pull_policy: always
     container_name: sablanyard_frontend
     restart: unless-stopped

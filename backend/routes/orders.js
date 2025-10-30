@@ -4,7 +4,7 @@ const Product = require('../models/Product');
 const { validateOrder } = require('../middleware/validation');
 const { generateOrderCode, calculateTotal } = require('../utils/helpers');
 const { sendOrderToAppScript } = require('../utils/appscript');
-const { generateOrderPaymentQR } = require('../utils/paymentHelper');
+const { generateOrderPaymentQR, formatOrderPaymentDescription } = require('../utils/paymentHelper');
 const ComboService = require('../services/ComboService');
 const router = express.Router();
 
@@ -199,10 +199,12 @@ router.post('/', validateOrder, async (req, res) => {
 		await order.save();
 		console.log('✅ Order saved successfully:', order._id);
 
-		// Generate payment QR URL
+		// Generate payment QR URL and description
 		let qrUrl = null;
+		let paymentDescription = null;
 		try {
 			qrUrl = await generateOrderPaymentQR(totalAmount, orderCode, studentId, fullName);
+			paymentDescription = await formatOrderPaymentDescription(orderCode, studentId, fullName);
 			console.log('✅ QR URL generated:', qrUrl);
 		} catch (qrError) {
 			console.error('❌ Failed to generate QR URL:', qrError.message);
@@ -236,7 +238,8 @@ router.post('/', validateOrder, async (req, res) => {
 				status: 'confirmed',
 				createdAt: order.createdAt,
 				comboInfo: comboInfo,
-				qrUrl: qrUrl
+				qrUrl: qrUrl,
+				paymentDescription: paymentDescription
 			}
 		});
 
@@ -293,6 +296,25 @@ router.get('/:orderCode', async (req, res) => {
 			});
 		}
 
+		// Generate QR code URL and payment description
+		let qrUrl = null;
+		let paymentDescription = null;
+		try {
+			qrUrl = await generateOrderPaymentQR(
+				order.totalAmount,
+				order.orderCode,
+				order.studentId,
+				order.fullName
+			);
+			paymentDescription = await formatOrderPaymentDescription(
+				order.orderCode,
+				order.studentId,
+				order.fullName
+			);
+		} catch (error) {
+			console.error('Error generating payment info:', error);
+		}
+
 		// Return order information including payment details
 		res.json({
 			success: true,
@@ -304,6 +326,8 @@ router.get('/:orderCode', async (req, res) => {
 				totalAmount: order.totalAmount,
 				createdAt: order.createdAt,
 				statusUpdatedAt: order.statusUpdatedAt,
+				qrUrl: qrUrl,
+				paymentDescription: paymentDescription,
 				items: order.items.map(item => ({
 					productName: item.productName,
 					quantity: item.quantity,

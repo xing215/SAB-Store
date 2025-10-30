@@ -1,7 +1,6 @@
 import React, { useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { formatCurrency } from '../services/api';
-import { formatOrderPaymentDescription } from '../utils/payment';
 
 const OrderSuccessPage = () => {
 	const location = useLocation();
@@ -20,7 +19,7 @@ const OrderSuccessPage = () => {
 		return null;
 	}
 
-	const { orderCode, totalAmount, customerInfo, qrUrl } = orderData;
+	const { orderCode, totalAmount, customerInfo, qrUrl, paymentDescription } = orderData;
 
 	return (
 		<div className="container mx-auto px-4 py-8">
@@ -149,7 +148,7 @@ const OrderSuccessPage = () => {
 										<h5 className="font-semibold text-gray-900 mb-2">Thông tin chuyển khoản:</h5>
 										<div className="space-y-1 text-xs text-gray-600">
 											<p><strong>Số tiền:</strong> {formatCurrency(totalAmount)}</p>
-											<p><strong>Nội dung:</strong> {formatOrderPaymentDescription(orderCode, customerInfo.studentId, customerInfo.fullName)}</p>
+											<p><strong>Nội dung:</strong> {paymentDescription}</p>
 											<p className="text-red-600 font-medium">
 												⚠️ Không thay đổi nội dung chuyển khoản
 											</p>

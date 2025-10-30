@@ -5,8 +5,6 @@ WORKDIR /app
 
 # Accept build arguments from compose.yml
 ARG REACT_APP_API_URL=http://localhost:5000/api
-ARG REACT_APP_BANK_NAME_ID=VCB
-ARG REACT_APP_ACCOUNT_NO=SAB25
 
 # Copy package files and install dependencies
 COPY package*.json yarn.lock ./
@@ -18,8 +16,6 @@ COPY . .
 
 # Set React environment variables from build arguments
 ENV REACT_APP_API_URL=$REACT_APP_API_URL
-ENV REACT_APP_BANK_NAME_ID=$REACT_APP_BANK_NAME_ID
-ENV REACT_APP_ACCOUNT_NO=$REACT_APP_ACCOUNT_NO
 
 # Set production build environment variables
 ENV NODE_ENV=production

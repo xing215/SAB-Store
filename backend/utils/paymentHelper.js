@@ -91,6 +91,46 @@ const getPaymentSettings = async () => {
 };
 
 /**
+ * Format order payment description
+ * @param {string} orderId - Order ID
+ * @param {string} studentId - Student ID
+ * @param {string} fullName - Customer full name
+ * @returns {Promise<string>} Formatted payment description
+ */
+/**
+ * Format payment description (shared function for both orders and direct sales)
+ * @param {string} orderCode - Order code
+ * @param {string} identifier - Student ID for orders, or "TAC {username}" for direct sales
+ * @param {string} [shortName] - Short name (optional, for orders only)
+ * @returns {Promise<string>} Formatted payment description
+ */
+const formatPaymentDescription = async (orderCode, identifier, shortName = '') => {
+	try {
+		const settings = await getPaymentSettings();
+		const parts = [settings.prefixMessage, orderCode, identifier];
+		if (shortName) {
+			parts.push(shortName);
+		}
+		return parts.join(' ');
+	} catch (error) {
+		console.error('Error formatting payment description:', error);
+		throw error;
+	}
+};
+
+/**
+ * Format order payment description
+ * @param {string} orderId - Order ID
+ * @param {string} studentId - Student ID
+ * @param {string} fullName - Customer full name
+ * @returns {Promise<string>} Formatted payment description
+ */
+const formatOrderPaymentDescription = async (orderId, studentId, fullName) => {
+	const shortName = generateShortName(fullName);
+	return formatPaymentDescription(orderId, studentId, shortName);
+};
+
+/**
  * Generate VietQR payment URL for orders
  * @param {number} amount - Payment amount
  * @param {string} orderId - Order ID
@@ -101,9 +141,7 @@ const getPaymentSettings = async () => {
 const generateOrderPaymentQR = async (amount, orderId, studentId, fullName) => {
 	try {
 		const settings = await getPaymentSettings();
-
-		const shortName = generateShortName(fullName);
-		const description = `${settings.prefixMessage} ${orderId} ${studentId} ${shortName}`;
+		const description = await formatOrderPaymentDescription(orderId, studentId, fullName);
 
 		const baseUrl = 'https://img.vietqr.io/image';
 		const qrUrl = `${baseUrl}/${settings.bankNameId}-${settings.bankAccountId}-qr_only.png?amount=${amount}&addInfo=${encodeURIComponent(description)}`;
@@ -126,11 +164,8 @@ const generateDirectSalePaymentQR = async (amount, orderCode, username) => {
 	try {
 		const settings = await getPaymentSettings();
 
-		const now = new Date();
-		const yymmdd = now.toISOString().slice(2, 10).replace(/-/g, '');
-		const hhmmss = now.toTimeString().slice(0, 8).replace(/:/g, '');
-
-		const description = `${settings.prefixMessage} ${orderCode} TAC ${username} ${yymmdd} ${hhmmss}`;
+		// Use shared formatPaymentDescription with TAC identifier
+		const description = await formatPaymentDescription(orderCode, `TAC ${username}`);
 
 		const baseUrl = 'https://img.vietqr.io/image';
 		const qrUrl = `${baseUrl}/${settings.bankNameId}-${settings.bankAccountId}-qr_only.png?amount=${amount}&addInfo=${encodeURIComponent(description)}`;
@@ -146,6 +181,7 @@ module.exports = {
 	toAscii,
 	generateShortName,
 	getPaymentSettings,
+	formatOrderPaymentDescription,
 	generateOrderPaymentQR,
 	generateDirectSalePaymentQR
 };

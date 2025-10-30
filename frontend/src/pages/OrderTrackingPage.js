@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { orderService, formatCurrency, formatDate, getStatusText, getStatusColor } from '../services/api';
-import { generateOrderPaymentQR, formatOrderPaymentDescription } from '../utils/payment';
 import LoadingSpinner from '../components/LoadingSpinner';
 
 const OrderTrackingPage = () => {
@@ -48,13 +47,7 @@ const OrderTrackingPage = () => {
 
 			if (response.success) {
 				setOrder(response.data);
-				const qrUrl = generateOrderPaymentQR(
-					response.data.totalAmount,
-					response.data.orderCode,
-					response.data.studentId,
-					response.data.fullName
-				);
-				setPaymentQR(qrUrl);
+				setPaymentQR(response.data.qrUrl);
 			}
 		} catch (err) {
 			setError(err.message);
@@ -213,16 +206,16 @@ const OrderTrackingPage = () => {
 											{getStatusSteps(order.status).map((step, index) => (
 												<div key={step.key} className="flex flex-col items-center flex-1 relative">
 													<div className={`w-10 h-10 rounded-full flex items-center justify-center mb-2 relative z-10 ${step.completed
-															? 'bg-success-100 text-success-600'
-															: step.active
-																? 'bg-blue-100 text-blue-700'
-																: 'bg-gray-100 text-gray-400'
+														? 'bg-success-100 text-success-600'
+														: step.active
+															? 'bg-blue-100 text-blue-700'
+															: 'bg-gray-100 text-gray-400'
 														}`}>
 														<i className={step.icon}></i>
 													</div>
 													<span className={`text-xs text-center ${step.completed || step.active
-															? 'text-gray-900 font-medium'
-															: 'text-gray-400'
+														? 'text-gray-900 font-medium'
+														: 'text-gray-400'
 														}`}>
 														{step.label}
 													</span>
@@ -355,7 +348,7 @@ const OrderTrackingPage = () => {
 													<h5 className="font-semibold text-gray-900 mb-2">Thông tin chuyển khoản:</h5>
 													<div className="space-y-1 text-xs text-gray-600">
 														<p><strong>Số tiền:</strong> {formatCurrency(order.totalAmount)}</p>
-														<p><strong>Nội dung:</strong> {formatOrderPaymentDescription(orderCode, order.studentId, order.fullName)}</p>
+														<p><strong>Nội dung:</strong> {order.paymentDescription}</p>
 														<p className="text-red-600 font-medium">
 															⚠️ Không thay đổi nội dung chuyển khoản
 														</p>

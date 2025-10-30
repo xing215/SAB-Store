@@ -41,37 +41,10 @@ export const toAscii = (text) => {
 };
 
 /**
- * Generate payment QR code URL for direct sales
- * @param {number} amount - Payment amount
- * @param {string} orderCode - Order code
- * @param {string} studentId - Student ID
- * @param {string} customerName - Customer name
- * @returns {string} QR code URL
- */
-export const generatePaymentQR = (amount, orderCode) => {
-	// Payment description for QR
-	const description = formatPaymentDescription(orderCode);
-
-	const bankId = process.env.REACT_APP_BANK_NAME_ID;
-	const accountNo = process.env.REACT_APP_ACCOUNT_NO;
-
-	if (!bankId || !accountNo) {
-		console.error('Bank information not configured in environment variables');
-		return null;
-	}
-
-	// Generate VietQR URL
-	const qrData = `https://img.vietqr.io/image/${bankId}-${accountNo}-qr_only.png?amount=${amount}&addInfo=${encodeURIComponent(description)}`;
-
-	return qrData;
-};
-
-/**
  * Format payment description for QR code
  * @param {string} orderCode - Order code
- * @param {string} studentId - Student ID
- * @param {string} customerName - Customer name
  * @returns {string} Formatted description
+ * @deprecated Use backend-generated QR codes instead
  */
 export const formatPaymentDescription = (orderCode) => {
 	// For direct sales, create TAC format
@@ -117,34 +90,8 @@ export const generateShortName = (fullName) => {
 };
 
 /**
- * Generate VietQR payment URL for orders
- * @param {number} amount - Payment amount
- * @param {string} orderId - Order ID
- * @param {string} studentId - Student ID
- * @param {string} fullName - Customer full name
- * @returns {string} VietQR URL
- */
-export const generateOrderPaymentQR = (amount, orderId, studentId, fullName) => {
-	const bankId = process.env.REACT_APP_BANK_NAME_ID;
-	const accountNo = process.env.REACT_APP_ACCOUNT_NO;
-
-	if (!bankId || !accountNo) {
-		console.error('Bank information not configured in environment variables');
-		return null;
-	}
-
-	const shortName = generateShortName(fullName);
-	const prefixMessage = 'SAB';
-	const description = `${prefixMessage} ${orderId} ${studentId} ${shortName}`;
-
-	const baseUrl = 'https://img.vietqr.io/image';
-	const qrUrl = `${baseUrl}/${bankId}-${accountNo}-qr_only.png?amount=${amount}&addInfo=${encodeURIComponent(description)}`;
-
-	return qrUrl;
-};
-
-/**
  * Format payment description for orders
+ * @deprecated This function is deprecated. Payment description is now returned by the API.
  * @param {string} orderId - Order ID
  * @param {string} studentId - Student ID
  * @param {string} fullName - Customer full name

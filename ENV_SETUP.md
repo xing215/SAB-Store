@@ -33,14 +33,26 @@
 - `APPSCRIPT_URL`: Google Apps Script webhook URL
 - `CORS_ORIGIN`: Allowed CORS origin (default: `http://localhost:3000`)
 
+### MinIO Object Storage Configuration
+- `MINIO_ROOT_USER`: MinIO root username (default: `minioadmin`)
+- `MINIO_ROOT_PASSWORD`: MinIO root password (default: `minioadmin123`) [CHANGE THIS]
+- `MINIO_ENDPOINT`: MinIO service endpoint (default: `minio` for Docker, `localhost` for local dev)
+- `MINIO_PORT`: MinIO API port (default: `9000`)
+- `MINIO_BUCKET_NAME`: MinIO bucket name for file storage (default: `sablanyard`)
+- `MINIO_USE_SSL`: Enable SSL for MinIO connection (default: `false`)
+
 ### Frontend Configuration
 - `FRONTEND_PORT`: Frontend port mapping (default: `3000`)
 - `REACT_APP_API_URL`: Backend API URL (default: `http://localhost:5000`)
-- `REACT_APP_BANK_NAME_ID`: Bank identifier for payment QR code
-- `REACT_APP_ACCOUNT_NO`: Bank account number for payments
 
 ### System Configuration
 - `TZ`: Timezone (default: `Asia/Ho_Chi_Minh`)
+
+### Payment Settings
+Payment settings (Bank Name, Account Number, Prefix Message) are now managed via the Admin Settings page and stored in the database. Initial values can be set via backend environment variables:
+- `BANK_NAME_ID`: Initial bank identifier (e.g., `MB`, `VCB`)
+- `BANK_ACCOUNT_ID`: Initial bank account number
+- `PREFIX_MESSAGE`: Initial payment prefix message (default: `SAB`)
 
 ## Security Notes
 
