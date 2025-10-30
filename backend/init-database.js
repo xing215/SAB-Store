@@ -44,8 +44,6 @@ async function initDatabase() {
 		// log all accounts and users in the database
 		const allUsers = await User.find();
 		const allAccounts = await Account.find();
-		console.log(`All users in DB: ${JSON.stringify(allUsers, null, 2)}`);
-		console.log(`All accounts in DB: ${JSON.stringify(allAccounts, null, 2)}`);
 		// Create sample products using Mongoose
 		const existingProducts = await Product.countDocuments();
 
