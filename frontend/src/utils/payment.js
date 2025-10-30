@@ -44,17 +44,17 @@ export const toAscii = (text) => {
  * Format payment description for QR code
  * @param {string} orderCode - Order code
  * @returns {string} Formatted description
- * @deprecated Use backend-generated QR codes instead
+ * @deprecated Use backend-generated QR codes instead. This function is DEPRECATED and should not be used.
  */
 export const formatPaymentDescription = (orderCode) => {
-	// For direct sales, create TAC format
+	console.warn('[DEPRECATED] formatPaymentDescription should not be used. Backend generates payment QR codes.');
+	
+	// Fallback implementation (should never be called in production)
 	const now = new Date();
-	const yymmdd = now.toISOString().slice(2, 10).replace(/-/g, ''); // YYMMDD
-	const hhmmss = now.toTimeString().slice(0, 8).replace(/:/g, ''); // HHMMSS
-	const username = localStorage.getItem('sellerInfo') ?
-		JSON.parse(localStorage.getItem('sellerInfo')).username || 'seller' : 'seller';
-
-	return `SAB ${orderCode} TAC ${username} ${yymmdd} ${hhmmss}`;
+	const yymmdd = now.toISOString().slice(2, 10).replace(/-/g, '');
+	const hhmmss = now.toTimeString().slice(0, 8).replace(/:/g, '');
+	
+	return `SAB ${orderCode} ${yymmdd} ${hhmmss}`;
 };
 
 /**

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { authClient } from '../../lib/auth-client';
@@ -7,6 +7,25 @@ import Logo from '../Logo';
 const SellerLayout = ({ children }) => {
 	const navigate = useNavigate();
 	const location = useLocation();
+	const [username, setUsername] = useState('Seller');
+
+	// Get username from authenticated session
+	useEffect(() => {
+		const getSessionUser = async () => {
+			try {
+				const { data: session } = await authClient.getSession();
+				if (session?.user?.name) {
+					setUsername(session.user.name);
+				} else if (session?.user?.email) {
+					// Fallback to email username
+					setUsername(session.user.email.split('@')[0]);
+				}
+			} catch (error) {
+				console.error('Error getting session:', error);
+			}
+		};
+		getSessionUser();
+	}, []);
 
 	const handleLogout = async () => {
 		try {
@@ -22,9 +41,6 @@ const SellerLayout = ({ children }) => {
 	const isActiveRoute = (path) => {
 		return location.pathname === path;
 	};
-
-	// Lấy username từ localStorage (hoặc context nếu có)
-	const username = localStorage.getItem('username') || 'Seller';
 
 	return (
 		<div className="min-h-screen bg-gray-50">
