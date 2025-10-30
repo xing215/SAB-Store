@@ -141,6 +141,7 @@ const CheckoutPage = () => {
 							orderCode: response.data.orderCode,
 							totalAmount: response.data.totalAmount,
 							qrUrl: response.data.qrUrl,
+							paymentDescription: response.data.paymentDescription,
 							customerInfo: {
 								studentId: formData.studentId.trim(),
 								fullName: formData.fullName.trim(),
