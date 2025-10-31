@@ -2,26 +2,25 @@ const express = require('express');
 const multer = require('multer');
 const path = require('path');
 const { uploadFile, deleteFile } = require('../lib/minio');
+const { validateImageFile, generateSecureFilename, sanitizeFilename, MAX_FILE_SIZE } = require('../utils/fileValidator');
 const router = express.Router();
 
 const storage = multer.memoryStorage();
 
 const fileFilter = (req, file, cb) => {
-	const allowedTypes = /jpeg|jpg|png|gif|webp/;
-	const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
-	const mimetype = allowedTypes.test(file.mimetype);
+	const allowedMimeTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
 
-	if (mimetype && extname) {
-		return cb(null, true);
-	} else {
-		cb(new Error('Chỉ chấp nhận file ảnh (JPEG, JPG, PNG, GIF, WebP)'));
+	if (!allowedMimeTypes.includes(file.mimetype)) {
+		return cb(new Error('Chỉ chấp nhận file ảnh (JPEG, PNG, GIF, WebP)'));
 	}
+
+	cb(null, true);
 };
 
 const upload = multer({
 	storage: storage,
 	limits: {
-		fileSize: 200 * 1024 * 1024
+		fileSize: MAX_FILE_SIZE
 	},
 	fileFilter: fileFilter
 });
@@ -35,9 +34,9 @@ router.post('/product-image', upload.single('image'), async (req, res) => {
 			});
 		}
 
-		const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-		const ext = path.extname(req.file.originalname);
-		const filename = `image-${uniqueSuffix}${ext}`;
+		await validateImageFile(req.file);
+
+		const filename = generateSecureFilename(req.file.originalname);
 		const objectName = `products/${filename}`;
 
 		await uploadFile(objectName, req.file.buffer, req.file.mimetype);
@@ -52,6 +51,17 @@ router.post('/product-image', upload.single('image'), async (req, res) => {
 		});
 	} catch (error) {
 		console.error('Upload error:', error);
+
+		if (error.message.includes('File signature') ||
+			error.message.includes('Invalid') ||
+			error.message.includes('exceeds') ||
+			error.message.includes('Filename validation')) {
+			return res.status(400).json({
+				success: false,
+				message: error.message
+			});
+		}
+
 		res.status(500).json({
 			success: false,
 			message: 'Lỗi server khi tải ảnh',
@@ -69,12 +79,14 @@ router.post('/product-images', upload.array('images', 5), async (req, res) => {
 			});
 		}
 
+		for (const file of req.files) {
+			await validateImageFile(file);
+		}
+
 		const imageUrls = [];
 
 		for (const file of req.files) {
-			const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-			const ext = path.extname(file.originalname);
-			const filename = `image-${uniqueSuffix}${ext}`;
+			const filename = generateSecureFilename(file.originalname);
 			const objectName = `products/${filename}`;
 
 			await uploadFile(objectName, file.buffer, file.mimetype);
@@ -92,6 +104,17 @@ router.post('/product-images', upload.array('images', 5), async (req, res) => {
 		});
 	} catch (error) {
 		console.error('Upload error:', error);
+
+		if (error.message.includes('File signature') ||
+			error.message.includes('Invalid') ||
+			error.message.includes('exceeds') ||
+			error.message.includes('Filename validation')) {
+			return res.status(400).json({
+				success: false,
+				message: error.message
+			});
+		}
+
 		res.status(500).json({
 			success: false,
 			message: 'Lỗi server khi tải ảnh',
@@ -102,7 +125,7 @@ router.post('/product-images', upload.array('images', 5), async (req, res) => {
 
 router.delete('/product-image/:filename', async (req, res) => {
 	try {
-		const filename = req.params.filename;
+		const filename = sanitizeFilename(req.params.filename);
 		const objectName = `products/${filename}`;
 
 		await deleteFile(objectName);
@@ -113,6 +136,13 @@ router.delete('/product-image/:filename', async (req, res) => {
 		});
 	} catch (error) {
 		console.error('Delete error:', error);
+
+		if (error.message.includes('Invalid filename')) {
+			return res.status(400).json({
+				success: false,
+				message: 'Tên file không hợp lệ'
+			});
+		}
 
 		if (error.code === 'NotFound') {
 			return res.status(404).json({
