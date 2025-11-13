@@ -2,7 +2,7 @@ services:
   # SAB Lanyard MongoDB Database
   mongodb:
     image: mongo:6.0
-    container_name: sabstore_mongodb
+    container_name: amdstore_mongodb
     restart: unless-stopped
     environment:
       MONGO_INITDB_ROOT_USERNAME: ${MONGO_INITDB_ROOT_USERNAME:-admin}
@@ -14,7 +14,7 @@ services:
     volumes:
       - mongodb_data:/data/db
     networks:
-      - sabstore_network
+      - amdstore_network
     healthcheck:
       test: [ "CMD", "mongosh", "--eval", "db.adminCommand('ping')" ]
       interval: 10s
@@ -25,7 +25,7 @@ services:
   # SAB Lanyard MinIO Object Storage
   minio:
     image: minio/minio:latest
-    container_name: sabstore_minio
+    container_name: amdstore_minio
     restart: unless-stopped
     command: server /data --console-address ":9001"
     environment:
@@ -38,7 +38,7 @@ services:
     volumes:
       - minio_data:/data
     networks:
-      - sabstore_network
+      - amdstore_network
     healthcheck:
       test: [ "CMD", "curl", "-f", "http://localhost:9000/minio/health/live" ]
       interval: 10s
@@ -52,7 +52,7 @@ services:
       context: ./backend
       dockerfile: Dockerfile
     pull_policy: always
-    container_name: sabstore_backend
+    container_name: amdstore_backend
     restart: unless-stopped
     environment:
       NODE_ENV: ${NODE_ENV:-production}
@@ -69,7 +69,7 @@ services:
       MINIO_PORT: ${MINIO_PORT:-9000}
       MINIO_ACCESS_KEY: ${MINIO_ROOT_USER:-minioadmin}
       MINIO_SECRET_KEY: ${MINIO_ROOT_PASSWORD:-minioadmin123}
-      MINIO_BUCKET_NAME: ${MINIO_BUCKET_NAME:-sabstore}
+      MINIO_BUCKET_NAME: ${MINIO_BUCKET_NAME:-amdstore}
       MINIO_USE_SSL: ${MINIO_USE_SSL:-false}
       TZ: ${TZ:-Asia/Ho_Chi_Minh}
     expose:
@@ -82,7 +82,7 @@ services:
     volumes:
       - backend_uploads:/app/uploads
     networks:
-      - sabstore_network
+      - amdstore_network
 
   # SAB Lanyard Frontend React App (with Nginx Reverse Proxy)
   frontend:
@@ -94,7 +94,7 @@ services:
     pull_policy: always
     environment:
       VITE_API_URL: ${REACT_APP_API_URL:-http://localhost}
-    container_name: sabstore_frontend
+    container_name: amdstore_frontend
     restart: unless-stopped
     expose:
       - 80
@@ -102,7 +102,7 @@ services:
       backend:
         condition: service_started
     networks:
-      - sabstore_network
+      - amdstore_network
     healthcheck:
       test: [ "CMD", "curl", "-f", "http://localhost/health" ]
       interval: 30s
@@ -117,6 +117,6 @@ volumes:
 
 
 networks:
-  sabstore_network:
+  amdstore_network:
     external: true
     name: multi-domain
