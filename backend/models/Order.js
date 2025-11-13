@@ -107,6 +107,14 @@ const orderSchema = new mongoose.Schema({
 			message: 'Email không hợp lệ'
 		}
 	},
+	school: {
+		type: String,
+		required: function () {
+			return !this.isDirectSale;
+		},
+		trim: true,
+		maxLength: [200, 'Tên trường không được vượt quá 200 ký tự']
+	},
 	additionalNote: {
 		type: String,
 		trim: true,

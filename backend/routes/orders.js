@@ -20,7 +20,7 @@ router.post('/', validateOrder, async (req, res) => {
 			body: { ...req.body, items: req.body.items?.length ? `${req.body.items.length} items` : 'no items' }
 		});
 
-		const { studentId, fullName, email, phoneNumber, additionalNote, items, optimalPricing, useOptimalPricing = false } = req.body;
+		const { studentId, fullName, email, phoneNumber, school, additionalNote, items, optimalPricing, useOptimalPricing = false } = req.body;
 
 		if (!items || !Array.isArray(items) || items.length === 0) {
 			console.error('❌ Invalid items in request');
@@ -166,7 +166,7 @@ router.post('/', validateOrder, async (req, res) => {
 			console.error('❌ Failed to generate unique order code after 10 attempts');
 			return res.status(500).json({
 				success: false,
-				message: 'Không thể tạo mã đơn hàng duy nhất'
+				message: 'Không thể tạo mã vé duy nhất'
 			});
 		}
 
@@ -180,6 +180,7 @@ router.post('/', validateOrder, async (req, res) => {
 			fullName,
 			email,
 			phoneNumber,
+			school,
 			additionalNote,
 			items: orderItems,
 			totalAmount,
@@ -217,6 +218,7 @@ router.post('/', validateOrder, async (req, res) => {
 			fullName,
 			email,
 			phoneNumber,
+			school,
 			additionalNote,
 			items: orderItems,
 			totalAmount

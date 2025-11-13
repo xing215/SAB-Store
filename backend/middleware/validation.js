@@ -55,6 +55,13 @@ const validateOrder = [
 		.withMessage('Số điện thoại phải có 10 số và bắt đầu bằng 0')
 		.trim(),
 
+	body('school')
+		.notEmpty()
+		.withMessage('Tên trường là bắt buộc')
+		.isLength({ min: 1, max: 200 })
+		.withMessage('Tên trường phải từ 1-200 ký tự')
+		.trim(),
+
 	body('additionalNote')
 		.optional()
 		.isLength({ max: 500 })

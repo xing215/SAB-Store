@@ -30,10 +30,11 @@ const OrderSuccessPage = () => {
 						<i className="fas fa-check text-3xl text-success-600"></i>
 					</div>
 					<h1 className="text-3xl font-bold text-gray-900 mb-2">
-						Đặt hàng thành công! 🎉
+						Đã đặt vé thành công!
 					</h1>
 					<p className="text-gray-600 text-lg">
-						Nhà Cá sẽ chuẩn bị hàng cho bạn sớm nhất 🐟
+						Chúng mình rất vui vì bạn sẽ cùng tham gia sáng tạo với những sợi kẽm nhung.<br/>
+						Sự tham gia của bạn cũng đồng thời đóng góp vào quỹ thiện nguyện <b>Ấm Áp Mùa Đông</b> cho các em nhỏ tại <b>Mái Ấm Mầm Xanh</b>.
 					</p>
 				</div>
 
@@ -41,21 +42,21 @@ const OrderSuccessPage = () => {
 				<div className="card mb-8">
 					<div className="bg-success-50 px-6 py-4 border-b border-success-100">
 						<h2 className="text-xl font-semibold text-gray-900">
-							Thông tin đơn hàng
+							Thông tin đơn đặt vé
 						</h2>
 					</div>
 
 					<div className="p-6 space-y-4">
 						{/* Order Code */}
 						<div className="text-center">
-							<p className="text-sm text-gray-600 mb-2">Mã đơn hàng của bạn:</p>
+							<p className="text-sm text-gray-600 mb-2">Mã vé của bạn:</p>
 							<div className="bg-primary-100 text-primary-800 px-4 py-3 rounded-lg inline-block">
 								<span className="text-2xl font-bold font-mono tracking-wider">
 									{orderCode}
 								</span>
 							</div>
 							<p className="text-xs text-gray-500 mt-2">
-								Vui lòng <b>lưu lại mã này</b> để tra cứu đơn hàng
+								Vui lòng <b>lưu lại mã này</b> để tra cứu vé tham dự
 							</p>
 						</div>
 
@@ -63,7 +64,7 @@ const OrderSuccessPage = () => {
 						<div className="border-t pt-4">
 							<div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-left">
 								<div>
-									<p className="text-sm text-gray-600">Khách hàng:</p>
+									<p className="text-sm text-gray-600">Đại diện:</p>
 									<p className="font-semibold text-gray-900">{customerInfo.studentId} - {customerInfo.fullName}</p>
 								</div>
 								<div>
@@ -93,10 +94,10 @@ const OrderSuccessPage = () => {
 							<div className="mb-4">
 								<h3 className="text-xl font-bold text-red-700 mb-2">
 									<i className="fas fa-exclamation-triangle mr-2"></i>
-									Thanh toán đơn đặt hàng.
+									Thanh toán vé tham dự
 								</h3>
 								<p className="text-red-600 text-sm">
-									Để được xử lý nhanh nhất, bạn vui lòng thanh toán trong vòng 1 giờ
+									Để thuận tiện cho công tác tổ chức, rất mong bạn có thể hoàn tất thanh toán trong vòng <b>1 giờ</b>.
 								</p>
 							</div>
 
@@ -167,7 +168,7 @@ const OrderSuccessPage = () => {
 						className="btn-primary"
 					>
 						<i className="fas fa-search mr-2"></i>
-						Tra cứu đơn hàng
+						Tra cứu vé tham dự
 					</Link>
 
 					<Link
