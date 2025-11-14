@@ -42,6 +42,15 @@ async function initDatabase() {
 					}
 				},
 			});
+
+			// get the created user from database
+			const adminUser = await User.findOne({ email: adminEmail });
+			// get the account associated with the user
+			const adminAccount = await Account.findById(adminUser.accountId);
+
+			console.log('✅ Created admin user:');
+			console.log(`   - UserData: ${JSON.stringify(adminUser, null, 2)}`);
+			console.log(`   - AccountData: ${JSON.stringify(adminAccount, null, 2)}`);
 		}
 
 		// log all accounts and users in the database
