@@ -95,6 +95,7 @@ services:
         condition: service_started
     networks:
       - amdstore_network
+      - domain_network
     healthcheck:
       test: [ "CMD", "curl", "-f", "http://localhost/health" ]
       interval: 30s
