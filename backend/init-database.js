@@ -34,16 +34,14 @@ async function initDatabase() {
 		}
 		else {
 
-			await auth.api.createUser({
+			await auth.api.signUpEmail({
 				body: {
 					email: adminEmail,
 					name: 'System Administrator',
 					password: adminPassword,
 					role: 'admin',
-					data: {
-						username: adminUsername,
-						displayUsername: 'Admin',
-					}
+					username: adminUsername,
+					displayUsername: 'Admin',
 				},
 			});
 
