@@ -4,11 +4,8 @@ services:
     image: mongo:6.0
     container_name: amdstore_mongodb
     restart: unless-stopped
-    environment:
-      MONGO_INITDB_ROOT_USERNAME: ${MONGO_INITDB_ROOT_USERNAME:-amdadmin}
-      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_INITDB_ROOT_PASSWORD:-password123}
-      MONGO_INITDB_DATABASE: ${MONGO_INITDB_DATABASE:-minipreorder}
-      TZ: ${TZ:-Asia/Ho_Chi_Minh}
+    env_file:
+      - .env
     expose:
       - "27017"
     volumes:
@@ -117,5 +114,6 @@ volumes:
 
 networks:
   amdstore_network:
+  domain_network:
     external: true
     name: multi-domain
