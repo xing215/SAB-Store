@@ -110,6 +110,8 @@ volumes:
 
 networks:
   amdstore_network:
+    name: amdstore_network
+    driver: bridge
   domain_network:
     external: true
     name: multi-domain
