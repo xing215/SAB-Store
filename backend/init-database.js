@@ -34,21 +34,23 @@ async function initDatabase() {
 		}
 		else {
 
-			await auth.api.signUpEmail({
+			await auth.api.createUser({
 				body: {
 					email: adminEmail,
 					name: 'System Administrator',
 					password: adminPassword,
 					role: 'admin',
-					username: adminUsername,
-					displayUsername: 'Admin',
+					data: {
+						username: adminUsername,
+						displayUsername: 'Admin',
+					}
 				},
 			});
 
 			// get the created user from database
 			const adminUser = await User.findOne({ email: adminEmail });
 			// get the account associated with the user
-			const adminAccount = await Account.findById(adminUser.accountId);
+			const adminAccount = await Account.findOne({ userId: adminUser.userId });
 
 			console.log('✅ Created admin user:');
 			console.log(`   - UserData: ${JSON.stringify(adminUser, null, 2)}`);
