@@ -2,7 +2,6 @@ services:
   # SAB Lanyard MongoDB Database
   mongodb:
     image: mongo:6.0
-    container_name: sabstore_mongodb
     restart: unless-stopped
     environment:
       MONGO_INITDB_ROOT_USERNAME: ${MONGO_INITDB_ROOT_USERNAME:-admin}
@@ -25,7 +24,6 @@ services:
   # SAB Lanyard MinIO Object Storage
   minio:
     image: minio/minio:latest
-    container_name: sabstore_minio
     restart: unless-stopped
     command: server /data --console-address ":9001"
     environment:
@@ -52,7 +50,6 @@ services:
       context: ./backend
       dockerfile: Dockerfile
     pull_policy: always
-    container_name: sabstore_backend
     restart: unless-stopped
     environment:
       NODE_ENV: ${NODE_ENV:-production}
@@ -94,7 +91,6 @@ services:
     pull_policy: always
     environment:
       VITE_API_URL: ${REACT_APP_API_URL:-http://localhost}
-    container_name: sabstore_frontend
     restart: unless-stopped
     expose:
       - 80
