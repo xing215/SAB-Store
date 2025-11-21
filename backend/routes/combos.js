@@ -1,8 +1,10 @@
-const express = require('express');
+﻿const express = require('express');
 const Combo = require('../models/Combo');
 const Product = require('../models/Product');
 const ComboService = require('../services/ComboService');
 const { authenticateAdmin, authenticateSeller, authenticateUser } = require('../middleware/better-auth');
+const { ErrorResponse, catchAsync } = require('../utils/errorResponse');
+const ErrorLogger = require('../utils/errorLogger');
 const router = express.Router();
 
 /**
@@ -10,7 +12,7 @@ const router = express.Router();
  * @desc    Get all combos (admin only)
  * @access  Private/Admin
  */
-router.get('/', authenticateAdmin, async (req, res) => {
+router.get('/', authenticateAdmin, catchAsync(async (req, res) => {
 	try {
 		const { active } = req.query;
 
@@ -30,7 +32,7 @@ router.get('/', authenticateAdmin, async (req, res) => {
 			data: { combos }
 		});
 	} catch (error) {
-		console.error('Get combos error:', error);
+		
 		res.status(500).json({
 			success: false,
 			message: 'Lỗi server khi lấy danh sách combo'
@@ -43,7 +45,7 @@ router.get('/', authenticateAdmin, async (req, res) => {
  * @desc    Get active combos for combo detection
  * @access  Public
  */
-router.get('/active', async (req, res) => {
+router.get('/active', catchAsync(async (req, res) => {
 	try {
 		const combos = await Combo.findActive();
 
@@ -52,7 +54,7 @@ router.get('/active', async (req, res) => {
 			data: { combos }
 		});
 	} catch (error) {
-		console.error('Get active combos error:', error);
+		
 		res.status(500).json({
 			success: false,
 			message: 'Lỗi server khi lấy danh sách combo'
@@ -65,15 +67,12 @@ router.get('/active', async (req, res) => {
  * @desc    Detect optimal combo combination for given products
  * @access  Public
  */
-router.post('/detect', async (req, res) => {
+router.post('/detect', catchAsync(async (req, res) => {
 	try {
 		const { items } = req.body;
 
 		if (!items || !Array.isArray(items) || items.length === 0) {
-			return res.status(400).json({
-				success: false,
-				message: 'Danh sách sản phẩm là bắt buộc'
-			});
+			throw ErrorResponse.badRequestError('Danh sách sản phẩm là bắt buộc');
 		}
 
 		// Get product details for all items
@@ -204,7 +203,7 @@ router.post('/detect', async (req, res) => {
 			}
 		});
 	} catch (error) {
-		console.error('Detect combos error:', error);
+		
 		res.status(500).json({
 			success: false,
 			message: 'Lỗi server khi phát hiện combo'
@@ -217,24 +216,18 @@ router.post('/detect', async (req, res) => {
  * @desc    Create new combo
  * @access  Private/Admin
  */
-router.post('/', authenticateAdmin, async (req, res) => {
+router.post('/', authenticateAdmin, catchAsync(async (req, res) => {
 	try {
 		const { name, description, price, categoryRequirements, priority } = req.body;
 
 		// Validate required fields
 		if (!name || !price || !categoryRequirements || !Array.isArray(categoryRequirements)) {
-			return res.status(400).json({
-				success: false,
-				message: 'Tên, giá và yêu cầu danh mục là bắt buộc'
-			});
+			throw ErrorResponse.badRequestError('Tên, giá và yêu cầu danh mục là bắt buộc');
 		}
 
 		// Validate categoryRequirements
 		if (categoryRequirements.length === 0) {
-			return res.status(400).json({
-				success: false,
-				message: 'Combo phải có ít nhất một yêu cầu danh mục'
-			});
+			throw ErrorResponse.badRequestError('Combo phải có ít nhất một yêu cầu danh mục');
 		}
 
 		// Check if all categories exist in products
@@ -265,7 +258,7 @@ router.post('/', authenticateAdmin, async (req, res) => {
 			message: 'Tạo combo thành công'
 		});
 	} catch (error) {
-		console.error('Create combo error:', error);
+		
 
 		if (error.name === 'ValidationError') {
 			const errors = Object.values(error.errors).map(err => err.message);
@@ -287,15 +280,12 @@ router.post('/', authenticateAdmin, async (req, res) => {
  * @desc    Calculate optimal pricing for cart items
  * @access  Public
  */
-router.post('/pricing', async (req, res) => {
+router.post('/pricing', catchAsync(async (req, res) => {
 	try {
 		const { items } = req.body;
 
 		if (!items || !Array.isArray(items)) {
-			return res.status(400).json({
-				success: false,
-				message: 'Danh sách sản phẩm là bắt buộc'
-			});
+			throw ErrorResponse.badRequestError('Danh sách sản phẩm là bắt buộc');
 		}
 
 		const pricingBreakdown = await ComboService.getPricingBreakdown(items);
@@ -305,7 +295,7 @@ router.post('/pricing', async (req, res) => {
 			data: pricingBreakdown
 		});
 	} catch (error) {
-		console.error('Calculate pricing error:', error);
+		
 		res.status(500).json({
 			success: false,
 			message: 'Lỗi server khi tính toán giá'
@@ -318,7 +308,7 @@ router.post('/pricing', async (req, res) => {
  * @desc    Return error for GET requests to pricing endpoint
  * @access  Public
  */
-router.get('/pricing', async (req, res) => {
+router.get('/pricing', catchAsync(async (req, res) => {
 	return res.status(405).json({
 		success: false,
 		message: 'Phương thức GET không được hỗ trợ. Vui lòng sử dụng POST.'
@@ -330,34 +320,25 @@ router.get('/pricing', async (req, res) => {
  * @desc    Update combo
  * @access  Private/Admin
  */
-router.put('/:id', authenticateAdmin, async (req, res) => {
+router.put('/:id', authenticateAdmin, catchAsync(async (req, res) => {
 	try {
 		const { id } = req.params;
 		const { name, description, price, categoryRequirements, priority, isActive } = req.body;
 
 		// Validate ObjectId format
 		if (!id.match(/^[0-9a-fA-F]{24}$/)) {
-			return res.status(400).json({
-				success: false,
-				message: 'ID combo không hợp lệ'
-			});
+			throw ErrorResponse.badRequestError('ID combo không hợp lệ');
 		}
 
 		const combo = await Combo.findById(id);
 		if (!combo) {
-			return res.status(404).json({
-				success: false,
-				message: 'Không tìm thấy combo'
-			});
+			throw ErrorResponse.notFoundError('Không tìm thấy combo');
 		}
 
 		// Validate categoryRequirements if provided
 		if (categoryRequirements) {
 			if (!Array.isArray(categoryRequirements) || categoryRequirements.length === 0) {
-				return res.status(400).json({
-					success: false,
-					message: 'Combo phải có ít nhất một yêu cầu danh mục'
-				});
+				throw ErrorResponse.badRequestError('Combo phải có ít nhất một yêu cầu danh mục');
 			}
 
 			// Check if all categories exist
@@ -389,7 +370,7 @@ router.put('/:id', authenticateAdmin, async (req, res) => {
 			message: 'Cập nhật combo thành công'
 		});
 	} catch (error) {
-		console.error('Update combo error:', error);
+		
 
 		if (error.name === 'ValidationError') {
 			const errors = Object.values(error.errors).map(err => err.message);
@@ -411,24 +392,18 @@ router.put('/:id', authenticateAdmin, async (req, res) => {
  * @desc    Delete combo
  * @access  Private/Admin
  */
-router.delete('/:id', authenticateAdmin, async (req, res) => {
+router.delete('/:id', authenticateAdmin, catchAsync(async (req, res) => {
 	try {
 		const { id } = req.params;
 
 		// Validate ObjectId format
 		if (!id.match(/^[0-9a-fA-F]{24}$/)) {
-			return res.status(400).json({
-				success: false,
-				message: 'ID combo không hợp lệ'
-			});
+			throw ErrorResponse.badRequestError('ID combo không hợp lệ');
 		}
 
 		const combo = await Combo.findById(id);
 		if (!combo) {
-			return res.status(404).json({
-				success: false,
-				message: 'Không tìm thấy combo'
-			});
+			throw ErrorResponse.notFoundError('Không tìm thấy combo');
 		}
 
 		await Combo.findByIdAndDelete(id);
@@ -438,7 +413,7 @@ router.delete('/:id', authenticateAdmin, async (req, res) => {
 			message: 'Xóa combo thành công'
 		});
 	} catch (error) {
-		console.error('Delete combo error:', error);
+		
 		res.status(500).json({
 			success: false,
 			message: 'Lỗi server khi xóa combo'
@@ -451,24 +426,18 @@ router.delete('/:id', authenticateAdmin, async (req, res) => {
  * @desc    Get combo by ID
  * @access  Private/Admin
  */
-router.get('/:id', authenticateAdmin, async (req, res) => {
+router.get('/:id', authenticateAdmin, catchAsync(async (req, res) => {
 	try {
 		const { id } = req.params;
 
 		// Validate ObjectId format
 		if (!id.match(/^[0-9a-fA-F]{24}$/)) {
-			return res.status(400).json({
-				success: false,
-				message: 'ID combo không hợp lệ'
-			});
+			throw ErrorResponse.badRequestError('ID combo không hợp lệ');
 		}
 
 		const combo = await Combo.findById(id);
 		if (!combo) {
-			return res.status(404).json({
-				success: false,
-				message: 'Không tìm thấy combo'
-			});
+			throw ErrorResponse.notFoundError('Không tìm thấy combo');
 		}
 
 		res.json({
@@ -476,7 +445,7 @@ router.get('/:id', authenticateAdmin, async (req, res) => {
 			data: { combo }
 		});
 	} catch (error) {
-		console.error('Get combo error:', error);
+		
 		res.status(500).json({
 			success: false,
 			message: 'Lỗi server khi lấy thông tin combo'

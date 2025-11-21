@@ -115,6 +115,31 @@ async function startServer() {
 	});
 }
 
+// Handle uncaught exceptions
+process.on('uncaughtException', (error) => {
+	console.error('[CRITICAL] Uncaught Exception:', error);
+	console.error('Stack:', error.stack);
+	console.error('Process will exit...');
+	process.exit(1);
+});
+
+// Handle unhandled promise rejections
+process.on('unhandledRejection', (reason, promise) => {
+	console.error('[CRITICAL] Unhandled Rejection at:', promise);
+	console.error('Reason:', reason);
+	console.error('Process will exit...');
+	process.exit(1);
+});
+
+// Handle process warnings
+process.on('warning', (warning) => {
+	console.warn('[WARN] Process warning:', {
+		name: warning.name,
+		message: warning.message,
+		stack: warning.stack
+	});
+});
+
 async function main() {
 	try {
 		await waitForMongoDB();
@@ -122,7 +147,8 @@ async function main() {
 		await initializeDatabase();
 		await startServer();
 	} catch (error) {
-		console.error('❌ Startup failed:', error);
+		console.error('[ERROR] Startup failed:', error);
+		console.error('Stack:', error.stack);
 		process.exit(1);
 	}
 }

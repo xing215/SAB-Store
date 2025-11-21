@@ -1,5 +1,7 @@
-const express = require('express');
+﻿const express = require('express');
 const Product = require('../../models/Product');
+const { ErrorResponse, catchAsync } = require('../../utils/errorResponse');
+const ErrorLogger = require('../../utils/errorLogger');
 const router = express.Router();
 
 /**
@@ -7,7 +9,7 @@ const router = express.Router();
  * @desc    Get all products for admin management
  * @access  Private (Admin authentication handled by parent router)
  */
-router.get('/', async (req, res) => {
+router.get('/', catchAsync(async (req, res) => {
 	try {
 		const { page = 1, limit = 10, search = '', category = '', status = '' } = req.query;
 
@@ -47,7 +49,7 @@ router.get('/', async (req, res) => {
 			}
 		});
 	} catch (error) {
-		console.error('Get products error:', error);
+		// ErrorLogger will handle this
 		res.status(500).json({
 			success: false,
 			message: 'Lỗi server khi lấy danh sách sản phẩm'
@@ -60,7 +62,7 @@ router.get('/', async (req, res) => {
  * @desc    Create new product
  * @access  Private (Admin)
  */
-router.post('/', async (req, res) => {
+router.post('/', catchAsync(async (req, res) => {
 	try {
 		const {
 			name,
@@ -76,10 +78,7 @@ router.post('/', async (req, res) => {
 
 		// Validate required fields
 		if (!name || !price || !category) {
-			return res.status(400).json({
-				success: false,
-				message: 'Tên, giá và danh mục sản phẩm là bắt buộc'
-			});
+			throw ErrorResponse.badRequestError('Tên, giá và danh mục sản phẩm là bắt buộc');
 		}
 
 		const product = new Product({
@@ -102,7 +101,7 @@ router.post('/', async (req, res) => {
 			data: { product }
 		});
 	} catch (error) {
-		console.error('Create product error:', error);
+		// ErrorLogger will handle this
 
 		// Handle validation errors
 		if (error.name === 'ValidationError') {
@@ -115,10 +114,7 @@ router.post('/', async (req, res) => {
 
 		// Handle duplicate key errors
 		if (error.code === 11000) {
-			return res.status(400).json({
-				success: false,
-				message: 'Sản phẩm với thông tin này đã tồn tại'
-			});
+			throw ErrorResponse.badRequestError('Sản phẩm với thông tin này đã tồn tại');
 		}
 
 		res.status(500).json({
@@ -133,7 +129,7 @@ router.post('/', async (req, res) => {
  * @desc    Update product
  * @access  Private (Admin)
  */
-router.put('/:id', async (req, res) => {
+router.put('/:id', catchAsync(async (req, res) => {
 	try {
 		const { id } = req.params;
 		const updateData = { ...req.body };
@@ -150,10 +146,7 @@ router.put('/:id', async (req, res) => {
 		);
 
 		if (!product) {
-			return res.status(404).json({
-				success: false,
-				message: 'Không tìm thấy sản phẩm'
-			});
+			throw ErrorResponse.notFoundError('Không tìm thấy sản phẩm');
 		}
 
 		res.json({
@@ -162,7 +155,7 @@ router.put('/:id', async (req, res) => {
 			data: { product }
 		});
 	} catch (error) {
-		console.error('Update product error:', error);
+		// ErrorLogger will handle this
 
 		// Handle validation errors
 		if (error.name === 'ValidationError') {
@@ -175,18 +168,12 @@ router.put('/:id', async (req, res) => {
 
 		// Handle cast errors (invalid ID)
 		if (error.name === 'CastError') {
-			return res.status(400).json({
-				success: false,
-				message: 'ID sản phẩm không hợp lệ'
-			});
+			throw ErrorResponse.badRequestError('ID sản phẩm không hợp lệ');
 		}
 
 		// Handle duplicate key errors
 		if (error.code === 11000) {
-			return res.status(400).json({
-				success: false,
-				message: 'Sản phẩm với thông tin này đã tồn tại'
-			});
+			throw ErrorResponse.badRequestError('Sản phẩm với thông tin này đã tồn tại');
 		}
 
 		res.status(500).json({
@@ -201,17 +188,14 @@ router.put('/:id', async (req, res) => {
  * @desc    Delete product
  * @access  Private (Admin)
  */
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', catchAsync(async (req, res) => {
 	try {
 		const { id } = req.params;
 
 		const product = await Product.findById(id);
 
 		if (!product) {
-			return res.status(404).json({
-				success: false,
-				message: 'Không tìm thấy sản phẩm'
-			});
+			throw ErrorResponse.notFoundError('Không tìm thấy sản phẩm');
 		}
 
 		if (product.imageUrl && product.imageUrl !== '/fallback-product.png' && product.imageUrl.startsWith('/uploads/')) {
@@ -219,9 +203,9 @@ router.delete('/:id', async (req, res) => {
 				const objectName = product.imageUrl.replace('/uploads/', '');
 				const { deleteFile } = require('../../lib/minio');
 				await deleteFile(objectName);
-				console.log(`[DELETE PRODUCT] Deleted image: ${objectName}`);
+				// ErrorLogger will handle this
 			} catch (imageError) {
-				console.error('[DELETE PRODUCT] Error deleting image:', imageError);
+				// ErrorLogger will handle this
 			}
 		}
 
@@ -232,14 +216,11 @@ router.delete('/:id', async (req, res) => {
 			message: 'Xóa sản phẩm thành công'
 		});
 	} catch (error) {
-		console.error('Delete product error:', error);
+		// ErrorLogger will handle this
 
 		// Handle cast errors (invalid ID)
 		if (error.name === 'CastError') {
-			return res.status(400).json({
-				success: false,
-				message: 'ID sản phẩm không hợp lệ'
-			});
+			throw ErrorResponse.badRequestError('ID sản phẩm không hợp lệ');
 		}
 
 		res.status(500).json({

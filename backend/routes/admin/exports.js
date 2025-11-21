@@ -1,7 +1,9 @@
-const express = require('express');
+﻿const express = require('express');
 const ExcelJS = require('exceljs');
 const Order = require('../../models/Order');
 const { formatDate, formatCurrency } = require('../../utils/helpers');
+const { ErrorResponse, catchAsync } = require('../../utils/errorResponse');
+const ErrorLogger = require('../../utils/errorLogger');
 const router = express.Router();
 
 /**
@@ -22,7 +24,7 @@ function getStatusText(status) {
  * @desc    Export orders to Excel
  * @access  Private (Admin authentication handled by parent router)
  */
-router.get('/excel', async (req, res) => {
+router.get('/excel', catchAsync(async (req, res) => {
 	try {
 		const { status, search, startDate, endDate } = req.query;
 
@@ -114,7 +116,7 @@ router.get('/excel', async (req, res) => {
 		res.send(buffer);
 
 	} catch (error) {
-		console.error('Error exporting orders:', error);
+		// ErrorLogger will handle this
 		res.status(500).json({
 			success: false,
 			message: 'Lỗi server khi xuất file Excel'

@@ -1,6 +1,8 @@
-const express = require('express');
+﻿const express = require('express');
 const Order = require('../../models/Order');
 const Product = require('../../models/Product');
+const { ErrorResponse, catchAsync } = require('../../utils/errorResponse');
+const ErrorLogger = require('../../utils/errorLogger');
 const router = express.Router();
 
 /**
@@ -8,7 +10,7 @@ const router = express.Router();
  * @desc    Get dashboard statistics
  * @access  Private (Admin authentication handled by parent router)
  */
-router.get('/stats', async (req, res) => {
+router.get('/stats', catchAsync(async (req, res) => {
 	try {
 		const now = new Date();
 		const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -90,7 +92,7 @@ router.get('/stats', async (req, res) => {
 		});
 
 	} catch (error) {
-		console.error('Error fetching dashboard stats:', error);
+		// ErrorLogger will handle this
 		res.status(500).json({
 			success: false,
 			message: 'Lỗi server khi lấy thống kê dashboard'

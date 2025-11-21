@@ -1,9 +1,11 @@
-const express = require('express');
+﻿const express = require('express');
 const Order = require('../../models/Order');
 const Product = require('../../models/Product');
 const { validateOrderUpdate } = require('../../middleware/validation');
 const { getPaginationInfo } = require('../../utils/helpers');
 const { sendOrderToAppScript } = require('../../utils/appscript');
+const { ErrorResponse, catchAsync } = require('../../utils/errorResponse');
+const ErrorLogger = require('../../utils/errorLogger');
 const router = express.Router();
 
 /**
@@ -11,7 +13,7 @@ const router = express.Router();
  * @desc    Get all orders with pagination and search
  * @access  Private (Admin)
  */
-router.get('/', async (req, res) => {
+router.get('/', catchAsync(async (req, res) => {
 	try {
 		const {
 			page = 1,
@@ -69,7 +71,7 @@ router.get('/', async (req, res) => {
 		});
 
 	} catch (error) {
-		console.error('Error fetching orders:', error);
+		// ErrorLogger will handle this
 		res.status(500).json({
 			success: false,
 			message: 'Lỗi server khi lấy danh sách đơn hàng'
@@ -82,15 +84,12 @@ router.get('/', async (req, res) => {
  * @desc    Get single order by ID
  * @access  Private (Admin)
  */
-router.get('/:id', async (req, res) => {
+router.get('/:id', catchAsync(async (req, res) => {
 	try {
 		const order = await Order.findById(req.params.id);
 
 		if (!order) {
-			return res.status(404).json({
-				success: false,
-				message: 'Không tìm thấy đơn hàng'
-			});
+			throw ErrorResponse.notFoundError('Không tìm thấy đơn hàng');
 		}
 
 		res.json({
@@ -99,13 +98,10 @@ router.get('/:id', async (req, res) => {
 		});
 
 	} catch (error) {
-		console.error('Error fetching order:', error);
+		// ErrorLogger will handle this
 
 		if (error.name === 'CastError') {
-			return res.status(400).json({
-				success: false,
-				message: 'ID đơn hàng không hợp lệ'
-			});
+			throw ErrorResponse.badRequestError('ID đơn hàng không hợp lệ');
 		}
 
 		res.status(500).json({
@@ -127,10 +123,7 @@ router.put('/:id', validateOrderUpdate, async (req, res) => {
 		const order = await Order.findById(req.params.id);
 
 		if (!order) {
-			return res.status(404).json({
-				success: false,
-				message: 'Không tìm thấy đơn hàng'
-			});
+			throw ErrorResponse.notFoundError('Không tìm thấy đơn hàng');
 		}
 
 		// Admin có thể thay đổi trạng thái bất kỳ - không có ràng buộc flow
@@ -142,7 +135,7 @@ router.put('/:id', validateOrderUpdate, async (req, res) => {
 
 		// Handle stock restoration when order is cancelled
 		if (status === 'cancelled' && previousStatus !== 'cancelled') {
-			console.log('📦 Restoring stock for cancelled order:', order.orderCode);
+			// ErrorLogger will handle this
 			
 			// Restore stock for all items in the order
 			for (const item of order.items) {
@@ -151,12 +144,12 @@ router.put('/:id', validateOrderUpdate, async (req, res) => {
 					if (product) {
 						product.stockQuantity += item.quantity;
 						await product.save();
-						console.log(`✅ Restored ${item.quantity} units of ${product.name} to stock`);
+						// ErrorLogger will handle this
 					} else {
-						console.warn(`⚠️ Product ${item.productId} not found, skipping stock restoration`);
+						// ErrorLogger will handle this
 					}
 				} catch (stockError) {
-					console.error(`❌ Error restoring stock for product ${item.productId}:`, stockError);
+					// ErrorLogger will handle this
 					// Continue with other items even if one fails
 				}
 			}
@@ -164,7 +157,7 @@ router.put('/:id', validateOrderUpdate, async (req, res) => {
 
 		// Handle stock deduction when order is un-cancelled (restored from cancelled to another status)
 		if (previousStatus === 'cancelled' && status !== 'cancelled') {
-			console.log('📦 Deducting stock for restored order:', order.orderCode);
+			// ErrorLogger will handle this
 			
 			// Deduct stock for all items in the order
 			for (const item of order.items) {
@@ -180,12 +173,12 @@ router.put('/:id', validateOrderUpdate, async (req, res) => {
 						}
 						product.stockQuantity -= item.quantity;
 						await product.save();
-						console.log(`✅ Deducted ${item.quantity} units of ${product.name} from stock`);
+						// ErrorLogger will handle this
 					} else {
-						console.warn(`⚠️ Product ${item.productId} not found, skipping stock deduction`);
+						// ErrorLogger will handle this
 					}
 				} catch (stockError) {
-					console.error(`❌ Error deducting stock for product ${item.productId}:`, stockError);
+					// ErrorLogger will handle this
 					return res.status(500).json({
 						success: false,
 						message: 'Lỗi khi cập nhật kho hàng'
@@ -244,10 +237,10 @@ router.put('/:id', validateOrderUpdate, async (req, res) => {
 			cancelReason: order.cancelReason,
 			status: order.status
 		};
-		console.log('Push to AppScript:', appscriptData);
+		// ErrorLogger will handle this
 		setImmediate(() => {
 			sendOrderToAppScript(appscriptData).catch(err => {
-				console.error('AppScript push error:', err.message);
+				// ErrorLogger will handle this
 			});
 		});
 
@@ -258,13 +251,10 @@ router.put('/:id', validateOrderUpdate, async (req, res) => {
 		});
 
 	} catch (error) {
-		console.error('Error updating order:', error);
+		// ErrorLogger will handle this
 
 		if (error.name === 'CastError') {
-			return res.status(400).json({
-				success: false,
-				message: 'ID đơn hàng không hợp lệ'
-			});
+			throw ErrorResponse.badRequestError('ID đơn hàng không hợp lệ');
 		}
 
 		if (error.name === 'ValidationError') {
@@ -287,7 +277,7 @@ router.put('/:id', validateOrderUpdate, async (req, res) => {
  * @desc    Delete all orders (DANGEROUS - Admin only)
  * @access  Private (Admin)
  */
-router.delete('/', async (req, res) => {
+router.delete('/', catchAsync(async (req, res) => {
 	try {
 		console.log('🚨 DELETE ALL ORDERS Request:', {
 			admin: req.admin.username,
@@ -309,16 +299,12 @@ router.delete('/', async (req, res) => {
 			});
 		}
 
-		console.log(`📊 Found ${totalCount} orders to delete`);
+		// ErrorLogger will handle this
 
 		// Perform bulk deletion
 		const result = await Order.deleteMany({});
 
-		console.log('✅ Bulk deletion completed:', {
-			deletedCount: result.deletedCount,
-			acknowledged: result.acknowledged,
-			admin: req.admin.username
-		});
+		// ErrorLogger will handle this
 
 		// Log the dangerous operation
 		console.warn('🔥 CRITICAL OPERATION - ALL ORDERS DELETED:', {
@@ -340,7 +326,7 @@ router.delete('/', async (req, res) => {
 		});
 
 	} catch (error) {
-		console.error('💥 Error deleting all orders:', error);
+		// ErrorLogger will handle this
 
 		// Log the failed dangerous operation
 		console.error('🔥 CRITICAL OPERATION FAILED - DELETE ALL ORDERS:', {
@@ -362,7 +348,7 @@ router.delete('/', async (req, res) => {
  * @desc    Create direct sale order (admin)
  * @access  Private (Admin)
  */
-router.post('/direct', async (req, res) => {
+router.post('/direct', catchAsync(async (req, res) => {
 	try {
 		console.log('🔵 Admin Direct Order Request:', {
 			admin: req.admin.username,
@@ -374,23 +360,17 @@ router.post('/direct', async (req, res) => {
 
 		// Validate required fields
 		if (!items || !Array.isArray(items) || items.length === 0) {
-			return res.status(400).json({
-				success: false,
-				message: 'Danh sách sản phẩm không được để trống'
-			});
+			throw ErrorResponse.badRequestError('Danh sách sản phẩm không được để trống');
 		}
 
 		// Validate items
 		for (const item of items) {
 			if (!item.productId || !item.quantity || item.quantity <= 0) {
-				return res.status(400).json({
-					success: false,
-					message: 'Thông tin sản phẩm không hợp lệ'
-				});
+				throw ErrorResponse.badRequestError('Thông tin sản phẩm không hợp lệ');
 			}
 		}
 
-		console.log('✅ Validation passed, processing items...');
+		// ErrorLogger will handle this
 
 		// Calculate total amount and prepare order items
 		let totalAmount = 0;
@@ -421,9 +401,9 @@ router.post('/direct', async (req, res) => {
 		const orderCount = await Order.countDocuments();
 		const orderCode = `ORD${String(orderCount + 1).padStart(6, '0')}`;
 
-		console.log('📋 Creating order with code:', orderCode);
-		console.log('💰 Total amount:', totalAmount);
-		console.log('📦 Order items:', orderItems);
+		// ErrorLogger will handle this
+		// ErrorLogger will handle this
+		// ErrorLogger will handle this
 
 		// Create direct sale order
 		const order = new Order({
@@ -447,7 +427,7 @@ router.post('/direct', async (req, res) => {
 
 		await order.save();
 
-		console.log('✅ Direct order created successfully:', orderCode);
+		// ErrorLogger will handle this
 
 		res.status(201).json({
 			success: true,
@@ -460,7 +440,7 @@ router.post('/direct', async (req, res) => {
 		});
 
 	} catch (error) {
-		console.error('💥 Direct order creation error:', error);
+		// ErrorLogger will handle this
 		res.status(500).json({
 			success: false,
 			message: 'Lỗi server khi tạo đơn hàng'

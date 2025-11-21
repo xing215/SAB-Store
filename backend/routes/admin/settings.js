@@ -1,6 +1,8 @@
-const express = require('express');
+﻿const express = require('express');
 const Settings = require('../../models/Settings');
 const { authenticateAdmin } = require('../../middleware/better-auth');
+const { ErrorResponse, catchAsync } = require('../../utils/errorResponse');
+const ErrorLogger = require('../../utils/errorLogger');
 const router = express.Router();
 
 const SETTINGS_KEY = 'payment_config';
@@ -12,15 +14,12 @@ router.use(authenticateAdmin);
  * @desc    Get payment settings
  * @access  Private (Admin only)
  */
-router.get('/', async (req, res) => {
+router.get('/', catchAsync(async (req, res) => {
 	try {
 		const settings = await Settings.findOne({ key: SETTINGS_KEY });
 
 		if (!settings) {
-			return res.status(404).json({
-				success: false,
-				message: 'Chưa có cấu hình thanh toán'
-			});
+			throw ErrorResponse.notFoundError('Chưa có cấu hình thanh toán');
 		}
 
 		res.json({
@@ -35,7 +34,7 @@ router.get('/', async (req, res) => {
 		});
 
 	} catch (error) {
-		console.error('Error fetching settings:', error);
+		// ErrorLogger will handle this
 		res.status(500).json({
 			success: false,
 			message: 'Lỗi server khi lấy cấu hình'
@@ -48,15 +47,12 @@ router.get('/', async (req, res) => {
  * @desc    Update payment settings
  * @access  Private (Admin only)
  */
-router.put('/', async (req, res) => {
+router.put('/', catchAsync(async (req, res) => {
 	try {
 		const { bankNameId, bankAccountId, prefixMessage } = req.body;
 
 		if (!bankNameId || !bankAccountId || !prefixMessage) {
-			return res.status(400).json({
-				success: false,
-				message: 'Vui lòng cung cấp đầy đủ thông tin: bankNameId, bankAccountId, prefixMessage'
-			});
+			throw ErrorResponse.badRequestError('Vui lòng cung cấp đầy đủ thông tin: bankNameId, bankAccountId, prefixMessage');
 		}
 
 		const updateData = {
@@ -89,7 +85,7 @@ router.put('/', async (req, res) => {
 		});
 
 	} catch (error) {
-		console.error('Error updating settings:', error);
+		// ErrorLogger will handle this
 
 		if (error.name === 'ValidationError') {
 			return res.status(400).json({

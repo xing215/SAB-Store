@@ -1,8 +1,10 @@
-const express = require('express');
+﻿const express = require('express');
 const multer = require('multer');
 const path = require('path');
 const { uploadFile, deleteFile } = require('../lib/minio');
 const { validateImageFile, generateSecureFilename, sanitizeFilename, MAX_FILE_SIZE } = require('../utils/fileValidator');
+const { ErrorResponse, catchAsync } = require('../utils/errorResponse');
+const ErrorLogger = require('../utils/errorLogger');
 const router = express.Router();
 
 const storage = multer.memoryStorage();
@@ -25,13 +27,10 @@ const upload = multer({
 	fileFilter: fileFilter
 });
 
-router.post('/product-image', upload.single('image'), async (req, res) => {
+router.post('/product-image', upload.single('image'), catchAsync(async (req, res) => {
 	try {
 		if (!req.file) {
-			return res.status(400).json({
-				success: false,
-				message: 'Không có file nào được tải lên'
-			});
+			throw ErrorResponse.badRequestError('Không có file nào được tải lên');
 		}
 
 		await validateImageFile(req.file);
@@ -50,7 +49,7 @@ router.post('/product-image', upload.single('image'), async (req, res) => {
 			filename: filename
 		});
 	} catch (error) {
-		console.error('Upload error:', error);
+		
 
 		if (error.message.includes('File signature') ||
 			error.message.includes('Invalid') ||
@@ -70,13 +69,10 @@ router.post('/product-image', upload.single('image'), async (req, res) => {
 	}
 });
 
-router.post('/product-images', upload.array('images', 5), async (req, res) => {
+router.post('/product-images', upload.array('images', 5), catchAsync(async (req, res) => {
 	try {
 		if (!req.files || req.files.length === 0) {
-			return res.status(400).json({
-				success: false,
-				message: 'Không có file nào được tải lên'
-			});
+			throw ErrorResponse.badRequestError('Không có file nào được tải lên');
 		}
 
 		for (const file of req.files) {
@@ -103,7 +99,7 @@ router.post('/product-images', upload.array('images', 5), async (req, res) => {
 			images: imageUrls
 		});
 	} catch (error) {
-		console.error('Upload error:', error);
+		
 
 		if (error.message.includes('File signature') ||
 			error.message.includes('Invalid') ||
@@ -123,7 +119,7 @@ router.post('/product-images', upload.array('images', 5), async (req, res) => {
 	}
 });
 
-router.delete('/product-image/:filename', async (req, res) => {
+router.delete('/product-image/:filename', catchAsync(async (req, res) => {
 	try {
 		const filename = sanitizeFilename(req.params.filename);
 		const objectName = `products/${filename}`;
@@ -135,20 +131,14 @@ router.delete('/product-image/:filename', async (req, res) => {
 			message: 'Xóa ảnh thành công'
 		});
 	} catch (error) {
-		console.error('Delete error:', error);
+		
 
 		if (error.message.includes('Invalid filename')) {
-			return res.status(400).json({
-				success: false,
-				message: 'Tên file không hợp lệ'
-			});
+			throw ErrorResponse.badRequestError('Tên file không hợp lệ');
 		}
 
 		if (error.code === 'NotFound') {
-			return res.status(404).json({
-				success: false,
-				message: 'Không tìm thấy file'
-			});
+			throw ErrorResponse.notFoundError('Không tìm thấy file');
 		}
 
 		res.status(500).json({
