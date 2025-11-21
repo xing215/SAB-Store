@@ -120,5 +120,4 @@ volumes:
 
 networks:
   sabstore_network:
-    external: true
-    name: multi-domain
+    driver: bridge
