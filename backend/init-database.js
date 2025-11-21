@@ -20,10 +20,6 @@ async function initDatabase() {
 		const adminUsername = process.env.ADMIN_USERNAME || 'admin';
 		const adminPassword = process.env.ADMIN_PASSWORD || 'admin123';
 
-		console.log('🔐 Admin Credentials:')
-		console.log(`   - Email: ${adminEmail}`)
-		console.log(`   - Username: ${adminUsername}`)
-
 		// Check if admin user already exists in database
 		const existingUser = await User.findOne({
 			$or: [{ email: adminEmail }, { username: adminUsername }]
@@ -46,16 +42,11 @@ async function initDatabase() {
 					}
 				},
 			});
-
-			// get the created user from database
-			const adminUser = await User.findOne({ email: adminEmail });
-			// get the account associated with the user
-			const adminAccount = await Account.findOne({ userId: adminUser.userId });
-
-			console.log('✅ Created admin user:');
-			console.log(`   - UserData: ${JSON.stringify(adminUser, null, 2)}`);
-			console.log(`   - AccountData: ${JSON.stringify(adminAccount, null, 2)}`);
 		}
+
+		// log all accounts and users in the database
+		const allUsers = await User.find();
+		const allAccounts = await Account.find();
 
 		// Initialize payment settings
 		const existingSettings = await Settings.findOne({ key: SETTINGS_KEY });

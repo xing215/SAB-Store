@@ -7,10 +7,11 @@ import 'react-toastify/dist/ReactToastify.css';
 import { CartProvider } from './context/CartContext';
 
 // Pages
+import HomePage from './pages/HomePage';
+import CheckoutPage from './pages/CheckoutPage';
 import OrderSuccessPage from './pages/OrderSuccessPage';
 import OrderTrackingPage from './pages/OrderTrackingPage';
 import LoginPage from './pages/LoginPage';
-import EventPage from './pages/EventPage';
 
 // Admin Pages
 import AdminDashboard from './pages/admin/AdminDashboard';
@@ -39,7 +40,8 @@ function App() {
 					<Routes>
 						{/* Public Routes */}
 						<Route path="/" element={<Layout />}>
-							<Route index element={<EventPage />} />
+							<Route index element={<HomePage />} />
+							<Route path="checkout" element={<CheckoutPage />} />
 							<Route path="order-success" element={<OrderSuccessPage />} />
 							<Route path="order-tracking" element={<OrderTrackingPage />} />
 						</Route>

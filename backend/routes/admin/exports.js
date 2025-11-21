@@ -57,7 +57,7 @@ router.get('/excel', async (req, res) => {
 
 		// Define columns
 		worksheet.columns = [
-			{ header: 'Mã vé', key: 'orderCode', width: 15 },
+			{ header: 'Mã đơn hàng', key: 'orderCode', width: 15 },
 			{ header: 'Mã số sinh viên', key: 'studentId', width: 20 },
 			{ header: 'Họ tên', key: 'fullName', width: 25 },
 			{ header: 'Email', key: 'email', width: 30 },

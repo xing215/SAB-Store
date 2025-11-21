@@ -41,7 +41,7 @@
 - `MINIO_ROOT_PASSWORD`: MinIO root password (default: `minioadmin123`) [CHANGE THIS]
 - `MINIO_ENDPOINT`: MinIO service endpoint (default: `minio` for Docker, `localhost` for local dev)
 - `MINIO_PORT`: MinIO API port (default: `9000`)
-- `MINIO_BUCKET_NAME`: MinIO bucket name for file storage (default: `amdstore`)
+- `MINIO_BUCKET_NAME`: MinIO bucket name for file storage (default: `sabstore`)
 - `MINIO_USE_SSL`: Enable SSL for MinIO connection (default: `false`)
 
 ### Frontend Configuration

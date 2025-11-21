@@ -5,7 +5,7 @@ const MINIO_ENDPOINT = process.env.MINIO_ENDPOINT || 'localhost';
 const MINIO_PORT = parseInt(process.env.MINIO_PORT || '9000');
 const MINIO_ACCESS_KEY = process.env.MINIO_ACCESS_KEY || 'minioadmin';
 const MINIO_SECRET_KEY = process.env.MINIO_SECRET_KEY || 'minioadmin123';
-const MINIO_BUCKET_NAME = process.env.MINIO_BUCKET_NAME || 'amdstore';
+const MINIO_BUCKET_NAME = process.env.MINIO_BUCKET_NAME || 'sabstore';
 const MINIO_USE_SSL = process.env.MINIO_USE_SSL === 'true';
 
 const minioClient = new Minio.Client({

@@ -446,7 +446,7 @@ const SellerDashboard = () => {
 						{/* Order Code */}
 						<div>
 							<label className="block text-sm font-medium text-gray-700 mb-1">
-								Mã vé
+								Mã đơn hàng
 							</label>
 							<p className="text-sm text-gray-900">#{selectedOrderStatus.orderCode}</p>
 						</div>

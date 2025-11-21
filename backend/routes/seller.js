@@ -614,7 +614,7 @@ router.post('/orders/direct', async (req, res) => {
 		if (!isUnique) {
 			return res.status(500).json({
 				success: false,
-				message: 'Không thể tạo mã vé duy nhất'
+				message: 'Không thể tạo mã đơn hàng duy nhất'
 			});
 		}
 

@@ -29,12 +29,12 @@ const OrderTrackingPage = () => {
 	// Extracted search logic for reuse
 	const performSearch = async (codeToSearch) => {
 		if (!codeToSearch.trim()) {
-			setError('Vui lòng nhập mã vé');
+			setError('Vui lòng nhập mã đơn hàng');
 			return;
 		}
 
 		if (codeToSearch.trim().length < 5) {
-			setError('Mã vé không hợp lệ');
+			setError('Mã đơn hàng không hợp lệ');
 			return;
 		}
 
@@ -81,9 +81,9 @@ const OrderTrackingPage = () => {
 
 	const getStatusSteps = (currentStatus) => {
 		let steps = [
-			{ key: 'confirmed', label: 'Đã đăng ký', icon: 'fas fa-check-circle' },
-			{ key: 'paid', label: 'Đã nhận thanh toán', icon: 'fas fa-credit-card' },
-			{ key: 'delivered', label: 'Đã tham dự', icon: 'fas fa-truck' }
+			{ key: 'confirmed', label: 'Đã xác nhận đơn hàng', icon: 'fas fa-check-circle' },
+			{ key: 'paid', label: 'Đã thanh toán', icon: 'fas fa-credit-card' },
+			{ key: 'delivered', label: 'Đã giao hàng', icon: 'fas fa-truck' }
 		];
 
 		const statusOrder = ['confirmed', 'paid', 'delivered'];
@@ -92,7 +92,7 @@ const OrderTrackingPage = () => {
 
 		steps.forEach((step, index) => {
 			if (index > currentIndex) {
-				step.label = step.label.replace('Đã', 'Chờ');
+				step.label = step.label.replace('Đã', 'Chờ xác nhận');
 			}
 		});
 
@@ -111,10 +111,10 @@ const OrderTrackingPage = () => {
 				<div className="text-center mb-8">
 					<h1 className="text-3xl font-bold text-gray-900 mb-2">
 						<i className="fas fa-search mr-3 text-blue-700"></i>
-						Tra cứu vé tham dự
+						Tra cứu đơn hàng
 					</h1>
 					<p className="text-gray-600">
-						Nhập mã vé để xem trạng thái và chi tiết vé tham dự
+						Nhập mã đơn hàng để xem trạng thái và chi tiết đơn hàng
 					</p>
 				</div>
 
@@ -124,7 +124,7 @@ const OrderTrackingPage = () => {
 						<div className="space-y-4">
 							<div>
 								<label htmlFor="orderCode" className="block text-sm font-medium text-gray-700 mb-2">
-									Mã vé <span className="text-danger-500">*</span>
+									Mã đơn hàng <span className="text-danger-500">*</span>
 								</label>
 								<div className="flex space-x-3">
 									<input
@@ -135,7 +135,7 @@ const OrderTrackingPage = () => {
 											setOrderCode(e.target.value.toUpperCase());
 											setError('');
 										}}
-										placeholder="Nhập mã vé"
+										placeholder="Nhập mã đơn hàng"
 										className={`form-input flex-1 ${error ? 'form-input-error' : ''}`}
 										style={{ textTransform: 'uppercase' }}
 									/>
@@ -173,7 +173,7 @@ const OrderTrackingPage = () => {
 							<div className="bg-primary-50 px-6 py-4 border-b border-primary-100">
 								<div className="flex items-center justify-between">
 									<h2 className="text-xl font-semibold text-gray-900">
-										Vé tham dự #{order.orderCode}
+										Đơn hàng #{order.orderCode}
 									</h2>
 									<span className={`badge ${getStatusColor(order.status)}`}>
 										{getStatusText(order.status)}
@@ -250,7 +250,7 @@ const OrderTrackingPage = () => {
 						<div className="card">
 							<div className="bg-gray-50 px-6 py-4 border-b border-gray-100">
 								<h3 className="text-lg font-semibold text-gray-900">
-									Chi tiết số lượng
+									Chi tiết đơn hàng
 								</h3>
 							</div>
 
@@ -294,10 +294,10 @@ const OrderTrackingPage = () => {
 										<div className="mb-4">
 											<h3 className="text-xl font-bold text-red-700 mb-2">
 												<i className="fas fa-exclamation-triangle mr-2"></i>
-												Thanh toán vé tham dự
+												Chờ xác nhận từ người bán
 											</h3>
 											<p className="text-red-600 text-sm">
-												Để thuận tiện cho công tác tổ chức, rất mong bạn có thể hoàn tất thanh toán trong vòng <b>1 giờ</b>.
+												Để được xử lý nhanh nhất, bạn vui lòng thanh toán trong vòng 1 giờ
 											</p>
 										</div>
 

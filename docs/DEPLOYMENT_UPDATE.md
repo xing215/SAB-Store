@@ -18,7 +18,7 @@
 ```nginx
 location /uploads/ {
     # Remove /uploads prefix and proxy to MinIO bucket
-    rewrite ^/uploads/(.*)$ /amdstore/$1 break;
+    rewrite ^/uploads/(.*)$ /sabstore/$1 break;
     
     proxy_pass http://minio:9000;
     # ... MinIO specific configurations
@@ -57,10 +57,10 @@ docker compose -f prod.compose.yml --env-file .env.prod up -d --build
 ### Step 4: Verify MinIO Policy
 ```powershell
 # Check MinIO logs
-docker logs amdstore_minio
+docker logs sabstore_minio
 
-# Should see: "[MinIO] Public read policy applied to bucket 'amdstore'"
-docker logs amdstore_backend
+# Should see: "[MinIO] Public read policy applied to bucket 'sabstore'"
+docker logs sabstore_backend
 ```
 
 ### Step 5: Test Image Access
@@ -76,18 +76,18 @@ docker logs amdstore_backend
 # Access MinIO console
 # Navigate to http://your-server:9001
 # Login with credentials from .env.prod
-# Check bucket 'amdstore' has public read policy
+# Check bucket 'sabstore' has public read policy
 ```
 
 ### Nginx cannot connect to MinIO
 **Check network connectivity**:
 ```powershell
-docker exec amdstore_frontend ping minio
+docker exec sabstore_frontend ping minio
 ```
 
 ### Check Nginx logs
 ```powershell
-docker logs amdstore_frontend
+docker logs sabstore_frontend
 ```
 
 ## Environment Variables
@@ -96,7 +96,7 @@ Ensure these are set in `.env.prod`:
 ```env
 MINIO_ROOT_USER=minioadmin
 MINIO_ROOT_PASSWORD=minioadmin123
-MINIO_BUCKET_NAME=amdstore
+MINIO_BUCKET_NAME=sabstore
 MINIO_ENDPOINT=minio
 MINIO_PORT=9000
 MINIO_USE_SSL=false

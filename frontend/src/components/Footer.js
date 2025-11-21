@@ -20,7 +20,7 @@ const Footer = () => {
                 to="/order-tracking" 
                 className="block text-gray-300 hover:text-white transition-colors"
               >
-                Tra cứu vé tham dự
+                Tra cứu đơn hàng
               </Link>
             </div>
           </div>
