@@ -28,125 +28,67 @@ const upload = multer({
 });
 
 router.post('/product-image', upload.single('image'), catchAsync(async (req, res) => {
-	try {
-		if (!req.file) {
-			throw ErrorResponse.badRequestError('Không có file nào được tải lên');
-		}
-
-		await validateImageFile(req.file);
-
-		const filename = generateSecureFilename(req.file.originalname);
-		const objectName = `products/${filename}`;
-
-		await uploadFile(objectName, req.file.buffer, req.file.mimetype);
-
-		const imageUrl = `/uploads/${objectName}`;
-
-		res.json({
-			success: true,
-			message: 'Tải ảnh thành công',
-			imageUrl: imageUrl,
-			filename: filename
-		});
-	} catch (error) {
-		
-
-		if (error.message.includes('File signature') ||
-			error.message.includes('Invalid') ||
-			error.message.includes('exceeds') ||
-			error.message.includes('Filename validation')) {
-			return res.status(400).json({
-				success: false,
-				message: error.message
-			});
-		}
-
-		res.status(500).json({
-			success: false,
-			message: 'Lỗi server khi tải ảnh',
-			error: error.message
-		});
+	if (!req.file) {
+		throw ErrorResponse.badRequestError('Không có file nào được tải lên');
 	}
-});
+
+	await validateImageFile(req.file);
+
+	const filename = generateSecureFilename(req.file.originalname);
+	const objectName = `products/${filename}`;
+
+	await uploadFile(objectName, req.file.buffer, req.file.mimetype);
+
+	const imageUrl = `/uploads/${objectName}`;
+
+	res.json({
+		success: true,
+		message: 'Tải ảnh thành công',
+		imageUrl: imageUrl,
+		filename: filename
+	});
+}));
 
 router.post('/product-images', upload.array('images', 5), catchAsync(async (req, res) => {
-	try {
-		if (!req.files || req.files.length === 0) {
-			throw ErrorResponse.badRequestError('Không có file nào được tải lên');
-		}
-
-		for (const file of req.files) {
-			await validateImageFile(file);
-		}
-
-		const imageUrls = [];
-
-		for (const file of req.files) {
-			const filename = generateSecureFilename(file.originalname);
-			const objectName = `products/${filename}`;
-
-			await uploadFile(objectName, file.buffer, file.mimetype);
-
-			imageUrls.push({
-				url: `/uploads/${objectName}`,
-				filename: filename
-			});
-		}
-
-		res.json({
-			success: true,
-			message: `Tải ${req.files.length} ảnh thành công`,
-			images: imageUrls
-		});
-	} catch (error) {
-		
-
-		if (error.message.includes('File signature') ||
-			error.message.includes('Invalid') ||
-			error.message.includes('exceeds') ||
-			error.message.includes('Filename validation')) {
-			return res.status(400).json({
-				success: false,
-				message: error.message
-			});
-		}
-
-		res.status(500).json({
-			success: false,
-			message: 'Lỗi server khi tải ảnh',
-			error: error.message
-		});
+	if (!req.files || req.files.length === 0) {
+		throw ErrorResponse.badRequestError('Không có file nào được tải lên');
 	}
-});
 
-router.delete('/product-image/:filename', catchAsync(async (req, res) => {
-	try {
-		const filename = sanitizeFilename(req.params.filename);
+	for (const file of req.files) {
+		await validateImageFile(file);
+	}
+
+	const imageUrls = [];
+
+	for (const file of req.files) {
+		const filename = generateSecureFilename(file.originalname);
 		const objectName = `products/${filename}`;
 
-		await deleteFile(objectName);
+		await uploadFile(objectName, file.buffer, file.mimetype);
 
-		res.json({
-			success: true,
-			message: 'Xóa ảnh thành công'
-		});
-	} catch (error) {
-		
-
-		if (error.message.includes('Invalid filename')) {
-			throw ErrorResponse.badRequestError('Tên file không hợp lệ');
-		}
-
-		if (error.code === 'NotFound') {
-			throw ErrorResponse.notFoundError('Không tìm thấy file');
-		}
-
-		res.status(500).json({
-			success: false,
-			message: 'Lỗi server khi xóa ảnh',
-			error: error.message
+		imageUrls.push({
+			url: `/uploads/${objectName}`,
+			filename: filename
 		});
 	}
-});
+
+	res.json({
+		success: true,
+		message: `Tải ${req.files.length} ảnh thành công`,
+		images: imageUrls
+	});
+}));
+
+router.delete('/product-image/:filename', catchAsync(async (req, res) => {
+	const filename = sanitizeFilename(req.params.filename);
+	const objectName = `products/${filename}`;
+
+	await deleteFile(objectName);
+
+	res.json({
+		success: true,
+		message: 'Xóa ảnh thành công'
+	});
+}));
 
 module.exports = router;
