@@ -103,6 +103,7 @@ services:
         condition: service_started
     networks:
       - sabstore_network
+      - multi-domain
     healthcheck:
       test: [ "CMD", "curl", "-f", "http://localhost/health" ]
       interval: 30s
