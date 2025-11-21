@@ -98,8 +98,10 @@ services:
       backend:
         condition: service_started
     networks:
-      - sabstore_network
-      - multi-domain
+      sabstore_network:
+        priority: 1000
+      multi-domain:
+        priority: 100
     healthcheck:
       test: [ "CMD", "curl", "-f", "http://localhost/health" ]
       interval: 30s
