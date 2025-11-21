@@ -1,4 +1,4 @@
-﻿const express = require('express');
+const express = require('express');
 const mongoose = require('mongoose');
 const multer = require('multer');
 
@@ -9,8 +9,6 @@ const Order = require('../../models/Order');
 const Account = require('../../models/Account');
 const Combo = require('../../models/Combo');
 
-const { ErrorResponse, catchAsync } = require('../../utils/errorResponse');
-const ErrorLogger = require('../../utils/errorLogger');
 const router = express.Router();
 
 // Configure multer for file uploads
@@ -33,7 +31,7 @@ const upload = multer({
  * GET /api/admin/database/export
  * Admin authentication handled by parent router
  */
-router.get('/export', catchAsync(async (req, res) => {
+router.get('/export', async (req, res) => {
 	try {
 		console.log(`[${new Date().toISOString()}] Database export requested by admin: ${req.user.email}`);
 
@@ -77,7 +75,7 @@ router.get('/export', catchAsync(async (req, res) => {
 
 		res.json(exportData);
 	} catch (error) {
-		// ErrorLogger will handle this
+		console.error('Database export error:', error);
 		res.status(500).json({
 			error: 'Export failed',
 			code: 'EXPORT_ERROR',
@@ -107,7 +105,7 @@ router.post('/import', upload.single('dataFile'), async (req, res) => {
 		try {
 			importData = JSON.parse(req.file.buffer.toString());
 		} catch (parseError) {
-			// ErrorLogger will handle this
+			console.error('JSON parse error:', parseError.message);
 			return res.status(400).json({
 				error: 'Invalid JSON file',
 				code: 'INVALID_JSON',
@@ -152,7 +150,7 @@ router.post('/import', upload.single('dataFile'), async (req, res) => {
 						importResults.users.skipped++;
 					}
 				} catch (error) {
-					// ErrorLogger will handle this
+					console.error('User import error:', error.message);
 					importResults.users.errors++;
 					errorDetails.users.push({
 						index: i,
@@ -176,7 +174,7 @@ router.post('/import', upload.single('dataFile'), async (req, res) => {
 						importResults.products.skipped++;
 					}
 				} catch (error) {
-					// ErrorLogger will handle this
+					console.error('Product import error:', error.message);
 					importResults.products.errors++;
 					errorDetails.products.push({
 						index: i,
@@ -205,7 +203,7 @@ router.post('/import', upload.single('dataFile'), async (req, res) => {
 						importResults.orders.imported++;
 					}
 				} catch (error) {
-					// ErrorLogger will handle this
+					console.error('Order import error:', error.message);
 					importResults.orders.errors++;
 					errorDetails.orders.push({
 						index: i,
@@ -235,7 +233,7 @@ router.post('/import', upload.single('dataFile'), async (req, res) => {
 					if (error.code === 11000) {
 						importResults.accounts.skipped++;
 					} else {
-						// ErrorLogger will handle this
+						console.error('Account import error:', error.message);
 						importResults.accounts.errors++;
 						errorDetails.accounts.push({
 							index: i,
@@ -260,7 +258,7 @@ router.post('/import', upload.single('dataFile'), async (req, res) => {
 						importResults.combos.skipped++;
 					}
 				} catch (error) {
-					// ErrorLogger will handle this
+					console.error('Combo import error:', error.message);
 					importResults.combos.errors++;
 					errorDetails.combos.push({
 						index: i,
@@ -290,7 +288,7 @@ router.post('/import', upload.single('dataFile'), async (req, res) => {
 		});
 
 	} catch (error) {
-		// ErrorLogger will handle this
+		console.error('Database import error:', error);
 
 		res.status(500).json({
 			error: 'Import failed',
@@ -306,7 +304,7 @@ router.post('/import', upload.single('dataFile'), async (req, res) => {
  * GET /api/admin/database/stats
  * Admin authentication handled by parent router
  */
-router.get('/stats', catchAsync(async (req, res) => {
+router.get('/stats', async (req, res) => {
 	try {
 		const [userCount, productCount, orderCount, accountCount, comboCount] = await Promise.all([
 			User.countDocuments({}),
@@ -330,7 +328,7 @@ router.get('/stats', catchAsync(async (req, res) => {
 
 		res.json(stats);
 	} catch (error) {
-		// ErrorLogger will handle this
+		console.error('Database stats error:', error);
 		res.status(500).json({
 			error: 'Failed to get database statistics',
 			code: 'STATS_ERROR'

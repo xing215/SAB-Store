@@ -1,4 +1,4 @@
-﻿const express = require('express');
+const express = require('express');
 const Order = require('../models/Order');
 const Product = require('../models/Product');
 const User = require('../models/User');
@@ -9,8 +9,6 @@ const { sendOrderToAppScript } = require('../utils/appscript');
 const { generateDirectSalePaymentQR } = require('../utils/paymentHelper');
 const ComboService = require('../services/ComboService');
 const { auth } = require('../lib/auth');
-const { ErrorResponse, catchAsync } = require('../utils/errorResponse');
-const ErrorLogger = require('../utils/errorLogger');
 const router = express.Router();
 
 // Apply seller authentication to all routes
@@ -48,7 +46,7 @@ router.post('/change-password', validatePasswordChange, async (req, res) => {
 		});
 
 	} catch (error) {
-		
+		console.error('Error changing seller password:', error);
 		res.status(500).json({
 			success: false,
 			message: 'Lỗi server khi đổi mật khẩu'
@@ -61,7 +59,7 @@ router.post('/change-password', validatePasswordChange, async (req, res) => {
  * @desc    Get seller dashboard statistics
  * @access  Private (Seller)
  */
-router.get('/dashboard/stats', catchAsync(async (req, res) => {
+router.get('/dashboard/stats', async (req, res) => {
 	try {
 		const now = new Date();
 		const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -163,7 +161,7 @@ router.get('/dashboard/stats', catchAsync(async (req, res) => {
 		});
 
 	} catch (error) {
-		
+		console.error('Seller dashboard stats error:', error);
 		res.status(500).json({
 			success: false,
 			message: 'Lỗi server khi lấy thống kê dashboard'
@@ -176,7 +174,7 @@ router.get('/dashboard/stats', catchAsync(async (req, res) => {
  * @desc    Get orders for seller management
  * @access  Private (Seller)
  */
-router.get('/orders', catchAsync(async (req, res) => {
+router.get('/orders', async (req, res) => {
 	try {
 		const {
 			page = 1,
@@ -256,7 +254,7 @@ router.get('/orders', catchAsync(async (req, res) => {
 		});
 
 	} catch (error) {
-		
+		console.error('Get orders error:', error);
 		res.status(500).json({
 			success: false,
 			message: 'Lỗi server khi lấy danh sách đơn hàng'
@@ -269,7 +267,7 @@ router.get('/orders', catchAsync(async (req, res) => {
  * @desc    Update order status
  * @access  Private (Seller)
  */
-router.put('/orders/:id/status', catchAsync(async (req, res) => {
+router.put('/orders/:id/status', async (req, res) => {
 	try {
 		const { id } = req.params;
 		const { status, transactionCode, cancelReason, note } = req.body;
@@ -277,7 +275,10 @@ router.put('/orders/:id/status', catchAsync(async (req, res) => {
 		// Validate status
 		const validStatuses = ['pending', 'confirmed', 'paid', 'delivered', 'cancelled'];
 		if (!validStatuses.includes(status)) {
-			throw ErrorResponse.badRequestError('Trạng thái đơn hàng không hợp lệ');
+			return res.status(400).json({
+				success: false,
+				message: 'Trạng thái đơn hàng không hợp lệ'
+			});
 		}
 
 		// Build update object
@@ -325,7 +326,10 @@ router.put('/orders/:id/status', catchAsync(async (req, res) => {
 		).populate('items.productId', 'name imageUrl price');
 
 		if (!order) {
-			throw ErrorResponse.notFoundError('Không tìm thấy đơn hàng');
+			return res.status(404).json({
+				success: false,
+				message: 'Không tìm thấy đơn hàng'
+			});
 		}
 
 		const appscriptData = {
@@ -340,10 +344,10 @@ router.put('/orders/:id/status', catchAsync(async (req, res) => {
 			cancelReason: order.cancelReason,
 			status: order.status
 		};
-		
+		console.log('Push to AppScript:', appscriptData);
 		setImmediate(() => {
 			sendOrderToAppScript(appscriptData).catch(err => {
-				
+				console.error('Gửi đơn hàng lên App Script thất bại:', err.message);
 			});
 		});
 
@@ -361,7 +365,7 @@ router.put('/orders/:id/status', catchAsync(async (req, res) => {
 		});
 
 	} catch (error) {
-		
+		console.error('Update order status error:', error);
 		res.status(500).json({
 			success: false,
 			message: 'Lỗi server khi cập nhật trạng thái đơn hàng'
@@ -374,7 +378,7 @@ router.put('/orders/:id/status', catchAsync(async (req, res) => {
  * @desc    Get order details
  * @access  Private (Seller)
  */
-router.get('/orders/:id', catchAsync(async (req, res) => {
+router.get('/orders/:id', async (req, res) => {
 	try {
 		const { id } = req.params;
 
@@ -383,7 +387,10 @@ router.get('/orders/:id', catchAsync(async (req, res) => {
 			.lean();
 
 		if (!order) {
-			throw ErrorResponse.notFoundError('Không tìm thấy đơn hàng');
+			return res.status(404).json({
+				success: false,
+				message: 'Không tìm thấy đơn hàng'
+			});
 		}
 
 		res.json({
@@ -399,7 +406,7 @@ router.get('/orders/:id', catchAsync(async (req, res) => {
 		});
 
 	} catch (error) {
-		
+		console.error('Get order details error:', error);
 		res.status(500).json({
 			success: false,
 			message: 'Lỗi server khi lấy chi tiết đơn hàng'
@@ -412,12 +419,15 @@ router.get('/orders/:id', catchAsync(async (req, res) => {
  * @desc    Create direct sale order
  * @access  Private (Seller)
  */
-router.post('/orders/direct', catchAsync(async (req, res) => {
+router.post('/orders/direct', async (req, res) => {
 	try {
 		const { items, optimalPricing, useOptimalPricing = false } = req.body;
 
 		if (!items || !Array.isArray(items) || items.length === 0) {
-			throw ErrorResponse.badRequestError('Danh sách sản phẩm không hợp lệ');
+			return res.status(400).json({
+				success: false,
+				message: 'Danh sách sản phẩm không hợp lệ'
+			});
 		}
 
 		let totalAmount;
@@ -425,7 +435,7 @@ router.post('/orders/direct', catchAsync(async (req, res) => {
 		let orderItems = [];
 
 		if (useOptimalPricing && optimalPricing) {
-			
+			console.log('💎 Direct sales using optimal pricing from frontend');
 
 			// Validate products exist
 			const productIds = items.map(item => item.productId);
@@ -435,7 +445,10 @@ router.post('/orders/direct', catchAsync(async (req, res) => {
 			});
 
 			if (products.length !== productIds.length) {
-				throw ErrorResponse.badRequestError('Một hoặc nhiều sản phẩm không khả dụng');
+				return res.status(400).json({
+					success: false,
+					message: 'Một hoặc nhiều sản phẩm không khả dụng'
+				});
 			}
 
 			// Check stock quantities
@@ -482,7 +495,7 @@ router.post('/orders/direct', catchAsync(async (req, res) => {
 			}
 
 		} else {
-			
+			console.log('🔄 Direct sales using traditional combo detection');
 			// Apply combo detection silently for direct sales
 			const comboResult = await ComboService.detectAndApplyBestCombo(items, true);
 			let finalItems = items;
@@ -634,9 +647,9 @@ router.post('/orders/direct', catchAsync(async (req, res) => {
 		try {
 			const username = req.seller?.username || 'seller';
 			qrUrl = await generateDirectSalePaymentQR(totalAmount, orderCode, username);
-			
+			console.log('✅ Direct sale QR URL generated:', qrUrl);
 		} catch (qrError) {
-			
+			console.error('❌ Failed to generate direct sale QR URL:', qrError.message);
 		}
 
 		// Populate order for response
@@ -657,7 +670,7 @@ router.post('/orders/direct', catchAsync(async (req, res) => {
 		});
 
 	} catch (error) {
-		
+		console.error('Create direct order error:', error);
 		res.status(500).json({
 			success: false,
 			message: 'Lỗi server khi tạo đơn hàng bán trực tiếp'
